@@ -1,0 +1,16 @@
+
+config samba
+	option workgroup 'WORKGROUP'
+	option charset 'UTF-8'
+	option description 'Samba on OpenWRT'
+	option name 'OpenWrt'
+	option homes '0'
+	option macos '0'
+
+config sambashare
+	option path '/xyH.storage/Netshare_Samba'
+	option read_only 'no'
+	option guest_ok 'yes'
+	option inherit_owner 'yes'
+	option name 'shARed'
+

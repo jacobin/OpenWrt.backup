@@ -1,0 +1,13 @@
+proxies:
+  - {type: trojan, password: 57rSedv3T, server: 121.14.3.186, port: 28113, skip-cert-verify: true, name: IEPL+·+日本JP+·+23+·+深港IEPL}
+  - {type: trojan, password: 57rSedv3T, server: 183.2.150.192, port: 28113, skip-cert-verify: true, name: IEPL+·+日本JP+·+23+·+沪港IEPL}
+  - {type: trojan, password: 57rSedv3T, server: 121.14.3.186, port: 28107, skip-cert-verify: true, name: IEPL+·+日本JP+·+V8+·+深港IEPL}
+  - {type: trojan, password: 57rSedv3T, server: 183.2.150.192, port: 28107, skip-cert-verify: true, name: IEPL+·+日本JP+·+V8+·+沪港IEPL}
+  - {type: trojan, password: 57rSedv3T, server: 121.14.3.186, port: 28117, skip-cert-verify: true, name: IEPL+·+日本JP+·+A140+·+Netflix日本+·+ChatGPT解锁+·+深港IEPL}
+  - {type: trojan, password: 57rSedv3T, server: 183.2.150.192, port: 28117, skip-cert-verify: true, name: IEPL+·+日本JP+·+A140+·+Netflix日本+·+ChatGPT解锁+·+沪港IEPL}
+  - {type: trojan, password: 57rSedv3T, server: 121.14.3.186, port: 28136, skip-cert-verify: true, name: IEPL+·+美国US+·+36+·+深港IEPL}
+  - {type: trojan, password: 57rSedv3T, server: 183.2.150.192, port: 28136, skip-cert-verify: true, name: IEPL+·+美国US+·+36+·+沪港IEPL}
+  - {type: trojan, password: 57rSedv3T, server: 121.14.3.186, port: 28109, skip-cert-verify: true, name: IEPL+·+美国US+·+88+·+深港IEPL}
+  - {type: trojan, password: 57rSedv3T, server: 183.2.150.192, port: 28109, skip-cert-verify: true, name: IEPL+·+美国US+·+88+·+沪港IEPL}
+  - {type: trojan, password: 57rSedv3T, server: 121.14.3.186, port: 28175, skip-cert-verify: true, name: IEPL+·+美国US+·+A250+·+Netflix美国+·+ChatGPT解锁+·+深港IEPL}
+  - {type: trojan, password: 57rSedv3T, server: 183.2.150.192, port: 28175, skip-cert-verify: true, name: IEPL+·+美国US+·+A250+·+Netflix美国+·+ChatGPT解锁+·+沪港IEPL}

@@ -1,0 +1,33 @@
+root@OpenWrt:~# cd /
+root@OpenWrt:/# ls -al
+root@OpenWrt:/# df -h
+root@OpenWrt:/# mount
+root@OpenWrt:~# cd /mnt/sda1
+root@OpenWrt:~# password aria2
+root@OpenWrt:~# passwd aria2
+root@OpenWrt:~# chown -R aria2 "/etc/openclash/New folder"
+root@OpenWrt:~# chown -R aria2 "/etc/openclash/New folder"
+root@OpenWrt:~# pwd
+root@OpenWrt:~# cd /tmp
+root@OpenWrt:/tmp# opkg update
+root@OpenWrt:/tmp# opkg install aria2 luci-app-aria2
+root@OpenWrt:/tmp# opkg install aria2 luci-app-aria2
+root@OpenWrt:/tmp# opkg update
+root@OpenWrt:/tmp# opkg install aria2 luci-app-aria2
+root@OpenWrt:/tmp# opkg install ariang
+root@OpenWrt:/tmp# opkg install webui-aria2
+root@OpenWrt:~# opkg update
+root@OpenWrt:~# opkg install libstdcpp libsqlite3 libssh2 libxml2 luci-app-aria2  luci-i18n-aria2-zh-cn  webui-aria2 aria2
+root@OpenWrt:~# opkg update
+root@OpenWrt:~# opkg install libxml2-dev
+root@OpenWrt:~# history
+
+   0 opkg update
+   4 opkg install libstdcpp libsqlite3 libssh2 libxml2 luci-app-aria2  luci-i18n-aria2-zh-cn  webui-aria2 aria2
+   5 opkg update
+   6 opkg install libxml2-dev
+   7 history
+
+
+opkg update
+opkg "install" "libstdcpp" "libsqlite3" "libssh2" "libxml2" "luci-app-aria2" "luci-i18n-aria2-zh-cn" "webui-aria2" "aria2" "libxml2-dev"

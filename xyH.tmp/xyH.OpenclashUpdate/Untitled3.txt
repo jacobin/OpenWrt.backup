@@ -1,0 +1,66 @@
+now=`date '+%Y-%m-%d-%H-%M-%S'`
+tarFName="/tmp/Backup_OpenClash_$now.tgz"
+
+# https://stackoverflow.com/questions/1521462/looping-through-the-content-of-a-file-in-bash
+while IFS="" read -r p || [ -n "$p" ]
+do
+    files="./$files\x20$p"
+done < ./backup_openclash_file_list.txt
+
+tar -cvzf $tarFName -C /etc/openclash \
+    ./2ye.yaml \
+    ./BetterShop.club=aHR0cHM6Ly9zc3IuYmV0dGVyc2hvcC5jbHViL2RhaWx5LXNzLWFpcnBvcnQuaHRtbA==.yaml \
+    ./ChromeGo01.yaml \
+    ./ChromeGo02.yaml \
+    ./ChromeGo03.yaml \
+    ./ChromeGo04.yaml \
+    ./ChromeGo05.yaml \
+    ./ChromeGo06.yaml \
+    ./ChromeGo07.yaml \
+    ./ChromeGo08.yaml \
+    ./ChromeGo09.yaml \
+    ./ChromeGo10.yaml \
+    ./ChromeGo11.yaml \
+    ./ChromeGo12.yaml \
+    ./ChromeGo13.yaml \
+    ./ChromeGo14.yaml \
+    ./ChromeGo15.yaml \
+    ./Country.mmdb \
+    ./Ffreefq.neocities.org.yaml \
+    ./FreeFQ.yaml \
+    ./GeoIP.dat \
+    ./GeoSite.dat \
+    ./Github.comPawdroid=aHR0cHM6Ly9naXRodWIuY29tL1Bhd2Ryb2lkL0ZyZWUtc2VydmVycw==.yaml \
+    ./GongjudashiI.yaml \
+    ./KeJiWangLuo=aHR0cHM6Ly93d3cueW91dHViZS5jb20vY2hhbm5lbC9VQ0dQYzJkc0pja3BmU2lGcHBBZ2ZzZ0E=.yaml \
+    ./MianFeiJieDian=aHR0cHM6Ly93d3cueW91dHViZS5jb20vQHVzZXItZnExdWs5cGw5aA==.yaml \
+    ./Pojieziyuanjun20220822.yaml \
+    ./Pojieziyuanjun20220831.yaml \
+    ./Pojieziyuanjun20220905.yaml \
+    ./Pojieziyuanjun20220926.yaml \
+    ./Pojieziyuanjun20230705.yaml \
+    ./WRFreeFQ.yaml \
+    ./XiyaowongFreeFQ.yaml \
+    ./Zhlx2835Freefq.yaml \
+    ./accelerated-domains.china.conf \
+    ./china_ip6_route.ipset \
+    ./china_ip_route.ipset \
+    ./clashnode.com-p-256.html.yaml \
+    ./free886.herokuapp.com.yaml \
+    ./getgeo.sh \
+    ./backup_openclash.sh \
+    ./github.com-Pawdroid-Free-servers.yaml \
+    ./github.com-ermaozi-get_subscribe.yaml \
+    ./nodefree.org.yaml \
+    ./openclash \
+    ./sspool.herokuapp.com.yaml \
+    ./yugogo.yaml \
+    ./yugogo2.yaml \
+    ./backup \
+    ./config \
+    ./core \
+    ./custom \
+    ./game_rules \
+    ./history \
+    ./proxy_provider \
+    ./rule_provider

@@ -1,0 +1,109 @@
+root@OpenWrt:/xyH.OpenclashUpdate# opkg update
+    Downloading http://downloads.openwrt.org/snapshots/targets/x86/64/packages/Packages.gz
+    Updated list of available packages in /var/opkg-lists/openwrt_core
+    Downloading http://downloads.openwrt.org/snapshots/packages/x86_64/base/Packages.gz
+    Updated list of available packages in /var/opkg-lists/openwrt_base
+    Downloading http://downloads.openwrt.org/releases/18.06.9/packages/x86_64/luci/Packages.gz
+    Updated list of available packages in /var/opkg-lists/openwrt_luci
+    Downloading http://downloads.openwrt.org/snapshots/packages/x86_64/packages/Packages.gz
+    Updated list of available packages in /var/opkg-lists/openwrt_packages
+    Downloading http://downloads.openwrt.org/snapshots/packages/x86_64/routing/Packages.gz
+    Updated list of available packages in /var/opkg-lists/openwrt_routing
+
+root@OpenWrt:/xyH.OpenclashUpdate# opkg install bind-dig
+    Multiple packages (libgcc1 and libgcc1) providing same name marked HOLD or PREFER. Using latest.
+    Multiple packages (libgcc1 and libgcc1) providing same name marked HOLD or PREFER. Using latest.
+    Multiple packages (libpthread and libpthread) providing same name marked HOLD or PREFER. Using latest.
+    Multiple packages (libgcc1 and libgcc1) providing same name marked HOLD or PREFER. Using latest.
+    Multiple packages (libatomic1 and libatomic1) providing same name marked HOLD or PREFER. Using latest.
+    Multiple packages (libpthread and libpthread) providing same name marked HOLD or PREFER. Using latest.
+    Multiple packages (libpthread and libpthread) providing same name marked HOLD or PREFER. Using latest.
+    Multiple packages (librt and librt) providing same name marked HOLD or PREFER. Using latest.
+    Upgrading bind-dig on root from 9.17.13-1 to 9.18.19-1...
+    Downloading http://downloads.openwrt.org/snapshots/packages/x86_64/packages/bind-dig_9.18.19-1_x86_64.ipk
+    Configuring bind-dig.
+
+root@OpenWrt:/xyH.OpenclashUpdate# dig www.baidu.com
+    Error loading shared library libisc-9.18.19.so: No such file or directory (needed by /usr/bin/dig)
+    Error loading shared library libdns-9.18.19.so: No such file or directory (needed by /usr/bin/dig)
+    Error loading shared library libisccfg-9.18.19.so: No such file or directory (needed by /usr/bin/dig)
+    Error loading shared library libirs-9.18.19.so: No such file or directory (needed by /usr/bin/dig)
+    Error loading shared library libbind9-9.18.19.so: No such file or directory (needed by /usr/bin/dig)
+    Error relocating /usr/bin/dig: dns_message_create: symbol not found
+    Error relocating /usr/bin/dig: dst_key_setbits: symbol not found
+     ... <<The following omits 108,000 words>>
+    Error relocating /usr/bin/dig: dns_rdataset_first: symbol not found
+    Error relocating /usr/bin/dig: irs_resconf_getattempts: symbol not found
+    Error relocating /usr/bin/dig: bind9_getaddresses: symbol not found
+    Error relocating /usr/bin/dig: dns_tsig_hmacmd5_name: symbol not found
+    Error relocating /usr/bin/dig: isc_mem_debugging: symbol not found
+
+root@OpenWrt:/xyH.OpenclashUpdate# opkg list-installed | grep dig
+    bind-dig - 9.18.19-1
+    ruby-digest - 3.0.1-1
+
+root@OpenWrt:/xyH.OpenclashUpdate# opkg install bind-libs
+    Multiple packages (libgcc1 and libgcc1) providing same name marked HOLD or PREFER. Using latest.
+    Multiple packages (libgcc1 and libgcc1) providing same name marked HOLD or PREFER. Using latest.
+    Multiple packages (libpthread and libpthread) providing same name marked HOLD or PREFER. Using latest.
+    Multiple packages (libgcc1 and libgcc1) providing same name marked HOLD or PREFER. Using latest.
+    Multiple packages (libatomic1 and libatomic1) providing same name marked HOLD or PREFER. Using latest.
+    Multiple packages (libpthread and libpthread) providing same name marked HOLD or PREFER. Using latest.
+    Multiple packages (libpthread and libpthread) providing same name marked HOLD or PREFER. Using latest.
+    Multiple packages (librt and librt) providing same name marked HOLD or PREFER. Using latest.
+    Upgrading bind-libs on root from 9.17.13-1 to 9.18.19-1...
+    Downloading http://downloads.openwrt.org/snapshots/packages/x86_64/packages/bind-libs_9.18.19-1_x86_64.ipk
+    Multiple packages (libpthread and libpthread) providing same name marked HOLD or PREFER. Using latest.
+    Multiple packages (libatomic1 and libatomic1) providing same name marked HOLD or PREFER. Using latest.
+    Removing obsolete file /usr/lib/libisccfg-9.17.13.so.
+    Removing obsolete file /usr/lib/libdns-9.17.13.so.
+    Removing obsolete file /usr/lib/libbind9-9.17.13.so.
+    Removing obsolete file /usr/lib/libisccc-9.17.13.so.
+    Removing obsolete file /usr/lib/libisc-9.17.13.so.
+    Removing obsolete file /usr/lib/libns-9.17.13.so.
+    Removing obsolete file /usr/lib/libirs-9.17.13.so.
+    Configuring bind-libs.
+
+root@OpenWrt:/xyH.OpenclashUpdate# dig www.baidu.com
+    ; <<>> DiG 9.18.19 <<>> www.baidu.com
+    ;; global options: +cmd
+    ;; Got answer:
+    ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 16812
+    ;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 1
+
+    ;; OPT PSEUDOSECTION:
+    ; EDNS: version: 0, flags:; udp: 512
+    ;; QUESTION SECTION:
+    ;www.baidu.com.                 IN      A
+
+    ;; ANSWER SECTION:
+    www.baidu.com.          34      IN      A       120.232.145.144
+    www.baidu.com.          34      IN      A       120.232.145.185
+
+    ;; Query time: 43 msec
+    ;; SERVER: 127.0.0.1#53(127.0.0.1) (UDP)
+    ;; WHEN: Sun Dec 03 00:29:58 CST 2023
+    ;; MSG SIZE  rcvd: 74
+
+root@OpenWrt:/xyH.OpenclashUpdate# dig @8.8.8.8 www.google.com +trace
+    ; <<>> DiG 9.18.19 <<>> @8.8.8.8 www.google.com +trace
+    ; (1 server found)
+    ;; global options: +cmd
+    .                       73227   IN      NS      i.root-servers.net.
+    .                       73227   IN      NS      h.root-servers.net.
+    .                       73227   IN      NS      m.root-servers.net.
+    .                       73227   IN      NS      l.root-servers.net.
+    .                       73227   IN      NS      e.root-servers.net.
+    .                       73227   IN      NS      d.root-servers.net.
+    .                       73227   IN      NS      k.root-servers.net.
+    .                       73227   IN      NS      b.root-servers.net.
+    .                       73227   IN      NS      f.root-servers.net.
+    .                       73227   IN      NS      a.root-servers.net.
+    .                       73227   IN      NS      g.root-servers.net.
+    .                       73227   IN      NS      j.root-servers.net.
+    .                       73227   IN      NS      c.root-servers.net.
+    .                       73227   IN      RRSIG   NS 8 0 518400 20231215050000 20231202040000 46780 . ijHJQkDAgVpi/rFLil+0Ow4BcWJNti87KvZIFsdCsqdWERMxmPfiD2EE DyreU29OSpsjCKxZyADGGIsGp/kkLbRWGqZNhOeL2oxe1JY4XVbg55ON JED7axGipiLYtuxK9aQj1NtYosFvC6f1nghF2d8gA/mSRq5nul9E54+T iD4Qo8XTUOQAkqFQPeq6bBae8dkSdLyOn9WEG5AyXrBvxezxVxuXGAz0 jEML/b9xA/AHswGSKKWbHWpHYVe9AkVPlVax8t+wj9NdXdF3ImV9vXss 1EQZEIeHZN9bBYpO8wvXpG7+TbzcpvG7esuMbCJ+kfbiriqKUWHKLIyX 1CCRFw==
+    ;; Received 525 bytes from 8.8.8.8#53(8.8.8.8) in 43 ms
+
+    www.google.com.         1       IN      A       198.18.0.56
+    ;; Received 71 bytes from 198.18.5.4#53(c.root-servers.net) in 0 ms

@@ -1,0 +1,18 @@
+#!/bin/sh /etc/rc.common
+START=99
+
+start(){
+    kill -9 $(pgrep -f subconverter.MetaCubeX/subconverter)
+    cd /etc/subconverter.MetaCubeX
+    /etc/subconverter.MetaCubeX/subconverter > /dev/null 2>&1 &
+}
+
+stop(){
+    kill -9 $(pgrep -f subconverter.MetaCubeX/subconverter)
+}
+
+restart(){
+    kill -9 $(pgrep -f subconverter.MetaCubeX/subconverter)
+    cd /etc/subconverter.MetaCubeX
+    /etc/subconverter.MetaCubeX/subconverter > /dev/null 2>&1 &
+}

@@ -1,0 +1,14 @@
+  - {name: "%�\x11�<'���ЋM���L\f\x0b��\rK�\x0e\x0bM\x0e\f%�", server: 62.100.205.48, port: 989, type: ss, cipher: aes-256-cfb, password: f8f7aCzcPKbsF8p3, udp: true}
+  - {name: "%�\x11�|'��\x12\x12�LML\x0b�L\rˍ\r���KL\f�%�", server: 150.107.46.21, port: 8083, type: ssr, cipher: aes-256-cfb, password: iFqnzSscN, protocol: origin, obfs: tls1.2_ticket_auth, protocol-param: "", obfs-param: "", udp: true}
+  - {name: "%�\x11�<'���KM\rK�MM\x0b��\r\x0b�L�L\f�%�", server: ssca.irundns.net, port: 443, type: ssr, cipher: aes-128-cfb, password: $$Turb0VPN$$, protocol: auth_aes128_md5, obfs: http_post, protocol-param: "", obfs-param: "", udp: true}
+  - {name: "%�\x11�<'���ЋM���L\f\x0b��\rK�\x0e\x0bM\x0eN%�", server: 62.100.205.48, port: 989, type: ss, cipher: aes-256-cfb, password: f8f7aCzcPKbsF8p3, udp: true}
+  - {name: "%�\x11�<'���KM\rK�MM\x0b��\r\x0b�L�MLN%�", server: ssca.irundns.net, port: 443, type: ssr, cipher: aes-128-cfb, password: $$Turb0VPN$$, protocol: auth_aes128_md5, obfs: http_post, protocol-param: "", obfs-param: "", udp: true}
+  - {name: "%�\x11�|'��\x12\x12�LML\x0b�L\rˍ\r���KL\f�%�", server: 150.107.46.21, port: 8083, type: ssr, cipher: aes-256-cfb, password: iFqnzSscN, protocol: origin, obfs: tls1.2_ticket_auth, protocol-param: "", obfs-param: "", udp: true}
+  - {name: "%�\x11�<'���ЋM���L\f\x0b��\rK�\x0e\x0bL\rL%�", server: 62.100.205.48, port: 989, type: ss, cipher: aes-256-cfb, password: f8f7aCzcPKbsF8p3, udp: true}
+  - {name: "%�\x11�|'��\x12\x12�LML\x0b�L\rˍ\r���KL\f�%�", server: 150.107.46.21, port: 8083, type: ssr, cipher: aes-256-cfb, password: iFqnzSscN, protocol: origin, obfs: tls1.2_ticket_auth, protocol-param: "", obfs-param: "", udp: true}
+  - {name: "%�\x11�<'���ЋM���L\f\x0b��\rK�\x0e\x0bML\x0e%�", server: 62.100.205.48, port: 989, type: ss, cipher: aes-256-cfb, password: f8f7aCzcPKbsF8p3, udp: true}
+  - {name: "%�\x11�<'���KM\rK�MM\x0b��\r\x0b�L�MLM%�", server: ssca.irundns.net, port: 443, type: ssr, cipher: aes-128-cfb, password: $$Turb0VPN$$, protocol: auth_aes128_md5, obfs: http_post, protocol-param: "", obfs-param: "", udp: true}
+  - {name: "%�\x11�|'��\x12\x12�LML\x0b�L\rˍ\r���KL\f�%� 2", server: 150.107.46.21, port: 8083, type: ssr, cipher: aes-256-cfb, password: iFqnzSscN, protocol: origin, obfs: tls1.2_ticket_auth, protocol-param: "", obfs-param: "", udp: true}
+  - {name: "%�\x11�<'���ЋM���L\f\x0b��\rK�\x0e\x0bM\x0e\r%�", server: 62.100.205.48, port: 989, type: ss, cipher: aes-256-cfb, password: f8f7aCzcPKbsF8p3, udp: true}
+  - {name: "%�\x11�|'��\x12\x12�LML\x0b�L\rˍ\r���KL\f�%� 3", server: 150.107.46.21, port: 8083, type: ssr, cipher: aes-256-cfb, password: iFqnzSscN, protocol: origin, obfs: tls1.2_ticket_auth, protocol-param: "", obfs-param: "", udp: true}
+  - DOMAIN-SUFFIX,q.ox11.com,🛑 全球拦截

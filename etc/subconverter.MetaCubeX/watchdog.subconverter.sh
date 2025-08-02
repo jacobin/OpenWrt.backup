@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# The file "/tmp/tmp/subconverter.crontab.flag.txt" under tmp/tmp will be deleted every time "restart OpenWRT". So, here it is used as the sign of "can start timed tasks"
+if ! test -f "/tmp/tmp/subconverter.crontab.flag.txt"; then
+    exit 1
+fi
+
+# https://www.cnblogs.com/yuyanc/p/16434413.html
+step=5
+for (( i = 0; i < 60; i=(i+step) )); do
+
+    # https://stackoverflow.com/questions/9117507/linux-unix-command-to-determine-if-process-is-running
+    PROCESS=/etc/subconverter.MetaCubeX/subconverter
+    PIDS=`ps | grep -v grep | grep -v watchdog | grep $PROCESS | grep -o '^[ ]*[0-9]*'`
+    if [ -z "$PIDS" ]; then
+        echo fuckup ...
+        /etc/init.d/subconverter.MetaCubeX start
+    else
+        for PID in $PIDS; do
+            echo $PID
+        done
+    fi
+
+    sleep $step
+done

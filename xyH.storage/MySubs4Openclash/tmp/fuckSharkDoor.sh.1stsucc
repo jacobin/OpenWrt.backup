@@ -1,0 +1,193 @@
+#!/bin/bash
+
+
+
+###############################################################################
+#   # Test #1 ############################################################## {{
+#   wget https://github.com//sharkDoor/vpn-free-nodes/tree/master/node-list/2025-03 -Oeee.html
+#   cat eee.html | grep "日" | grep "时" | grep "分" | grep '"contentType":"file"}],"templateDirectorySuggestionUrl"' | sed 's/{"name":"/\n{"name":"/g' | grep '.md","contentType":"file"}],"templateDirectorySuggestionUrl"' | sed 's/,/\n/g' | sed -n 1p > lll.html
+#   ######################################################################## }}
+
+
+
+###############################################################################
+#   # Test #2 ############################################################## {{
+#   wget https://github.com//sharkDoor/vpn-free-nodes/tree/master/node-list/ -ODDD.html
+#   cat DDD.html |  grep ',"contentType":"directory"}],"templateDirectorySuggestionUrl"' | sed 's/{"name":"/\n{"name":"/g' > FFF.html
+#
+#   cat EEE.html |  grep ',"contentType":"directory"}],"templateDirectorySuggestionUrl"' | sed 's/{"name":"/\n{"name":"/g' |  grep ',"contentType":"directory"}],"templateDirectorySuggestionUrl"' > FFF.html
+#   ######################################################################## }}
+
+
+
+###############################################################################
+# fnExtractStringBetweenAB ################################################# {{
+function fnExtractStringBetweenAB() {  # $1/return var, $2/originalString, $3/A string, $4/B string
+  # echo $2
+  # echo $3
+  # echo $4
+    local foo="$2"
+    foo=${foo##*${3}}
+    foo=${foo%%${4}*}
+  # echo [$foo]
+  # echo "${1}='${foo}'"
+    eval "${1}='${foo}'"
+}
+#   # Example:
+#   fnExtractStringBetweenAB ret "<p class=\"item-title\"><a href=\"https://nodefree.org/p/2067.html\" title=\"「5月25日」最高速度13.56M/S，2024年最新高速SSR/V2ray/Clash订阅链接免费节点\">「5月25日」最高速度13.56M/S，2024年最新高速SSR/V2ray/Clash订阅链接免费节点</a></p>" \
+#       "a href=" \
+#       "title="
+#
+#   echo [${ret}]
+#   ret=`echo $ret | xargs`
+#   echo [${ret}]
+#   ######################################################################## }}
+
+
+
+###############################################################################
+#   Test #3 ################################################################ {{
+#   # https://superuser.com/questions/321240/how-do-you-redirect-wget-response-to-standard-out
+#   wget -q -O- "https://github.com//sharkDoor/vpn-free-nodes/tree/master/node-list/" | grep ',"contentType":"directory"}],"templateDirectorySuggestionUrl"' | sed 's/{"name":"/\n{"name":"/g' | grep ',"contentType":"directory"}],"templateDirectorySuggestionUrl"' | sed -n 1p > HHH.html
+#   fnExtractStringBetweenAB ret "$(cat HHH.html)" \
+#                    '"path":"node-list/' \
+#                    '","contentType":"directory"'
+#   echo [${ret}]
+#   ret=`echo $ret | xargs`
+#   echo [${ret}]
+#   ######################################################################## }}
+
+
+
+###############################################################################
+#   Test #4 ################################################################ {{
+#   # Remember to escape the double quotes
+#   fnExtractStringBetweenAB ret \
+#       "$(wget -q -O- "https://github.com//sharkDoor/vpn-free-nodes/tree/master/node-list/" | grep ',\"contentType\":\"directory\"}],\"templateDirectorySuggestionUrl\"' | sed 's/{\"name\":\"/\n{\"name\":\"/g' | grep ',\"contentType\":\"directory\"}],\"templateDirectorySuggestionUrl\"' | sed -n 1p)" \
+#           '"path":"node-list/' \
+#           '","contentType":"directory"'
+#
+#   echo [${ret}]
+#   ret=`echo $ret | xargs`
+#   echo [${ret}]
+#   ######################################################################## }}
+
+
+
+fnExtractStringBetweenAB YYYY_MM \
+    "$(wget -q -O- https://github.com//sharkDoor/vpn-free-nodes/tree/master/node-list/ | grep ',\"contentType\":\"directory\"}],\"templateDirectorySuggestionUrl\"' | sed 's/{\"name\":\"/\n{\"name\":\"/g' | grep ',\"contentType\":\"directory\"}],\"templateDirectorySuggestionUrl\"' | sed -n 1p)" \
+        '"path":"node-list/' \
+        '","contentType":"directory"'
+
+wget "https://github.com//sharkDoor/vpn-free-nodes/tree/master/node-list/${YYYY_MM}" -OQQQ.html -q
+cat QQQ.html | grep "日" | grep "时" | grep "分" | grep '"contentType":"file"}],"templateDirectorySuggestionUrl"' | sed 's/{"name":"/\n{"name":"/g' | grep '.md","contentType":"file"}],"templateDirectorySuggestionUrl"' | sed 's/,/\n/g' | sed -n 1p > LLL.html
+
+
+
+fnExtractStringBetweenAB TIME_FName "$(cat LLL.html)" '{"name":"' '.md"'
+
+#   echo [${TIME_FName}]
+#   TIME_FName=`echo $TIME_FName | xargs`
+#   echo [${TIME_FName}]
+
+#   echo https://raw.githubusercontent.com/sharkDoor/vpn-free-nodes/refs/heads/master/node-list/${YYYY_MM}/${TIME_FName}.md
+
+wget -q -OMMM.txt https://raw.githubusercontent.com/sharkDoor/vpn-free-nodes/refs/heads/master/node-list/${YYYY_MM}/${TIME_FName}.md
+
+tail -n +3 "MMM.txt" | while read line || [ -n "$line" ];
+do
+    node=$(echo ${line} | cut "-d|" -f 7)
+    echo ${node}
+done > NNN.txt
+
+#    # trojan://y8DvPRQfz@163.177.46.220:28175?allowInsecure=1&peer=ctldl.windowsupdate.com#IEPL+·+美国US+·+A250+·+Netflix美国+·+ChatGPT解锁+·+沪港IEPL
+#    echo port: 7890 > OOO.yaml
+#    echo socks-port: 7891 >> OOO.yaml
+#    echo allow-lan: true >> OOO.yaml
+#    echo mode: Rule >> OOO.yaml
+#    echo log-level: info >> OOO.yaml
+#    echo external-controller: :9090 >> OOO.yaml
+echo proxies: > OOO.yaml
+
+#   - {name: "[Trojan] 🇺🇸 US美国(mibei77.com 米贝节点分享)", server: 38.28.197.130, port: 443, type: trojan, password: Aimer, skip-cert-verify: true, udp: true}
+#   - {name: "[Trojan] 🇷🇺 俄罗斯(mibei77.com 米贝节点分享)", server: 46.254.92.142, port: 2087, type: trojan, password: Aimer, skip-cert-verify: true, udp: true}
+#   - {name: "[Trojan] 🇺🇸 US美国(mibei77.com 米贝节点分享) 5", server: 108.165.152.98, port: 2087, type: trojan, password: Aimer, skip-cert-verify: true, udp: true}
+
+#     input_string="trojan://y8DvPRQfz@163.177.46.183:28113?allowInsecure=1&peer=download.windowsupdate.com#IEPL+%C2%B7+%E6%97%A5%E6%9C%ACJP+%C2%B7+23+%C2%B7+%E6%B7%B1%E6%B8%AFIEPL"
+#     # Save the current IFS value
+#     old_ifs="$IFS"
+#     # Set IFS to ';,'
+#     IFS='/@:?=&#'
+#     # Read the string into an array
+#     read -ra elements <<< "$input_string"
+#     # Restore the old IFS value
+#     IFS="$old_ifs"
+#
+#     # Loop through the elements
+#     for i in "${!elements[@]}"; do
+#     #for element in "${elements[@]}"; do
+#         printf "%s\t%s\n" "$i" "${elements[$i]}"
+#     doneS
+
+
+function url_decode() {
+    echo "$@" \
+        | sed -E 's/%([0-9a-fA-F]{2})/\\x\1/g;s/\+/ /g'
+}
+
+
+cat "NNN.txt" | while read line || [ -n "$line" ];
+do
+    printf "  - {"
+
+    input_string=${line}
+    # Save the current IFS value
+    old_ifs="$IFS"
+    IFS='/@:?=&#'
+    # Read the string into an array
+    read -ra elements <<< "$input_string"
+    # Restore the old IFS value
+    IFS="$old_ifs"
+
+    # https://www.baeldung.com/linux/string-split-many-delimiters
+    # https://stackoverflow.com/questions/6723426/looping-over-arrays-printing-both-index-and-value
+    for i in "${!elements[@]}"; do
+        # trojan://y8DvPRQfz@163.177.46.183:28113?allowInsecure=1&peer=download.windowsupdate.com#IEPL+%C2%B7+%E6%97%A5%E6%9C%ACJP+%C2%B7+23+%C2%B7+%E6%B7%B1%E6%B8%AFIEPL
+        #   # 0   trojan
+        #   # 1
+        #   # 2
+        #   # 3   y8DvPRQfz
+        #   # 4   163.177.46.183
+        #   # 5   28113
+        #   # 6   allowInsecure
+        #   # 7   1
+        #   # 8   peer
+        #   # 9   download.windowsupdate.com
+        #   # 10  IEPL+%C2%B7+%E6%97%A5%E6%9C%ACJP+%C2%B7+23+%C2%B7+%E6%B7%B1%E6%B8%AFIEPL
+        case "$i" in
+        0)  printf "type: %s, " "${elements[$i]}"
+            ;;
+        3)  printf "password: %s, " "${elements[$i]}"
+            ;;
+        4)  printf  "server: %s, " "${elements[$i]}"
+            ;;
+        5)  printf  "port: %s, " "${elements[$i]}"
+            ;;
+        7)  if [[ "${elements[$i]}" == "1" ]]; then
+                verify="true"
+            else
+                veriry="false"
+            fi
+            printf  "skip-cert-verify: %s, " "${verify}"
+            ;;
+        10) name=${elements[$i]}
+            EscAdd="$(echo $name | sed 's/+/%2B/g')"
+            name2="$(url_decode $EscAdd)"
+            echo -n -e "name: "$name2
+            ;;
+        *) ;;
+        esac
+    done
+
+    printf "}\n"
+done >> OOO.yaml

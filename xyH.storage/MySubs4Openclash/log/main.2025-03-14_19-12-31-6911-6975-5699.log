@@ -1,0 +1,10 @@
+Usage: 
+	main.sh <[0;31m-c[0mSubConverter> <[0;31m-f[0mDbFile> <[0;31m-h[0m>
+	Example:
+		./main.sh [0;31m-c[0m[4;35mhttp://127.0.0.1:25500[0m [0;31m-f[0m[0;93mdefinition_file.txt[0m
+	Note:
+		SubConverter	-- Such as "[4;35mhttp://127.0.0.1:25500[0m" or "[4;35mhttps://api.dler.io[0m"
+		DbFile		-- A library file such as [0;93mdefinition_file.txt[0m with multi-line content similar to the following line
+					[1;91mxfxssr[0m;[4;32mhttps://raw.githubusercontent.com/xfxssr/ssnode/main/README.md[0m
+					[1;91mChromeGo01[0m;[4;32mhttps://gitlab.com/free9999/ipupdate/-/raw/master/clash/config.yaml[0m
+

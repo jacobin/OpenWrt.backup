@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# Put your custom commands here that should be executed once
+# the system init finished. By default this file does nothing.
+
+
+
+##########################################################################
+sleep 60
+
+
+
+##########################################################################
+#https://www.google.com/search?q=openclash+remove+ipv6&pws=0&gl=us&gws_rd=cr
+#https://zhuanlan.zhihu.com/p/603266978
+#1. 首先禁止Lan，Wan和DHCPv6及odhcpd
+uci set 'network.lan.ipv6=0'
+uci set 'network.wan.ipv6=0'
+uci set 'dhcp.lan.dhcpv6=disabled'
+/etc/init.d/odhcpd disable
+uci commit
+#有些能担心禁用odhcpd会带来问题，实际上据说odhcpd是专门为IPV6服务的。
+#by http://itgeeker.net
+
+#2. 禁用 RA 和 DHCPv6，这样就不会分发 IPv6 IP
+uci -q delete dhcp.lan.dhcpv6
+uci -q delete dhcp.lan.ra
+uci commit dhcp
+/etc/init.d/odhcpd restart
+
+#3. 现在可以禁用 LAN 委派
+uci set network.lan.delegate="0"
+uci commit network
+/etc/init.d/network restart
+
+#4. 禁用odhcpd
+/etc/init.d/odhcpd disable
+/etc/init.d/odhcpd stop
+
+#5. 最后你可以删除 IPv6 ULA 前缀
+uci -q delete network.globals.ula_prefix
+uci commit network
+/etc/init.d/network restart
+
+
+
+##########################################################################
+"/etc/init.d/qbittorrent" enable
+#"/etc/init.d/subconverter" enable
+"/etc/init.d/subconverter.MetaCubeX" enable
+#"/etc/init.d/subconverter.asdlokj1qpi233" enable
+"/etc/init.d/openclash" enable
+
+pgrep "/usr/bin/qbittorrent-nox" || "/etc/init.d/qbittorrent" start 
+#pgrep "/etc/subconverter/subconverter" || "/etc/init.d/subconverter" start 
+pgrep "/etc/subconverter.MetaCubeX/subconverter" || "/etc/init.d/subconverter.MetaCubeX" start
+#pgrep "/etc/subconverter.asdlokj1qpi233/subconverter" || "/etc/init.d/subconverter.asdlokj1qpi233" start
+pgrep "/etc/openclash/clash" || "/etc/init.d/openclash" start
+
+date > "/tmp/tmp/subconverter.crontab.flag.txt"
+
+##########################################################################
+
+exit 0

@@ -1,0 +1,13 @@
+0 0 * * * /etc/init.d/acme start
+3 3 12 12 * /usr/bin/nginx-util 'check_ssl'
+0 */3 * * * /etc/openclash/ClashNodeSubcri.sh
+*/59 * * * * /www/Hxy/eMule.server.mets/eMuleEd2k.sh
+#*/1 * * * * /etc4444/subconverter/watchdog.subconverter.sh
+*/1 * * * * /etc/subconverter.MetaCubeX/watchdog.subconverter.sh
+#*/1 * * * * /etc4444/subconverter.asdlokj1qpi233/watchdog.subconverter.sh
+1 2 * * * lua /usr/share/ttnode/main.lua
+0 0 * * 5 /usr/share/openclash/openclash_rule.sh
+0 0 * * 1 /usr/share/openclash/openclash_ipdb.sh
+0 0 * * 3 /usr/share/openclash/openclash_geosite.sh
+0 0 * * 2 /usr/share/openclash/openclash_geoip.sh
+0 0 * * 1 /usr/share/openclash/openclash_chnroute.sh

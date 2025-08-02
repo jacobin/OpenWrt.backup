@@ -1,0 +1,21 @@
+首先，7z官方提供的linux标准包，手工在op上进行install.sh之后，没法使用。
+第二、搜索到方法是使用bsdtar。
+第三、更新op的软件源为如下：
+    # https://bruceyoong.com/openwrt-%E8%BD%AF%E4%BB%B6%E5%8C%85%E5%AE%98%E6%96%B9%E6%BA%90/
+    src/gz openwrt_core https://downloads.openwrt.org/releases/21.02.7/targets/x86/64/packages
+    src/gz openwrt_base https://downloads.openwrt.org/releases/21.02.7/packages/x86_64/base
+    src/gz openwrt_luci https://downloads.openwrt.org/releases/21.02.7/packages/x86_64/luci
+    src/gz openwrt_packages https://downloads.openwrt.org/releases/21.02.7/packages/x86_64/packages
+    src/gz openwrt_routing https://downloads.openwrt.org/releases/21.02.7/packages/x86_64/routing
+    src/gz openwrt_telephony https://downloads.openwrt.org/releases/21.02.7/packages/x86_64/telephony
+第四、确保此时翻墙有效
+第五、用puTTY到op的terminal下执行如下命令：
+        opkg update
+        opkg list | grep bsdtar
+        opkg install bsdtar
+        bsdtar --help
+    其中，第一个指令是为了更新可用软件列表，
+            第二个指令是检查列表是否包含bsdtar，
+            第三个命令是安装bsdtar，
+            第四个指令是检查第三个指令的成功与否。
+    全程观察，确保每一步都执行成功。
