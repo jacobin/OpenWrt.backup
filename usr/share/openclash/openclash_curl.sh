@@ -14,7 +14,7 @@ DOWNLOAD_FILE_CURL() {
         LOG_OUT "Downloading:【$(basename "$DOWNLOAD_PATH") - 0%】"
 
         (
-            curl -# -L --connect-timeout 10 -m 60 --speed-time 20 --speed-limit 1 --retry 2 \
+            curl -# -L --connect-timeout 10 -m 60 --speed-time 180 --speed-limit 1 --retry 2 \
                 -H "User-Agent: ${DOWNLOAD_UA}" \
                 "$DOWNLOAD_URL" -o "$DOWNLOAD_PATH" 2>"$TEMP_LOG"
             echo $? > "${TEMP_LOG}.exit"
@@ -62,7 +62,7 @@ DOWNLOAD_FILE_CURL() {
             return 0
         fi
     else
-        CURL_OUTPUT=$(curl -w "\n%{http_code}" -SsL --connect-timeout 30 -m 60 --speed-time 30 --speed-limit 1 --retry 2 -H "User-Agent: ${DOWNLOAD_UA}" "$DOWNLOAD_URL" -o "$DOWNLOAD_PATH" 2>&1)
+        CURL_OUTPUT=$(curl -w "\n%{http_code}" -SsL --connect-timeout 30 -m 60 --speed-time 180 --speed-limit 1 --retry 2 -H "User-Agent: ${DOWNLOAD_UA}" "$DOWNLOAD_URL" -o "$DOWNLOAD_PATH" 2>&1)
         EXIR_CODE=${PIPESTATUS[0]}
         HTTP_CODE=$(echo "$CURL_OUTPUT" | tail -n1)
 
