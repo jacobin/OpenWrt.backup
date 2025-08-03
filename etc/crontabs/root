@@ -10,4 +10,5 @@
 0 0 * * 1 /usr/share/openclash/openclash_ipdb.sh
 0 0 * * 3 /usr/share/openclash/openclash_geosite.sh
 0 0 * * 2 /usr/share/openclash/openclash_geoip.sh
+0 0 * * 4 /usr/share/openclash/openclash_geoasn.sh
 0 0 * * 1 /usr/share/openclash/openclash_chnroute.sh
