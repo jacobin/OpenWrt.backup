@@ -72,11 +72,13 @@ function combine_subscri() {
     arrGroup=()
     for (( i = 0; i < ${groupCount}; i++ )); do
         begin=$((i*5))
-        if [[ 5 < $((asize-begin)) ]]; then
-            end=5
+        if (( 5 < asize-begin )); then
+            thissize=5
         else
-            end=$((asize-begin))
+            thissize=$((asize-begin))
         fi
+        end=$((begin+thissize))
+
         thisCombine="http://127.0.0.1:8080/${arr[${begin}]}.yaml"
         for (( j = $((++begin)); j < ${end}; j++ )); do
             thisCombine="${thisCombine}|http://127.0.0.1:8080/${arr[${j}]}.yaml"
