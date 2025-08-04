@@ -268,7 +268,10 @@ cp -f "/etc/openclash/ClashNodeSubcri.cfg" "/etc/config/openclash"
 
 #******************************************************************************
 # restart openclash
-if [ $? -eq 0 ]; then "/etc/init.d/openclash" restart; fi
+if [ $? -eq 0 ]; then
+    # "/etc/init.d/openclash" restart;
+    /usr/share/openclash/openclash.sh
+fi
 
 #******************************************************************************
 echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "/etc/openclash/ClashNodeSubcri.log"

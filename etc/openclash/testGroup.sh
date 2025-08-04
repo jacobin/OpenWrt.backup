@@ -1,5 +1,13 @@
 #!/bin/bash
 
+arr=(1 2 3 4 5 6 7 8 9 a b c)
+asize=${#arr[@]}
+for (( begin = 0; begin < asize; begin+=5 )); do
+    end=$((begin+5))
+    if (( asize < end )); then end=${asize}; fi
+    echo -e "\t${begin},${end}"
+done
+
 # arr=(1 2 3 4 5 6 7 8 9 a b c)
 # asize=${#arr[@]}
 # declare -i groupCount=$(( (asize+4)/5 ))
@@ -19,13 +27,3 @@
 #     end=$((begin+thissize))
 #     echo -e "\t${begin},${end}"
 # done
-#
-
-
-arr=(1 2 3 4 5 6 7 8 9 a b c)
-asize=${#arr[@]}
-for (( begin = 0; begin < ${asize}; begin+=5 )); do
-    end=$((begin+5))
-    if (( asize < end )); then end=${asize}; fi
-    echo -e "\t${begin},${end}"
-done
