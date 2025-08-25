@@ -1,5 +1,9 @@
 #!/bin/bash
 
+
+
+
+
 ###############################################################################
 ######################### class: Process Singleton ############################
 ###############################################################################
@@ -58,10 +62,10 @@ function urlencode() {
 
 
 ###############################################################################
-######################### function: combine_openclash_config ##################
+######################### function: combine_subscri ###########################
 ###############################################################################
 # https://askubuntu.com/questions/674333/how-to-pass-an-array-as-function-argument
-function combine_openclash_config() {
+function combine_subscri() {
     local depth="$1"
     shift
 
@@ -100,11 +104,15 @@ function combine_openclash_config() {
     ((depth++))
 
     if (( 1 < groupCount )); then
-        echo $(combine_openclash_config "${depth}" "${arrGroup[@]}")
+        echo $(combine_subscri "${depth}" "${arrGroup[@]}")
     else
         echo "${arrGroup[0]}"
     fi
 }
+
+
+
+
 
 ###############################################################################
 ######################### Program Singleton starts running ####################
@@ -256,7 +264,7 @@ optNameSize=${#clashConfigNames[@]}
 if (( 0 < optNameSize )); then
     final1=${clashConfigNames[0]}
     if (( 1 < ${#clashConfigNames[@]} )); then
-        final1=$(combine_openclash_config "1" "${clashConfigNames[@]}")
+        final1=$(combine_subscri "1" "${clashConfigNames[@]}")
     fi
 fi
 
@@ -287,9 +295,6 @@ fi
 echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "/etc/openclash/ClashNodeSubcri.log"
 
 echo 99999999999999999999999999999999999999999999999999999999999999999999999999
-
-
-
 ###############################################################################
 ######################### Delete too many configuration backup files  #########
 ###############################################################################
@@ -309,9 +314,6 @@ for (( j=10; j<${bakSize}; j++ )); do
     fi
 done
 
-
-
-
 echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ###############################################################################
 ######################### Program Singleton quit ##############################
@@ -320,10 +322,6 @@ clean_up
 
 echo bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 exit 0
-
-
-
-
 
 ###############################################################################
 ################################## END ########################################
