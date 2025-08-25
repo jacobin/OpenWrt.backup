@@ -58,10 +58,10 @@ function urlencode() {
 
 
 ###############################################################################
-######################### function: combine_subscri ###########################
+######################### function: combine_openclash_config ##################
 ###############################################################################
 # https://askubuntu.com/questions/674333/how-to-pass-an-array-as-function-argument
-function combine_subscri() {
+function combine_openclash_config() {
     local depth="$1"
     shift
 
@@ -100,7 +100,7 @@ function combine_subscri() {
     ((depth++))
 
     if (( 1 < groupCount )); then
-        echo $(combine_subscri "${depth}" "${arrGroup[@]}")
+        echo $(combine_openclash_config "${depth}" "${arrGroup[@]}")
     else
         echo "${arrGroup[0]}"
     fi
@@ -120,9 +120,11 @@ echo "Begin: $(date +%Y%m%d_%H%M%S)" | tee -a "/etc/openclash/ClashNodeSubcri.lo
 #******************************************************************************
 if [ ! -f "/etc/openclash/ClashNodeSubcri.urls" ]; then
     echo -e "\tFile \"/etc/openclash/ClashNodeSubcri.urls\" not found!" | tee -a "/etc/openclash/ClashNodeSubcri.log"
+    clean_up
     exit 1
 fi
 
+echo 11111111111111111111111111111111111111111111111111111111111111111111111111
 #******************************************************************************
 # "/etc/openclash/ClashNodeSubcri.down"
 # Download the original data file
@@ -155,9 +157,11 @@ for (( i=1; i<=5; i++ )); do
     fi
 done
 
+echo 22222222222222222222222222222222222222222222222222222222222222222222222222
 #******************************************************************************
 if [ ! -f "/etc/openclash/ClashNodeSubcri.down" ]; then
     echo -e "\tFile \"/etc/openclash/ClashNodeSubcri.down\" not found!" | tee -a "/etc/openclash/ClashNodeSubcri.log"
+    clean_up
     exit 1
 fi
 
@@ -182,6 +186,7 @@ if (( downSize > 0 )); then
     done
 fi
 
+echo 33333333333333333333333333333333333333333333333333333333333333333333333333
 #******************************************************************************
 # "/etc/openclash/ClashNodeSubcri.ymls"
 if [ -f "/etc/openclash/ClashNodeSubcri.base64" ]; then
@@ -201,6 +206,7 @@ if [ -f "/etc/openclash/ClashNodeSubcri.base64" ]; then
     fi
 fi
 
+echo 44444444444444444444444444444444444444444444444444444444444444444444444444
 #******************************************************************************
 # "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
 clashConfigNames=()
@@ -228,6 +234,7 @@ if [ -f "/etc/openclash/ClashNodeSubcri.ymls" ]; then
     done
 fi
 
+echo 55555555555555555555555555555555555555555555555555555555555555555555555555
 #******************************************************************************
 readarray -t arrSubscri < <(cat "/etc/openclash/ClashNodeSubcri.urls")
 subsSize=${#arrSubscri[@]}
@@ -242,16 +249,18 @@ if (( subsSize > 0 )); then
     done
 fi
 
+echo 66666666666666666666666666666666666666666666666666666666666666666666666666
 #******************************************************************************
 # "/etc/openclash/ClashNodeSubcri.etc_config_openclash.3of4"
 optNameSize=${#clashConfigNames[@]}
 if (( 0 < optNameSize )); then
     final1=${clashConfigNames[0]}
     if (( 1 < ${#clashConfigNames[@]} )); then
-        final1=$(combine_subscri "1" "${clashConfigNames[@]}")
+        final1=$(combine_openclash_config "1" "${clashConfigNames[@]}")
     fi
 fi
 
+echo 77777777777777777777777777777777777777777777777777777777777777777777777777
 echo -e "\toption config_path '/etc/openclash/config/${final1}.yaml'" > "/etc/openclash/ClashNodeSubcri.etc_config_openclash.3of4"
 
 #******************************************************************************
@@ -266,17 +275,18 @@ cat "/etc/openclash/ClashNodeSubcri.etc_config_openclash.4of4.const" >> "/etc/op
 mv -f "/etc/config/openclash" "/etc/config/openclash.$(date +%Y%m%d_%H%M%S)"
 cp -f "/etc/openclash/ClashNodeSubcri.cfg" "/etc/config/openclash"
 
+echo 88888888888888888888888888888888888888888888888888888888888888888888888888
 #******************************************************************************
 # restart openclash
 if [ $? -eq 0 ]; then
     # "/etc/init.d/openclash" restart;
-    /usr/share/openclash/openclash.sh
+    /usr/share/openclash/openclash.sh > /dev/null 2>&1
 fi
 
 #******************************************************************************
 echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "/etc/openclash/ClashNodeSubcri.log"
 
-
+echo 99999999999999999999999999999999999999999999999999999999999999999999999999
 
 
 
@@ -302,12 +312,13 @@ done
 
 
 
-
+echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ###############################################################################
 ######################### Program Singleton quit ##############################
 ###############################################################################
 clean_up
 
+echo bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 exit 0
 
 
