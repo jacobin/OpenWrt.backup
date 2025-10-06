@@ -1,20 +1,265 @@
 #!/bin/bash
 
 
-
+###############################################################################
+## 程序流程图 #################################################################
+###############################################################################
+# https://zhuanlan.zhihu.com/p/54494213
+# https://stackoverflow.com/questions/43158140/way-to-create-multiline-comments-in-bash
+<< EOF
+    original
+        --> pass_openclash_subscription
+            --> etc_config_openclash.mutable("PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH")
+                --> /etc/config/openclash
+EOF
 
 
 ###############################################################################
-######################### class: Process Singleton ############################
+## 置函数于脚本文件的末尾 #####################################################
+###############################################################################
+# https://unix.stackexchange.com/questions/724122/is-there-a-way-to-put-helper-functions-at-the-end-of-a-script-file#:~:text=Another%20way%20to%20do%20this,entire%20bash%20script%20in%20functions?
+source <(sed '1,/^# HELPER FUNCTIONS #$/d' "$0")
+
+
+###############################################################################
+## 程序运行单例 ###############################################################
 ###############################################################################
 # https://stackoverflow.com/questions/6870221/is-there-any-mutex-semaphore-mechanism-in-shell-scripts
 # https://breezetemple.github.io/2018/07/19/shell-flock/
 F_LOCK=/var/tmp/$(basename "$0").lock
 F_PID=/var/tmp/$(basename "$0").pid
-
 exec 3> ${F_LOCK}
+if ! is_not_running; then exit 1; fi
 
-#******************************************************************************
+
+###############################################################################
+## 全局变量 ###################################################################
+###############################################################################
+EXISTENTIAL_CONFIGs="http://127.0.0.1:8080"
+# https://www.google.com/search?q=bash+get+absolute+dirname
+DIR0=$(dirname "$(readlink -f "$0")")
+CONVERTER="http://127.0.0.1:25511"
+                                   DATA_DIR="/www/Hxy/openclash"
+                   WEB_ORIG_DAT="http://127.0.0.1/Hxy/openclash/original"
+WEB_PASS_OPENCLASH_SUBSCRIPTION="http://127.0.0.1/Hxy/openclash/pass_openclash_subscription"
+
+
+###############################################################################
+## 主程序开始运行 #############################################################
+###############################################################################
+echo "Begin: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+
+
+###############################################################################
+## 检查系统的完备性 ###########################################################
+###############################################################################
+if [ ! -f "${DIR0}/ClashNodeSubcri.urls" ]; then
+    echo -e "\tFile \"${DIR0}/ClashNodeSubcri.urls\" not found!" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    singleton_clean_up ; exit 1
+fi
+
+if [ ! -f "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" ]; then
+    echo -e "\tFile \"${DIR0}/ClashNodeSubcri.etc_config_openclash.const\" not found!" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    singleton_clean_up ; exit 1
+fi
+
+
+###############################################################################
+## 检查是否有重复的『配置名』##################################################
+###############################################################################
+clashConfigNames=()
+readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
+subsSize=${#arrSubscri[@]}
+if (( subsSize <= 0 )); then
+    echo -e "\tSubscription configuration item count is 0" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    singleton_clean_up; exit 1
+fi
+for (( j=0; j<${subsSize}; j++ )); do
+    subscri=${arrSubscri[$j]}
+    arrSplit=(${subscri//,/ })
+    relativeFPath=${arrSplit[1]}
+    fullName=${relativeFPath##*/}
+    onlyName=(${fullName//./ })
+    clashConfigNames[$j]=${onlyName}
+done
+declare -A uniqClashConfigNames
+for ip in "${clashConfigNames[@]}"; do uniqClashConfigNames[$ip]=0; done
+if (( ${#uniqClashConfigNames[@]} < ${#clashConfigNames[@]} )); then
+    echo -e "\tItems with counts (duplicates have count > 1):" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    printf "%s\n" "${clashConfigNames[@]}" | sort | uniq -c | sed '/^      1 /d' | sed 's/^/\t /' | tee -a "${DIR0}/ClashNodeSubcri.log"
+    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    singleton_clean_up; exit 1
+fi
+
+
+###############################################################################
+## 最多尝试5次，把所订阅的原始的数据下载到本地${DATA_DIR}/original ############
+###############################################################################
+for (( k=1; k<=6; k++ )); do rm "${DIR0}/ClashNodeSubcri.loop$k" > /dev/null 2>&1; done
+cp -f "${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.loop1"
+rm "${DIR0}/ClashNodeSubcri.127.urls" > /dev/null 2>&1
+for (( i=1; i<=5; i++ )); do
+    if [ -f "${DIR0}/ClashNodeSubcri.loop$i" ]; then
+        # https://unix.stackexchange.com/questions/485221/read-lines-into-array-one-element-per-line-using-bash
+        # https://www.google.com/search?q=bash+read+line+except+comment&pws=0&gl=us&gws_rd=cr
+        readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.loop$i" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d' )
+        subsSize=${#arrSubscri[@]}
+        if (( subsSize > 0 )); then
+            let j=$i+1
+            for subscri in ${arrSubscri[@]}; do
+                # https://stackoverflow.com/questions/918886/how-do-i-split-a-string-on-a-delimiter-in-bash
+                arrSplit=(${subscri//,/ })
+                url=${arrSplit[0]}
+                fname=${arrSplit[1]}
+                wget --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=5 "${url}" -O"${DATA_DIR}/original/${fname}.tmp"
+                if [ $? -eq 0 ]; then
+                    mv -f "${DATA_DIR}/original/${fname}.tmp" "${DATA_DIR}/original/${fname}"
+                    echo "${WEB_ORIG_DAT}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.urls"
+                else
+                    echo ${url},${fname} >> "${DIR0}/ClashNodeSubcri.loop$j"
+                fi
+            done
+        fi
+    fi
+done
+
+
+###############################################################################
+## 把哪些『不能“通过Openclash进行订阅”』的数据文件进行base64的编码转换到${DATA_DIR}/pass_openclash_subscription
+###############################################################################
+rm "${DIR0}/ClashNodeSubcri.127.pass_openclash_subscription.urls" > /dev/null 2>&1
+readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.urls")
+for subscri in ${arrSubscri[@]}; do
+    arrSplit=(${subscri//,/ })
+    fname=${arrSplit[1]}
+    if base64 --decode --ignore-garbage "${DATA_DIR}/original/${fname}" &>/dev/null; then
+        ln -sf "${DATA_DIR}/original/${fname}" "${DATA_DIR}/pass_openclash_subscription/${fname}"
+    else
+        if ! [[ "${fname}" == *.yaml || "${fname}" == *.yml ]]; then
+            base64 -w0 "${DATA_DIR}/original/${fname}" > "${DATA_DIR}/pass_openclash_subscription/${fname}"
+        else
+            ln -sf "${DATA_DIR}/original/${fname}" "${DATA_DIR}/pass_openclash_subscription/${fname}"
+        fi
+    fi
+    echo "${WEB_PASS_OPENCLASH_SUBSCRIPTION}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.pass_openclash_subscription.urls"
+done
+
+
+###############################################################################
+## 生成 "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" ################
+###############################################################################
+if [ ! -f "${DIR0}/ClashNodeSubcri.127.pass_openclash_subscription.urls" ]; then
+    echo -e "\tFile \"${DIR0}/ClashNodeSubcri.127.pass_openclash_subscription.urls\" not found!" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    singleton_clean_up ; exit 1
+fi
+
+rm "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" > /dev/null 2>&1
+echo -e "\toption config_path 'PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH'\n" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+
+readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.pass_openclash_subscription.urls")
+for subscri in ${arrSubscri[@]}; do
+    arrSplit=(${subscri//,/ })
+    url=${arrSplit[0]}
+    fname=${arrSplit[1]}
+    # https://stackoverflow.com/questions/525872/echo-tab-characters-in-bash-script
+    echo -e "config config_subscribe"      >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+    echo -e "\toption sub_ua 'clash.meta'" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+    echo -e "\toption sub_convert '0'"     >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+    echo -e "\toption enabled '1'"         >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+    echo -e "\toption name '${fname}'"     >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+    echo -e "\toption address '${url}'"    >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+    echo -e ""                             >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+done
+
+###############################################################################
+optNameSize=${#clashConfigNames[@]}
+assert_true "[ $optNameSize -gt 0 ]" "The count of configuration items must be greater than 0."
+final1=${clashConfigNames[0]}
+if (( 1 < ${#clashConfigNames[@]} )); then
+    final1=$(combine_subscri "1" "${clashConfigNames[@]}")
+fi
+
+###############################################################################
+sed -i "s#PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH#${DIR0}\/config\/${final1}.yaml#g" "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+
+###############################################################################
+# "${DIR0}/ClashNodeSubcri.cfg"
+cat "${DIR0}/ClashNodeSubcri.etc_config_openclash.const"   >  "${DIR0}/ClashNodeSubcri.cfg"
+cat "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" >> "${DIR0}/ClashNodeSubcri.cfg"
+
+###############################################################################
+# "/etc/config/openclash"
+mv -f "/etc/config/openclash2" "/etc/config/openclash.$(date +%Y%m%d_%H%M%S)"
+cp -f "${DIR0}/ClashNodeSubcri.cfg" "/etc/config/openclash2"
+
+
+###############################################################################
+## 打包多余的config openclash文件。外头只留十个 ###############################
+###############################################################################
+if [ -f "/etc/config/openclash.backup.tar.gz" ]; then
+    gzip -d "/etc/config/openclash.backup.tar.gz"
+    assert_true "[ ! -f \"/etc/config/openclash.backup.tar.gz\" ]" "Failed to unzip file \"/etc/config/openclash.backup.tar.gz\"."
+    tar x -v -f "/etc/config/openclash.backup.tar" -C "/"
+    assert_true "[ -f \"/etc/config/openclash.backup.tar\" ]" "tar's behavior towards file \"/etc/config/openclash.backup.tar\" does not meet expectations."
+    rm "/etc/config/openclash.backup.tar" -f
+    assert_true "[ ! -f \"/etc/config/openclash.backup.tar\" ]" "Delete file \"/etc/config/openclash.backup.tar\" failed."
+fi
+
+tar_command_string="tar c -v -f \"/etc/config/openclash.backup.tar\""
+rm_command_string="rm -f"
+#useWildcardsForPathsContainingSpaces="/tmp/tmp 2/openclash.2"
+useWildcardsForPathsContainingSpaces="/etc/config/openclash.2"
+# https://stackoverflow.com/questions/6897190/problem-listing-files-in-bash-with-spaces-in-directory-path?rq=3
+useWildcardsForPathsContainingSpacesEscaped=`echo "$useWildcardsForPathsContainingSpaces" | sed 's/[[:space:]]/\[[:space:]]/g'`
+readarray -t arrOpenclashConfigBakup < <(ls -tc -1 ${useWildcardsForPathsContainingSpacesEscaped}*)
+n=${#useWildcardsForPathsContainingSpaces}  # Number of characters to compare
+bakSize=${#arrOpenclashConfigBakup[@]}
+for (( j=5; j<${bakSize}; j++ )); do
+    thisOldConfig=${arrOpenclashConfigBakup[$j]}
+    # https://www.google.com/search?q=bash+string+compare+n+characters&pws=0&gl=us&gws_rd=cr
+    substring="${thisOldConfig:0:n}"
+    # https://www.google.com/search?q=bash+string+equa+ignore+case&pws=0&gl=us&gws_rd=cr
+    if [[ "${substring,,}" == "${useWildcardsForPathsContainingSpaces,,}" ]]; then
+        tar_command_string="${tar_command_string} \"${arrOpenclashConfigBakup[$j]}\""
+        rm_command_string="${rm_command_string} \"${arrOpenclashConfigBakup[$j]}\""
+    fi
+done
+
+eval "$tar_command_string"
+eval "$rm_command_string"
+gzip "/etc/config/openclash.backup.tar"
+assert_true "[[ -f \"/etc/config/openclash.backup.tar.gz\" && ! -f \"/etc/config/openclash.backup.tar\" ]]" "Compressed file \"/etc/config/openclash.backup.tar\" failed."
+
+
+###############################################################################
+## 重启 openclash #############################################################
+###############################################################################
+# "/etc/init.d/openclash" restart;
+/usr/share/openclash/openclash.sh > /dev/null 2>&1
+
+
+###############################################################################
+## 主程序运行结束 #############################################################
+###############################################################################
+echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+
+
+###############################################################################
+## 程序运行单例清场 ###########################################################
+###############################################################################
+singleton_clean_up; exit 0
+
+
+exit 0
+# HELPER FUNCTIONS #
+
+###############################################################################
+######################### function: is_not_running ############################
+###############################################################################
 function is_not_running () {
     if ! flock -xn 3
     then
@@ -27,16 +272,15 @@ function is_not_running () {
     fi
 }
 
-#******************************************************************************
-function clean_up () {
+###############################################################################
+######################### function: singleton_clean_up ########################
+###############################################################################
+function singleton_clean_up () {
     flock -u 3
     exec 4>&-
     rm -f ${F_LOCK}
     rm -f ${F_PID}
 }
-
-
-
 
 
 ###############################################################################
@@ -56,9 +300,6 @@ function urlencode() {
     done
     LC_COLLATE=$old_lc_collate
 }
-
-
-
 
 
 ###############################################################################
@@ -83,21 +324,21 @@ function combine_subscri() {
         fi
         end=$((begin+thissize))
 
-        thisCombine="http://127.0.0.1:8080/${arr[${begin}]}.yaml"
+        thisCombine="${EXISTENTIAL_CONFIGs}/${arr[${begin}]}.yaml"
         for (( j = $((++begin)); j < ${end}; j++ )); do
-            thisCombine="${thisCombine}|http://127.0.0.1:8080/${arr[${j}]}.yaml"
+            thisCombine="${thisCombine}|${EXISTENTIAL_CONFIGs}/${arr[${j}]}.yaml"
         done
         url_uhttpd=$(urlencode "${thisCombine}")
         resultOptName="${depth}$((i+1))"
         arrGroup[${i}]="${resultOptName}"
 
-        echo -e "config config_subscribe"          >> "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
-        echo -e "\toption sub_ua 'clash.meta'"     >> "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
-        echo -e "\toption sub_convert '0'"         >> "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
-        echo -e "\toption enabled '1'"             >> "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
-        echo -e "\toption name '${resultOptName}'" >> "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
-        echo -e "\toption address 'http://127.0.0.1:25511/sub?target=clash&config=ACL4SSR_Online_Full_AdblockPlus.ini&emoji=true&list=false&udp=true&tfo=true&scv=true&fdn=true&enable_filter=true&filter_script=function%20filter%28N%29%7Bif%28N.Type%3D%3D%3D0%29%7Breturn%20true%3B%7Dlet%20M%3DN.EncryptMethod%3Bif%28M%3D%3D%3Dnull%7C%7CM.length%3D%3D%3D0%29%7Bif%28N.Type%3D%3D%3D1%29%7Breturn%20true%3B%7Dreturn%20false%3B%7Dlet%20C%3D%5B%27aes-128-cfb%27%2C%27aes-128-ctr%27%2C%27aes-128-gcm%27%2C%27aes-192-cfb%27%2C%27aes-192-ctr%27%2C%27aes-192-gcm%27%2C%27aes-256-cfb%27%2C%27aes-256-ctr%27%2C%27aes-256-gcm%27%2C%27auto%27%2C%27chacha20%27%2C%27chacha20-ietf%27%2C%27chacha20-ietf-poly1305%27%2C%27rc4-md5%27%2C%27xchacha20%27%2C%27xchacha20-ietf-poly1305%27%5D%3Blet%20m%3DM.toLowerCase%28%29%3Bfor%28let%20i%3D0%3Bi%3CC.length%3Bi%2B%2B%29%7Bif%28m%3D%3D%3DC%5Bi%5D%29%7Breturn%20false%3B%7D%7Dreturn%20true%3B%7D&exclude=%28CN%7CHK%7CHong%20Kong%7CHongKong%7Cv2cross%7CHONG%20KONG%7CHONGKONG%7CV2CROSS%7CHongkong%7C%E5%BB%A3%E6%9D%B1%7C%E5%8C%97%E4%BA%AC%7C%E5%B9%BF%E4%B8%9C%7C%E8%B4%B5%E5%B7%9E%7C%E4%B8%8A%E6%B5%B7%7C%E9%A6%99%E6%B8%AF%7C%E7%A7%BB%E5%8B%95%7C%E7%A7%BB%E5%8A%A8%7C%E4%B8%AD%E5%9C%8B%7C%E4%B8%AD%E5%9B%BD%7C%E8%B2%B4%E5%B7%9E%7C%E5%85%8D%E8%B4%B9%7C%E8%AE%A2%E9%98%85%7C%E8%AE%A2%E9%98%85%E9%9A%8F%E6%97%B6%E4%BC%9A%E5%A4%B1%E6%95%88%7C%E6%97%A5%E6%9C%9F%7C%E7%94%B5%E6%8A%A5%7C%E7%94%B5%E6%8A%A5%E7%BE%A4%29&url=${url_uhttpd}'" >> "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
-        echo -e "" >> "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
+        echo -e "config config_subscribe"          >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+        echo -e "\toption sub_ua 'clash.meta'"     >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+        echo -e "\toption sub_convert '0'"         >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+        echo -e "\toption enabled '1'"             >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+        echo -e "\toption name '${resultOptName}'" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+        echo -e "\toption address '${CONVERTER}/sub?target=clash&config=ACL4SSR_Online_Full_AdblockPlus.ini&emoji=true&list=false&udp=true&tfo=true&scv=true&fdn=true&enable_filter=true&filter_script=function%20filter%28N%29%7Bif%28N.Type%3D%3D%3D0%29%7Breturn%20true%3B%7Dlet%20M%3DN.EncryptMethod%3Bif%28M%3D%3D%3Dnull%7C%7CM.length%3D%3D%3D0%29%7Bif%28N.Type%3D%3D%3D1%29%7Breturn%20true%3B%7Dreturn%20false%3B%7Dlet%20C%3D%5B%27aes-128-cfb%27%2C%27aes-128-ctr%27%2C%27aes-128-gcm%27%2C%27aes-192-cfb%27%2C%27aes-192-ctr%27%2C%27aes-192-gcm%27%2C%27aes-256-cfb%27%2C%27aes-256-ctr%27%2C%27aes-256-gcm%27%2C%27auto%27%2C%27chacha20%27%2C%27chacha20-ietf%27%2C%27chacha20-ietf-poly1305%27%2C%27rc4-md5%27%2C%27xchacha20%27%2C%27xchacha20-ietf-poly1305%27%5D%3Blet%20m%3DM.toLowerCase%28%29%3Bfor%28let%20i%3D0%3Bi%3CC.length%3Bi%2B%2B%29%7Bif%28m%3D%3D%3DC%5Bi%5D%29%7Breturn%20false%3B%7D%7Dreturn%20true%3B%7D&exclude=%28CN%7CHK%7CHong%20Kong%7CHongKong%7Cv2cross%7CHONG%20KONG%7CHONGKONG%7CV2CROSS%7CHongkong%7C%E5%BB%A3%E6%9D%B1%7C%E5%8C%97%E4%BA%AC%7C%E5%B9%BF%E4%B8%9C%7C%E8%B4%B5%E5%B7%9E%7C%E4%B8%8A%E6%B5%B7%7C%E9%A6%99%E6%B8%AF%7C%E7%A7%BB%E5%8B%95%7C%E7%A7%BB%E5%8A%A8%7C%E4%B8%AD%E5%9C%8B%7C%E4%B8%AD%E5%9B%BD%7C%E8%B2%B4%E5%B7%9E%7C%E5%85%8D%E8%B4%B9%7C%E8%AE%A2%E9%98%85%7C%E8%AE%A2%E9%98%85%E9%9A%8F%E6%97%B6%E4%BC%9A%E5%A4%B1%E6%95%88%7C%E6%97%A5%E6%9C%9F%7C%E7%94%B5%E6%8A%A5%7C%E7%94%B5%E6%8A%A5%E7%BE%A4%29&url=${url_uhttpd}'" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+        echo -e "" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
     done
 
     # https://askubuntu.com/questions/385528/how-to-increment-a-variable-in-bash
@@ -111,218 +352,27 @@ function combine_subscri() {
 }
 
 
-
-
-
 ###############################################################################
-######################### Program Singleton starts running ####################
+######################### function: Function to simulate an assertion #########
 ###############################################################################
-if ! is_not_running; then exit 1; fi
+assert_true() {
+    local condition="$1"
+    local message="${2:-Assertion failed!}"
 
-
-###############################################################################
-######################### The main program starts running #####################
-###############################################################################
-echo "Begin: $(date +%Y%m%d_%H%M%S)" | tee -a "/etc/openclash/ClashNodeSubcri.log"
-
-#******************************************************************************
-if [ ! -f "/etc/openclash/ClashNodeSubcri.urls" ]; then
-    echo -e "\tFile \"/etc/openclash/ClashNodeSubcri.urls\" not found!" | tee -a "/etc/openclash/ClashNodeSubcri.log"
-    clean_up
-    exit 1
-fi
-
-echo 11111111111111111111111111111111111111111111111111111111111111111111111111
-#******************************************************************************
-# "/etc/openclash/ClashNodeSubcri.down"
-# Download the original data file
-for (( k=1; k<=6; k++ )); do rm "/etc/openclash/ClashNodeSubcri.loop$k" > /dev/null 2>&1; done
-cp -f "/etc/openclash/ClashNodeSubcri.urls" "/etc/openclash/ClashNodeSubcri.loop1"
-rm "/etc/openclash/ClashNodeSubcri.down" > /dev/null 2>&1
-for (( i=1; i<=5; i++ )); do
-    if [ -f "/etc/openclash/ClashNodeSubcri.loop$i" ]; then
-        # https://unix.stackexchange.com/questions/485221/read-lines-into-array-one-element-per-line-using-bash
-        readarray -t arrSubscri < <(cat "/etc/openclash/ClashNodeSubcri.loop$i")
-        subsSize=${#arrSubscri[@]}
-        if (( subsSize > 0 )); then
-            let j=$i+1
-            for subscri in ${arrSubscri[@]}; do
-                # https://stackoverflow.com/questions/918886/how-do-i-split-a-string-on-a-delimiter-in-bash
-                arrSplit=(${subscri//,/ })
-                url=${arrSplit[0]}
-                fname=${arrSplit[1]}
-                wget --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=5 "${url}" -O"/www/Hxy/openclash/${fname}.tmp"
-                if [ $? -eq 0 ]; then
-                    mv -f "/www/Hxy/openclash/${fname}.tmp" "/www/Hxy/openclash/${fname}"
-                    echo "/www/Hxy/openclash/${fname}" >> "/etc/openclash/ClashNodeSubcri.down"
-                else
-                    echo ${url},${fname} >> "/etc/openclash/ClashNodeSubcri.loop$j"
-                fi
-            done
-        else
-            break
-        fi
+    if ! eval "$condition"; then
+        echo -e "\tERROR: ${message}\n\tEnd: $(date +%Y%m%d_%H%M%S)" >&2 | tee -a "${DIR0}/ClashNodeSubcri.log"
+        singleton_clean_up; exit 1
     fi
-done
+}
 
-echo 22222222222222222222222222222222222222222222222222222222222222222222222222
-#******************************************************************************
-if [ ! -f "/etc/openclash/ClashNodeSubcri.down" ]; then
-    echo -e "\tFile \"/etc/openclash/ClashNodeSubcri.down\" not found!" | tee -a "/etc/openclash/ClashNodeSubcri.log"
-    clean_up
-    exit 1
-fi
+## Example usage:
+#VALUE=10
+#assert_true "[ $VALUE -eq 10 ]" "Value is not 10"
+#
+#ANOTHER_VALUE=5
+#assert_true "[ $ANOTHER_VALUE -gt 10 ]" "Another value is not greater than 10" # This will fail
 
-#******************************************************************************
-# "/etc/openclash/ClashNodeSubcri.base64"
-rm "/etc/openclash/ClashNodeSubcri.base64" > /dev/null 2>&1
-rm "/etc/openclash/ClashNodeSubcri.ymls" > /dev/null 2>&1
-readarray -t arrDown < <(cat "/etc/openclash/ClashNodeSubcri.down")
-downSize=${#arrDown[@]}
-if (( downSize > 0 )); then
-    for thisDown in ${arrDown[@]}; do
-        if base64 --decode --ignore-garbage "$thisDown" &>/dev/null; then
-            echo "$thisDown" >> "/etc/openclash/ClashNodeSubcri.base64"
-        else
-            if ! [[ "$thisDown" == *.yaml || "$thisDown" == *.yml ]]; then
-                base64 -w0 "$thisDown" > "${thisDown}.b64"
-                echo "${thisDown}.b64" >> "/etc/openclash/ClashNodeSubcri.base64"
-            else
-                echo "$thisDown" >> "/etc/openclash/ClashNodeSubcri.ymls"
-            fi
-        fi
-    done
-fi
-
-echo 33333333333333333333333333333333333333333333333333333333333333333333333333
-#******************************************************************************
-# "/etc/openclash/ClashNodeSubcri.ymls"
-if [ -f "/etc/openclash/ClashNodeSubcri.base64" ]; then
-    readarray -t arrB64 < <(cat "/etc/openclash/ClashNodeSubcri.base64")
-    b64Size=${#arrB64[@]}
-    if (( b64Size > 0 )); then
-        for thisB64 in ${arrB64[@]}; do
-            thisUrl=$(sed "s/\/www/http:\/\/127.0.0.1/" <<< ${thisB64})
-            url_uhttpd=$(urlencode "${thisUrl}")
-            wget --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=5 "http://127.0.0.1:25511/sub?target=clash&url=${url_uhttpd}" -O"${thisB64}.yml"
-            if [ $? -eq 0 ]; then
-                echo "${thisB64}.yml" >> "/etc/openclash/ClashNodeSubcri.ymls"
-            else
-                echo -e "\tFailed: wget --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=5 \"http://127.0.0.1:25511/sub?target=clash&url=${url_uhttpd}\" -O\"${thisB64}.yml\"" | tee -a "/etc/openclash/ClashNodeSubcri.log"
-            fi
-        done
-    fi
-fi
-
-echo 44444444444444444444444444444444444444444444444444444444444444444444444444
-#******************************************************************************
-# "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
-clashConfigNames=()
-rm "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4" > /dev/null 2>&1
-echo -e "" >> "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
-if [ -f "/etc/openclash/ClashNodeSubcri.ymls" ]; then
-    readarray -t arrYaml < <(cat "/etc/openclash/ClashNodeSubcri.ymls")
-    yamlSize=${#arrYaml[@]}
-    for (( j=0; j<${yamlSize}; j++ )); do
-        thisYaml=${arrYaml[$j]}
-        thisUrl=$(sed "s/\/www/http:\/\/127.0.0.1/" <<< ${thisYaml})
-        url_uhttpd=$(urlencode "${thisUrl}")
-        fullName=${thisYaml##*/}
-        onlyName=(${fullName//./ })
-      # clashConfigNames[$j]=${onlyName}
-
-        # https://stackoverflow.com/questions/525872/echo-tab-characters-in-bash-script
-        echo -e "config config_subscribe"      >> "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
-        echo -e "\toption sub_ua 'clash.meta'" >> "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
-        echo -e "\toption sub_convert '0'"     >> "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
-        echo -e "\toption enabled '1'"         >> "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
-        echo -e "\toption name '${onlyName}'"  >> "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
-        echo -e "\toption address 'http://127.0.0.1:25511/sub?target=clash&config=ACL4SSR_Online_Full_AdblockPlus.ini&emoji=true&list=false&udp=true&tfo=true&scv=true&fdn=true&enable_filter=true&filter_script=function%20filter%28N%29%7Bif%28N.Type%3D%3D%3D0%29%7Breturn%20true%3B%7Dlet%20M%3DN.EncryptMethod%3Bif%28M%3D%3D%3Dnull%7C%7CM.length%3D%3D%3D0%29%7Bif%28N.Type%3D%3D%3D1%29%7Breturn%20true%3B%7Dreturn%20false%3B%7Dlet%20C%3D%5B%27aes-128-cfb%27%2C%27aes-128-ctr%27%2C%27aes-128-gcm%27%2C%27aes-192-cfb%27%2C%27aes-192-ctr%27%2C%27aes-192-gcm%27%2C%27aes-256-cfb%27%2C%27aes-256-ctr%27%2C%27aes-256-gcm%27%2C%27auto%27%2C%27chacha20%27%2C%27chacha20-ietf%27%2C%27chacha20-ietf-poly1305%27%2C%27rc4-md5%27%2C%27xchacha20%27%2C%27xchacha20-ietf-poly1305%27%5D%3Blet%20m%3DM.toLowerCase%28%29%3Bfor%28let%20i%3D0%3Bi%3CC.length%3Bi%2B%2B%29%7Bif%28m%3D%3D%3DC%5Bi%5D%29%7Breturn%20false%3B%7D%7Dreturn%20true%3B%7D&exclude=%28CN%7CHK%7CHong%20Kong%7CHongKong%7Cv2cross%7CHONG%20KONG%7CHONGKONG%7CV2CROSS%7CHongkong%7C%E5%BB%A3%E6%9D%B1%7C%E5%8C%97%E4%BA%AC%7C%E5%B9%BF%E4%B8%9C%7C%E8%B4%B5%E5%B7%9E%7C%E4%B8%8A%E6%B5%B7%7C%E9%A6%99%E6%B8%AF%7C%E7%A7%BB%E5%8B%95%7C%E7%A7%BB%E5%8A%A8%7C%E4%B8%AD%E5%9C%8B%7C%E4%B8%AD%E5%9B%BD%7C%E8%B2%B4%E5%B7%9E%7C%E5%85%8D%E8%B4%B9VPN%7C%E8%AE%A2%E9%98%85%E9%9A%8F%E6%97%B6%E4%BC%9A%E5%A4%B1%E6%95%88%7C%E6%97%A5%E6%9C%9F%7C%E7%94%B5%E6%8A%A5%E7%BE%A4%29&url=${url_uhttpd}'" >> "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
-        echo -e "" >> "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"
-    done
-fi
-
-echo 55555555555555555555555555555555555555555555555555555555555555555555555555
-#******************************************************************************
-readarray -t arrSubscri < <(cat "/etc/openclash/ClashNodeSubcri.urls")
-subsSize=${#arrSubscri[@]}
-if (( subsSize > 0 )); then
-    for (( j=0; j<${subsSize}; j++ )); do
-        subscri=${arrSubscri[$j]}
-        arrSplit=(${subscri//,/ })
-        relativeFPath=${arrSplit[1]}
-        fullName=${relativeFPath##*/}
-        onlyName=(${fullName//./ })
-        clashConfigNames[$j]=${onlyName}
-    done
-fi
-
-echo 66666666666666666666666666666666666666666666666666666666666666666666666666
-#******************************************************************************
-# "/etc/openclash/ClashNodeSubcri.etc_config_openclash.3of4"
-optNameSize=${#clashConfigNames[@]}
-if (( 0 < optNameSize )); then
-    final1=${clashConfigNames[0]}
-    if (( 1 < ${#clashConfigNames[@]} )); then
-        final1=$(combine_subscri "1" "${clashConfigNames[@]}")
-    fi
-fi
-
-echo 77777777777777777777777777777777777777777777777777777777777777777777777777
-echo -e "\toption config_path '/etc/openclash/config/${final1}.yaml'" > "/etc/openclash/ClashNodeSubcri.etc_config_openclash.3of4"
-
-#******************************************************************************
-# "/etc/openclash/ClashNodeSubcri.cfg"
-cat "/etc/openclash/ClashNodeSubcri.etc_config_openclash.1of4"       >  "/etc/openclash/ClashNodeSubcri.cfg"
-cat "/etc/openclash/ClashNodeSubcri.etc_config_openclash.2of4.const" >> "/etc/openclash/ClashNodeSubcri.cfg"
-cat "/etc/openclash/ClashNodeSubcri.etc_config_openclash.3of4"       >> "/etc/openclash/ClashNodeSubcri.cfg"
-cat "/etc/openclash/ClashNodeSubcri.etc_config_openclash.4of4.const" >> "/etc/openclash/ClashNodeSubcri.cfg"
-
-#******************************************************************************
-# "/etc/config/openclash"
-mv -f "/etc/config/openclash" "/etc/config/openclash.$(date +%Y%m%d_%H%M%S)"
-cp -f "/etc/openclash/ClashNodeSubcri.cfg" "/etc/config/openclash"
-
-echo 88888888888888888888888888888888888888888888888888888888888888888888888888
-#******************************************************************************
-# restart openclash
-if [ $? -eq 0 ]; then
-    # "/etc/init.d/openclash" restart;
-    /usr/share/openclash/openclash.sh > /dev/null 2>&1
-fi
-
-#******************************************************************************
-echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "/etc/openclash/ClashNodeSubcri.log"
-
-echo 99999999999999999999999999999999999999999999999999999999999999999999999999
-###############################################################################
-######################### Delete too many configuration backup files  #########
-###############################################################################
-#useWildcardsForPathsContainingSpaces="/tmp/tmp 2/openclash.2"
-useWildcardsForPathsContainingSpaces="/etc/config/openclash.2"
-# https://stackoverflow.com/questions/6897190/problem-listing-files-in-bash-with-spaces-in-directory-path?rq=3
-useWildcardsForPathsContainingSpacesEscaped=`echo "$useWildcardsForPathsContainingSpaces" | sed 's/[[:space:]]/\[[:space:]]/g'`
-readarray -t arrOpenclashConfigBakup < <(ls -tc -1 ${useWildcardsForPathsContainingSpacesEscaped}*)
-n=${#useWildcardsForPathsContainingSpaces}  # Number of characters to compare
-bakSize=${#arrOpenclashConfigBakup[@]}
-for (( j=10; j<${bakSize}; j++ )); do
-    thisOldConfig=${arrOpenclashConfigBakup[$j]}
-    # https://www.google.com/search?q=bash+string+compare+n+characters&pws=0&gl=us&gws_rd=cr
-    substring="${thisOldConfig:0:n}"
-    if [[ "${substring}" == "${useWildcardsForPathsContainingSpaces}" ]]; then
-        rm "${arrOpenclashConfigBakup[$j]}"
-    fi
-done
-
-echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-###############################################################################
-######################### Program Singleton quit ##############################
-###############################################################################
-clean_up
-
-echo bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-exit 0
 
 ###############################################################################
-################################## END ########################################
+################################## File END ###################################
 ###############################################################################

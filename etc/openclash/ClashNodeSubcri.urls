@@ -1,3 +1,5 @@
+
+# 必须保证配置名（/不含扩展名）的唯一性
 https://jiang.netlify.app,2ye.txt
 https://raw.githubusercontent.com/aiboboxx/clashfree/main/clash.yml,aiboboxx.yaml
 https://raw.githubusercontent.com/free18/v2ray/refs/heads/main/c.yaml,free18.yaml
@@ -5,8 +7,9 @@ https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/clash.yml
 https://raw.githubusercontent.com/Barabama/FreeNodes/refs/heads/main/nodes/clashmeta.yaml,Barabama.yaml
 https://raw.githubusercontent.com/itxve/fetch-clash-node/main/node/merge.yaml,itxve.yaml
 https://raw.githubusercontent.com/Flik6/getNode/main/clash.yaml,Flik6.yaml
-https://raw.githubusercontent.com/barry-far/V2ray-Config/refs/heads/main/Splitted-By-Protocol/vmess.txt,barry-far/barry-far-vmess.txt
-https://raw.githubusercontent.com/barry-far/V2ray-Config/refs/heads/main/Splitted-By-Protocol/vless.txt,barry-far/barry-far-vless.txt
-https://raw.githubusercontent.com/barry-far/V2ray-Config/refs/heads/main/Splitted-By-Protocol/trojan.txt,barry-far/barry-far-trojan.txt
-https://raw.githubusercontent.com/barry-far/V2ray-Config/refs/heads/main/Splitted-By-Protocol/ss.txt,barry-far/barry-far-ss.txt
-https://raw.githubusercontent.com/barry-far/V2ray-Config/refs/heads/main/Splitted-By-Protocol/ssr.txt,barry-far/barry-far-ssr.txt
+
+https://raw.githubusercontent.com/barry-far/V2ray-Config/refs/heads/main/Splitted-By-Protocol/vmess.txt,barry-far-vmess.txt
+https://raw.githubusercontent.com/barry-far/V2ray-Config/refs/heads/main/Splitted-By-Protocol/vless.txt,barry-far-vless.txt
+https://raw.githubusercontent.com/barry-far/V2ray-Config/refs/heads/main/Splitted-By-Protocol/trojan.txt,barry-far-trojan.txt
+https://raw.githubusercontent.com/barry-far/V2ray-Config/refs/heads/main/Splitted-By-Protocol/ss.txt,barry-far-ss.txt
+https://raw.githubusercontent.com/barry-far/V2ray-Config/refs/heads/main/Splitted-By-Protocol/ssr.txt,barry-far-ssr.txt
