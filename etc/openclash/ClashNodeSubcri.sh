@@ -83,7 +83,8 @@ for (( j=0; j<${subsSize}; j++ )); do
     relativeFPath=${arrSplit[1]}
     fullName=${relativeFPath##*/}
     onlyName=(${fullName//./ })
-    clashConfigNames[$j]=${onlyName}
+    # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
+    clashConfigNames[$j]=$(echo "${onlyName}" | xargs)
 done
 declare -A uniqClashConfigNames
 for ip in "${clashConfigNames[@]}"; do uniqClashConfigNames[$ip]=0; done
@@ -112,8 +113,9 @@ for (( i=1; i<=5; i++ )); do
             for subscri in ${arrSubscri[@]}; do
                 # https://stackoverflow.com/questions/918886/how-do-i-split-a-string-on-a-delimiter-in-bash
                 arrSplit=(${subscri//,/ })
-                url=${arrSplit[0]}
-                fname=${arrSplit[1]}
+                # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
+                url=$(echo "${arrSplit[0]}" | xargs)
+                fname=$(echo "${arrSplit[1]}" | xargs)
                 wget --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=5 "${url}" -O"${DATA_DIR}/original/${fname}.tmp"
                 if [ $? -eq 0 ]; then
                     mv -f "${DATA_DIR}/original/${fname}.tmp" "${DATA_DIR}/original/${fname}"
