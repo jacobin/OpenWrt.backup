@@ -194,6 +194,8 @@ for subscri in ${arrSubscri[@]}; do
     arrSplit=(${subscri//,/ })
     url=${arrSplit[0]}
     fname=${arrSplit[1]}
+    url_uhttpd=$(urlencode "${url}")
+    url="${CONVERTER}/sub?target=clash&url=${url_uhttpd}"
     # https://stackoverflow.com/questions/525872/echo-tab-characters-in-bash-script
     echo -e "config config_subscribe"      >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
     echo -e "\toption sub_ua 'clash.meta'" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
