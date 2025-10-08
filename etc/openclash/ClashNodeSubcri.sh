@@ -65,6 +65,13 @@ if [ ! -f "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" ]; then
     singleton_clean_up ; exit 1
 fi
 
+file_hash=$(sha256sum "ClashNodeSubcri.etc_config_openclash.const" | awk '{print $1}')
+if [ "$file_hash" != "68a4dc90fd87e52ed9707c53b89ff9b199b68dc8516350449b76e06554e99406" ]; then
+    echo -e "\tThe SHA256 of file \"${DIR0}/ClashNodeSubcri.etc_config_openclash.const\" is incorrect, please check" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    singleton_clean_up ; exit 1
+fi
+
 if [ ! -d "/www/Hxy/openclash/original" ]; then
     echo -e "\tFolder \"/www/Hxy/openclash/original\" not found!" | tee -a "${DIR0}/ClashNodeSubcri.log"
     echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
