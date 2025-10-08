@@ -65,6 +65,33 @@ if [ ! -f "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" ]; then
     singleton_clean_up ; exit 1
 fi
 
+if [ ! -d "/www/Hxy/openclash/original" ]; then
+    echo -e "\tFolder \"/www/Hxy/openclash/original\" not found!" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    singleton_clean_up ; exit 1
+fi
+
+if [ ! -d "/www/Hxy/openclash/pass2subconverter" ]; then
+    echo -e "\tFolder \"/www/Hxy/openclash/pass2subconverter\" not found!" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    singleton_clean_up ; exit 1
+fi
+
+STATUS_CODE=$(curl --output /dev/null --silent --head --write-out "%{http_code}" "$EXISTENTIAL_CONFIGs")
+if (( STATUS_CODE != 200 )); then
+    echo -e "\tWeb service \"$EXISTENTIAL_CONFIGs\" is not started" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    singleton_clean_up ; exit 1
+fi
+
+# https://unix.stackexchange.com/questions/86556/testing-remote-tcp-port-using-telnet-by-running-a-one-line-command
+r=$(bash -c 'exec 3<> /dev/tcp/127.0.0.1/25511;echo $?' 2>/dev/null)
+if [ "$r" != "0" ]; then
+    echo -e "Service \"subconverter:25511\" is not started!" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    singleton_clean_up ; exit 1
+fi
+
 
 ###############################################################################
 ## 检查是否有重复的『配置名』##################################################
