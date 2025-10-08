@@ -8,7 +8,7 @@
 # https://stackoverflow.com/questions/43158140/way-to-create-multiline-comments-in-bash
 << EOF
     original
-        --> pass_openclash_subscription
+        --> pass2subconverter
             --> etc_config_openclash.mutable("PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH")
                 --> /etc/config/openclash
 EOF
@@ -39,9 +39,9 @@ EXISTENTIAL_CONFIGs="http://127.0.0.1:8080"
 # https://www.google.com/search?q=bash+get+absolute+dirname
 DIR0=$(dirname "$(readlink -f "$0")")
 CONVERTER="http://127.0.0.1:25511"
-                                   DATA_DIR="/www/Hxy/openclash"
-                   WEB_ORIG_DAT="http://127.0.0.1/Hxy/openclash/original"
-WEB_PASS_OPENCLASH_SUBSCRIPTION="http://127.0.0.1/Hxy/openclash/pass_openclash_subscription"
+                         DATA_DIR="/www/Hxy/openclash"
+         WEB_ORIG_DAT="http://127.0.0.1/Hxy/openclash/original"
+WEB_PASS2SUBCONVERTER="http://127.0.0.1/Hxy/openclash/pass2subconverter"
 
 
 ###############################################################################
@@ -130,31 +130,31 @@ done
 
 
 ###############################################################################
-## 把哪些『不能“通过Openclash进行订阅”』的数据文件进行base64的编码转换到${DATA_DIR}/pass_openclash_subscription
+## 把哪些『不能“通过Openclash进行订阅”』的数据文件进行base64的编码转换到${DATA_DIR}/pass2subconverter
 ###############################################################################
-rm "${DIR0}/ClashNodeSubcri.127.pass_openclash_subscription.urls" > /dev/null 2>&1
+rm "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls" > /dev/null 2>&1
 readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.urls")
 for subscri in ${arrSubscri[@]}; do
     arrSplit=(${subscri//,/ })
     fname=${arrSplit[1]}
     if base64 --decode --ignore-garbage "${DATA_DIR}/original/${fname}" &>/dev/null; then
-        ln -sf "${DATA_DIR}/original/${fname}" "${DATA_DIR}/pass_openclash_subscription/${fname}"
+        ln -sf "${DATA_DIR}/original/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
     else
         if ! [[ "${fname}" == *.yaml || "${fname}" == *.yml ]]; then
-            base64 -w0 "${DATA_DIR}/original/${fname}" > "${DATA_DIR}/pass_openclash_subscription/${fname}"
+            base64 -w0 "${DATA_DIR}/original/${fname}" > "${DATA_DIR}/pass2subconverter/${fname}"
         else
-            ln -sf "${DATA_DIR}/original/${fname}" "${DATA_DIR}/pass_openclash_subscription/${fname}"
+            ln -sf "${DATA_DIR}/original/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
         fi
     fi
-    echo "${WEB_PASS_OPENCLASH_SUBSCRIPTION}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.pass_openclash_subscription.urls"
+    echo "${WEB_PASS2SUBCONVERTER}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls"
 done
 
 
 ###############################################################################
 ## 生成 "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" ################
 ###############################################################################
-if [ ! -f "${DIR0}/ClashNodeSubcri.127.pass_openclash_subscription.urls" ]; then
-    echo -e "\tFile \"${DIR0}/ClashNodeSubcri.127.pass_openclash_subscription.urls\" not found!" | tee -a "${DIR0}/ClashNodeSubcri.log"
+if [ ! -f "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls" ]; then
+    echo -e "\tFile \"${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls\" not found!" | tee -a "${DIR0}/ClashNodeSubcri.log"
     echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
     singleton_clean_up ; exit 1
 fi
@@ -162,7 +162,7 @@ fi
 rm "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" > /dev/null 2>&1
 echo -e "\toption config_path 'PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH'\n" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
 
-readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.pass_openclash_subscription.urls")
+readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls")
 for subscri in ${arrSubscri[@]}; do
     arrSplit=(${subscri//,/ })
     url=${arrSplit[0]}
