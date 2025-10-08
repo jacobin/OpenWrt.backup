@@ -117,7 +117,7 @@ for (( i=1; i<=5; i++ )); do
                 url=$(echo "${arrSplit[0]}" | xargs)
                 fname=$(echo "${arrSplit[1]}" | xargs)
                 wget --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=5 "${url}" -O"${DATA_DIR}/original/${fname}.tmp"
-                if [ $? -eq 0 ]; then
+                if [[ $? -eq 0 && -f "${DATA_DIR}/original/${fname}.tmp" ]]; then
                     mv -f "${DATA_DIR}/original/${fname}.tmp" "${DATA_DIR}/original/${fname}"
                     echo "${WEB_ORIG_DAT}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.urls"
                 else
