@@ -241,8 +241,8 @@ cat "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" >> "${DIR0}/ClashNode
 
 ###############################################################################
 # "/etc/config/openclash"
-mv -f "/etc/config/openclash2" "/etc/config/openclash.$(date +%Y%m%d_%H%M%S)"
-cp -f "${DIR0}/ClashNodeSubcri.cfg" "/etc/config/openclash2"
+mv -f "/etc/config/openclash" "/etc/config/openclash.$(date +%Y%m%d_%H%M%S)"
+cp -f "${DIR0}/ClashNodeSubcri.cfg" "/etc/config/openclash"
 
 
 ###############################################################################
