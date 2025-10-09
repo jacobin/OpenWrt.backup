@@ -124,11 +124,12 @@ fi
 for (( j=0; j<${subsSize}; j++ )); do
     subscri=${arrSubscri[$j]}
     arrSplit=(${subscri//,/ })
-    relativeFPath=${arrSplit[1]}
-    fullName=${relativeFPath##*/}
-    onlyName=(${fullName//./ })
+    configFNameDotExtension=${arrSplit[1]}
+    # https://www.google.com/search?q=%24%7Bvar%23%23*%2F%7D&pws=0&gl=us&gws_rd=cr
+    configFNameDotExtension2=${configFNameDotExtension##*/}
+    configFName=(${configFNameDotExtension2//./ })
     # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
-    clashConfigNames[$j]=$(echo "${onlyName}" | xargs)
+    clashConfigNames[$j]=$(echo "${configFName}" | xargs)
 done
 declare -A uniqClashConfigNames
 for ip in "${clashConfigNames[@]}"; do uniqClashConfigNames[$ip]=0; done
@@ -138,6 +139,7 @@ if (( ${#uniqClashConfigNames[@]} < ${#clashConfigNames[@]} )); then
     echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
     singleton_clean_up; exit 1
 fi
+unset clashConfigNames
 
 
 ###############################################################################
@@ -154,7 +156,7 @@ for (( i=1; i<=5; i++ )); do
         subsSize=${#arrSubscri[@]}
         if (( subsSize > 0 )); then
             let j=$i+1
-            for subscri in ${arrSubscri[@]}; do
+            for subscri in "${arrSubscri[@]}"; do
                 # https://stackoverflow.com/questions/918886/how-do-i-split-a-string-on-a-delimiter-in-bash
                 arrSplit=(${subscri//,/ })
                 # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
@@ -178,7 +180,7 @@ done
 ###############################################################################
 rm "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls" > /dev/null 2>&1
 readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.urls")
-for subscri in ${arrSubscri[@]}; do
+for subscri in "${arrSubscri[@]}"; do
     arrSplit=(${subscri//,/ })
     fname=${arrSplit[1]}
     if base64 --decode --ignore-garbage "${DATA_DIR}/original/${fname}" &>/dev/null; then
@@ -206,21 +208,31 @@ fi
 rm "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" > /dev/null 2>&1
 echo -e "\toption config_path 'PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH'\n" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
 
+clashConfigNames=()
 readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls")
-for subscri in ${arrSubscri[@]}; do
+subsSize=${#arrSubscri[@]}
+for (( j=0; j<${subsSize}; j++ )); do
+    subscri=${arrSubscri[$j]}
     arrSplit=(${subscri//,/ })
     url=${arrSplit[0]}
-    fname=${arrSplit[1]}
-    url_uhttpd=$(urlencode "${url}")
-    url="${CONVERTER}/sub?target=clash&url=${url_uhttpd}"
+    configFNameDotExtension=${arrSplit[1]}
+    if ! [[ "${configFNameDotExtension}" == *.yaml || "${configFNameDotExtension}" == *.yml ]]; then
+        url_uhttpd=$(urlencode "${url}")
+        url="${CONVERTER}/sub?target=clash&url=${url_uhttpd}"
+    fi
+    # https://www.google.com/search?q=%24%7Bvar%23%23*%2F%7D&pws=0&gl=us&gws_rd=cr
+    configFNameDotExtension2=${configFNameDotExtension##*/}
+    configFName=(${configFNameDotExtension2//./ })
+    # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
+    clashConfigNames[$j]=$(echo "${configFName}" | xargs)
     # https://stackoverflow.com/questions/525872/echo-tab-characters-in-bash-script
-    echo -e "config config_subscribe"      >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
-    echo -e "\toption sub_ua 'clash.meta'" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
-    echo -e "\toption sub_convert '0'"     >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
-    echo -e "\toption enabled '1'"         >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
-    echo -e "\toption name '${fname}'"     >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
-    echo -e "\toption address '${url}'"    >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
-    echo -e ""                             >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+    echo -e "config config_subscribe"                    >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+    echo -e "\toption sub_ua 'clash.meta'"               >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+    echo -e "\toption sub_convert '0'"                   >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+    echo -e "\toption enabled '1'"                       >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+    echo -e "\toption name '${clashConfigNames[${j}]}'"  >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+    echo -e "\toption address '${url}'"                  >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+    echo -e ""                                           >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
 done
 
 ###############################################################################
