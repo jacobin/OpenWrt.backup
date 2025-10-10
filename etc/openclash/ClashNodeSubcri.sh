@@ -131,6 +131,7 @@ for (( j=0; j<${subsSize}; j++ )); do
     # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
     clashConfigNames[$j]=$(echo "${configFName}" | xargs)
 done
+
 declare -A uniqClashConfigNames
 for ip in "${clashConfigNames[@]}"; do uniqClashConfigNames[$ip]=0; done
 if (( ${#uniqClashConfigNames[@]} < ${#clashConfigNames[@]} )); then
@@ -163,7 +164,8 @@ for (( i=1; i<=5; i++ )); do
                 url=$(echo "${arrSplit[0]}" | xargs)
                 fname=$(echo "${arrSplit[1]}" | xargs)
                 wget --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=5 "${url}" -O"${DATA_DIR}/original/${fname}.tmp"
-                if [[ $? -eq 0 && -f "${DATA_DIR}/original/${fname}.tmp" ]]; then
+                thisFileSize=$(get_file_size "${DATA_DIR}/original/${fname}.tmp")
+                if [[ $? -eq 0 && -f "${DATA_DIR}/original/${fname}.tmp" && 0 < ${thisFileSize} ]]; then
                     mv -f "${DATA_DIR}/original/${fname}.tmp" "${DATA_DIR}/original/${fname}"
                     echo "${WEB_ORIG_DAT}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.urls"
                 else
@@ -359,6 +361,16 @@ function urlencode() {
         esac
     done
     LC_COLLATE=$old_lc_collate
+}
+
+
+###############################################################################
+######################### function: get_file_size #############################
+###############################################################################
+function get_file_size() {
+    local filepath="$1"
+    local size=$(wc -c < $filepath)
+    echo "$size"
 }
 
 
