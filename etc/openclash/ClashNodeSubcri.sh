@@ -166,13 +166,21 @@ for (( i=1; i<=5; i++ )); do
                 # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
                 url=$(echo "${arrSplit[0]}" | xargs)
                 fname=$(echo "${arrSplit[1]}" | xargs)
-                wget --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=5 "${url}" -O"${DATA_DIR}/original/${fname}.tmp"
-                thisFileSize=$(get_file_size "${DATA_DIR}/original/${fname}.tmp")
-                if [[ $? -eq 0 && -f "${DATA_DIR}/original/${fname}.tmp" && 0 < ${thisFileSize} ]]; then
-                    mv -f "${DATA_DIR}/original/${fname}.tmp" "${DATA_DIR}/original/${fname}"
-                    echo "${WEB_ORIG_DAT}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.urls"
+                if wget --spider "${url}" 2>/dev/null; then
+                    wget --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=5 "${url}" -O"${DATA_DIR}/original/${fname}.tmp"
+                    if [[ $? -eq 0 && -f "${DATA_DIR}/original/${fname}.tmp" ]]; then
+                        thisFileSize=$(get_file_size "${DATA_DIR}/original/${fname}.tmp")
+                        if [[ 0 < ${thisFileSize} ]]; then
+                            mv -f "${DATA_DIR}/original/${fname}.tmp" "${DATA_DIR}/original/${fname}"
+                            echo "${WEB_ORIG_DAT}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.urls"
+                        else
+                            tee_echo "\tThe size of URL \"${url}\" is zero"
+                        fi
+                    else
+                        echo ${url},${fname} >> "${DIR0}/ClashNodeSubcri.loop$j"
+                    fi
                 else
-                    echo ${url},${fname} >> "${DIR0}/ClashNodeSubcri.loop$j"
+                    tee_echo "\tURL \"${url}\" does not exist"
                 fi
             done
         fi
@@ -188,15 +196,19 @@ readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.urls")
 for subscri in "${arrSubscri[@]}"; do
     arrSplit=(${subscri//,/ })
     fname=${arrSplit[1]}
+    operation="ln"
+    assert_true "[ -f \"${DATA_DIR}/original/${fname}\" ]" "File \"${DATA_DIR}/original/${fname}\" that should exist does not exist"
     if base64 --decode --ignore-garbage "${DATA_DIR}/original/${fname}" &>/dev/null; then
         ln -sf "${DATA_DIR}/original/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
     else
         if ! [[ "${fname}" == *.yaml || "${fname}" == *.yml ]]; then
             base64 -w0 "${DATA_DIR}/original/${fname}" > "${DATA_DIR}/pass2subconverter/${fname}"
+            operation="base64"
         else
             ln -sf "${DATA_DIR}/original/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
         fi
     fi
+    assert_true "[[ $? -eq 0 ]]" "Operation \"${operation}\" on file \"${DATA_DIR}/original/${fname}\" failed"
     echo "${WEB_PASS2SUBCONVERTER}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls"
 done
 
