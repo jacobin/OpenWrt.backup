@@ -47,40 +47,35 @@ WEB_PASS2SUBCONVERTER="http://127.0.0.1/Hxy/openclash/pass2subconverter"
 ###############################################################################
 ## 主程序开始运行 #############################################################
 ###############################################################################
-echo "Begin: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+tee_echo "Begin: $(date +%Y%m%d_%H%M%S)"
 
 
 ###############################################################################
 ## 检查系统的完备性 ###########################################################
 ###############################################################################
 if [ ! -f "${DIR0}/ClashNodeSubcri.urls" ]; then
-    echo -e "\tFile \"${DIR0}/ClashNodeSubcri.urls\" not found!" | tee -a "${DIR0}/ClashNodeSubcri.log"
-    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    tee_echo "\tFile \"${DIR0}/ClashNodeSubcri.urls\" not found!"
     singleton_clean_up ; exit 1
 fi
 
 if [ ! -f "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" ]; then
-    echo -e "\tFile \"${DIR0}/ClashNodeSubcri.etc_config_openclash.const\" not found!" | tee -a "${DIR0}/ClashNodeSubcri.log"
-    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    tee_echo "\tFile \"${DIR0}/ClashNodeSubcri.etc_config_openclash.const\" not found!"
     singleton_clean_up ; exit 1
 fi
 
 file_hash=$(sha256sum "ClashNodeSubcri.etc_config_openclash.const" | awk '{print $1}')
 if [ "$file_hash" != "68a4dc90fd87e52ed9707c53b89ff9b199b68dc8516350449b76e06554e99406" ]; then
-    echo -e "\tThe SHA256 of file \"${DIR0}/ClashNodeSubcri.etc_config_openclash.const\" is incorrect, please check" | tee -a "${DIR0}/ClashNodeSubcri.log"
-    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    tee_echo "\tThe SHA256 of file \"${DIR0}/ClashNodeSubcri.etc_config_openclash.const\" is incorrect, please check"
     singleton_clean_up ; exit 1
 fi
 
 if [ ! -d "/www/Hxy/openclash/original" ]; then
-    echo -e "\tFolder \"/www/Hxy/openclash/original\" not found!" | tee -a "${DIR0}/ClashNodeSubcri.log"
-    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    tee_echo "\tFolder \"/www/Hxy/openclash/original\" not found!"
     singleton_clean_up ; exit 1
 fi
 
 if [ ! -d "/www/Hxy/openclash/pass2subconverter" ]; then
-    echo -e "\tFolder \"/www/Hxy/openclash/pass2subconverter\" not found!" | tee -a "${DIR0}/ClashNodeSubcri.log"
-    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    tee_echo "\tFolder \"/www/Hxy/openclash/pass2subconverter\" not found!"
     singleton_clean_up ; exit 1
 fi
 
@@ -89,23 +84,20 @@ fi
 # https://unix.stackexchange.com/questions/86556/testing-remote-tcp-port-using-telnet-by-running-a-one-line-command
 r=$(bash -c 'exec 3<> /dev/tcp/127.0.0.1/80;echo $?' 2>/dev/null)
 if [ "$r" != "0" ]; then
-    echo -e "\tWeb service \"http://127.0.0.1\" is not started" | tee -a "${DIR0}/ClashNodeSubcri.log"
-    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    tee_echo "\tWeb service \"http://127.0.0.1\" is not started"
     singleton_clean_up ; exit 1
 fi
 
 STATUS_CODE=$(curl --output /dev/null --silent --head --write-out "%{http_code}" "$EXISTENTIAL_CONFIGs")
 if (( STATUS_CODE != 200 )); then
-    echo -e "\tWeb service \"$EXISTENTIAL_CONFIGs\" is not started" | tee -a "${DIR0}/ClashNodeSubcri.log"
-    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    tee_echo "\tWeb service \"$EXISTENTIAL_CONFIGs\" is not started"
     singleton_clean_up ; exit 1
 fi
 
 # https://unix.stackexchange.com/questions/86556/testing-remote-tcp-port-using-telnet-by-running-a-one-line-command
 r=$(bash -c 'exec 3<> /dev/tcp/127.0.0.1/25511;echo $?' 2>/dev/null)
 if [ "$r" != "0" ]; then
-    echo -e "Service \"subconverter:25511\" is not started!" | tee -a "${DIR0}/ClashNodeSubcri.log"
-    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    tee_echo "Service \"subconverter:25511\" is not started!"
     singleton_clean_up ; exit 1
 fi
 
@@ -117,8 +109,7 @@ clashConfigNames=()
 readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
 subsSize=${#arrSubscri[@]}
 if (( subsSize <= 0 )); then
-    echo -e "\tSubscription configuration item count is 0" | tee -a "${DIR0}/ClashNodeSubcri.log"
-    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    tee_echo "\tSubscription configuration item count is 0"
     singleton_clean_up; exit 1
 fi
 for (( j=0; j<${subsSize}; j++ )); do
@@ -135,9 +126,8 @@ done
 declare -A uniqClashConfigNames
 for ip in "${clashConfigNames[@]}"; do uniqClashConfigNames[$ip]=0; done
 if (( ${#uniqClashConfigNames[@]} < ${#clashConfigNames[@]} )); then
-    echo -e "\tItems with counts (duplicates have count > 1):" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    tee_echo "\tItems with counts (duplicates have count > 1):"
     printf "%s\n" "${clashConfigNames[@]}" | sort | uniq -c | sed '/^      1 /d' | sed 's/^/\t /' | tee -a "${DIR0}/ClashNodeSubcri.log"
-    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
     singleton_clean_up; exit 1
 fi
 unset clashConfigNames
@@ -202,8 +192,7 @@ done
 ## 生成 "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" ################
 ###############################################################################
 if [ ! -f "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls" ]; then
-    echo -e "\tFile \"${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls\" not found!" | tee -a "${DIR0}/ClashNodeSubcri.log"
-    echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    tee_echo "\tFile \"${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls\" not found!"
     singleton_clean_up ; exit 1
 fi
 
@@ -305,13 +294,7 @@ assert_true "[[ -f \"/etc/config/openclash.backup.tar.gz\" && ! -f \"/etc/config
 
 
 ###############################################################################
-## 主程序运行结束 #############################################################
-###############################################################################
-echo -e "\tEnd: $(date +%Y%m%d_%H%M%S)" | tee -a "${DIR0}/ClashNodeSubcri.log"
-
-
-###############################################################################
-## 程序运行单例清场 ###########################################################
+## 主程序运行结束，程序运行单例清场 ###########################################
 ###############################################################################
 singleton_clean_up; exit 0
 
@@ -338,6 +321,7 @@ function is_not_running () {
 ######################### function: singleton_clean_up ########################
 ###############################################################################
 function singleton_clean_up () {
+    tee_echo "\tEnd: $(date +%Y%m%d_%H%M%S)"
     flock -u 3
     exec 4>&-
     rm -f ${F_LOCK}
@@ -432,7 +416,7 @@ assert_true() {
     local message="${2:-Assertion failed!}"
 
     if ! eval "$condition"; then
-        echo -e "\tERROR: ${message}\n\tEnd: $(date +%Y%m%d_%H%M%S)" >&2 | tee -a "${DIR0}/ClashNodeSubcri.log"
+        tee_echo "\tERROR: ${message}\n\tEnd: $(date +%Y%m%d_%H%M%S)"
         singleton_clean_up; exit 1
     fi
 }
@@ -443,6 +427,14 @@ assert_true() {
 #
 #ANOTHER_VALUE=5
 #assert_true "[ $ANOTHER_VALUE -gt 10 ]" "Another value is not greater than 10" # This will fail
+
+
+###############################################################################
+######################### function:tee_echo ###################################
+###############################################################################
+function tee_echo() {
+    echo -e "$1" | tee -a "${DIR0}/ClashNodeSubcri.log"
+}
 
 
 ###############################################################################
