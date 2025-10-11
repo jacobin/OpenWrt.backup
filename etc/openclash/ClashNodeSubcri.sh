@@ -55,28 +55,28 @@ tee_echo "Begin: $(date +%Y%m%d_%H%M%S)"
 ###############################################################################
 if [ ! -f "${DIR0}/ClashNodeSubcri.urls" ]; then
     tee_echo "\tFile \"${DIR0}/ClashNodeSubcri.urls\" not found!"
-    singleton_clean_up ; exit 1
+    singleton_clean_up 1
 fi
 
 if [ ! -f "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" ]; then
     tee_echo "\tFile \"${DIR0}/ClashNodeSubcri.etc_config_openclash.const\" not found!"
-    singleton_clean_up ; exit 1
+    singleton_clean_up 1
 fi
 
 file_hash=$(sha256sum "ClashNodeSubcri.etc_config_openclash.const" | awk '{print $1}')
 if [ "$file_hash" != "68a4dc90fd87e52ed9707c53b89ff9b199b68dc8516350449b76e06554e99406" ]; then
     tee_echo "\tThe SHA256 of file \"${DIR0}/ClashNodeSubcri.etc_config_openclash.const\" is incorrect, please check"
-    singleton_clean_up ; exit 1
+    singleton_clean_up 1
 fi
 
 if [ ! -d "/www/Hxy/openclash/original" ]; then
     tee_echo "\tFolder \"/www/Hxy/openclash/original\" not found!"
-    singleton_clean_up ; exit 1
+    singleton_clean_up 1
 fi
 
 if [ ! -d "/www/Hxy/openclash/pass2subconverter" ]; then
     tee_echo "\tFolder \"/www/Hxy/openclash/pass2subconverter\" not found!"
-    singleton_clean_up ; exit 1
+    singleton_clean_up 1
 fi
 
 #STATUS_CODE=$(curl --output /dev/null --silent --head --write-out "%{http_code}" "http://127.0.0.1)
@@ -85,20 +85,20 @@ fi
 r=$(bash -c 'exec 3<> /dev/tcp/127.0.0.1/80;echo $?' 2>/dev/null)
 if [ "$r" != "0" ]; then
     tee_echo "\tWeb service \"http://127.0.0.1\" is not started"
-    singleton_clean_up ; exit 1
+    singleton_clean_up 1
 fi
 
 STATUS_CODE=$(curl --output /dev/null --silent --head --write-out "%{http_code}" "$EXISTENTIAL_CONFIGs")
 if (( STATUS_CODE != 200 )); then
     tee_echo "\tWeb service \"$EXISTENTIAL_CONFIGs\" is not started"
-    singleton_clean_up ; exit 1
+    singleton_clean_up 1
 fi
 
 # https://unix.stackexchange.com/questions/86556/testing-remote-tcp-port-using-telnet-by-running-a-one-line-command
 r=$(bash -c 'exec 3<> /dev/tcp/127.0.0.1/25511;echo $?' 2>/dev/null)
 if [ "$r" != "0" ]; then
     tee_echo "Service \"subconverter:25511\" is not started!"
-    singleton_clean_up ; exit 1
+    singleton_clean_up 1
 fi
 
 
@@ -110,7 +110,7 @@ readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.urls" | sed -e 's/[[:sp
 subsSize=${#arrSubscri[@]}
 if (( subsSize <= 0 )); then
     tee_echo "\tSubscription configuration item count is 0"
-    singleton_clean_up; exit 1
+    singleton_clean_up 1
 fi
 for (( j=0; j<${subsSize}; j++ )); do
     subscri=${arrSubscri[$j]}
@@ -125,7 +125,7 @@ for (( j=0; j<${subsSize}; j++ )); do
 
     if [[ -z "${split0}" || -z "${split1}" || -n "${split2}" ]]; then
         tee_echo "\tLine format error:\n\t\t${subscri}"
-        singleton_clean_up; exit 1
+        singleton_clean_up 1
     fi
 
     configFNameDotExtension=${arrSplit[1]}
@@ -141,7 +141,7 @@ for ip in "${clashConfigNames[@]}"; do uniqClashConfigNames[$ip]=0; done
 if (( ${#uniqClashConfigNames[@]} < ${#clashConfigNames[@]} )); then
     tee_echo "\tItems with counts (duplicates have count > 1):"
     printf "%s\n" "${clashConfigNames[@]}" | sort | uniq -c | sed '/^      1 /d' | sed 's/^/\t /' | tee -a "${DIR0}/ClashNodeSubcri.log"
-    singleton_clean_up; exit 1
+    singleton_clean_up 1
 fi
 unset clashConfigNames
 
@@ -218,7 +218,7 @@ done
 ###############################################################################
 if [ ! -f "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls" ]; then
     tee_echo "\tFile \"${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls\" not found!"
-    singleton_clean_up ; exit 1
+    singleton_clean_up 1
 fi
 
 rm "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" > /dev/null 2>&1
@@ -321,7 +321,7 @@ assert_true "[[ -f \"/etc/config/openclash.backup.tar.gz\" && ! -f \"/etc/config
 ###############################################################################
 ## 主程序运行结束，程序运行单例清场 ###########################################
 ###############################################################################
-singleton_clean_up; exit 0
+singleton_clean_up 0
 
 
 exit 0
@@ -345,12 +345,13 @@ function is_not_running () {
 ###############################################################################
 ######################### function: singleton_clean_up ########################
 ###############################################################################
-function singleton_clean_up () {
+function singleton_clean_up() {
     tee_echo "\tEnd: $(date +%Y%m%d_%H%M%S)"
     flock -u 3
     exec 4>&-
     rm -f ${F_LOCK}
     rm -f ${F_PID}
+    exit "$1"
 }
 
 
@@ -442,7 +443,7 @@ function assert_true() {
 
     if ! eval "$condition"; then
         tee_echo "\tERROR: ${message}\n\tEnd: $(date +%Y%m%d_%H%M%S)"
-        singleton_clean_up; exit 1
+        singleton_clean_up 1
     fi
 }
 ## Example usage:
