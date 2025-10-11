@@ -115,6 +115,19 @@ fi
 for (( j=0; j<${subsSize}; j++ )); do
     subscri=${arrSubscri[$j]}
     arrSplit=(${subscri//,/ })
+
+    split0=${arrSplit[0]}
+    split1=${arrSplit[1]}
+    split2=${arrSplit[2]}
+    split0=$(echo "${split0}" | xargs)
+    split1=$(echo "${split1}" | xargs)
+    split2=$(echo "${split2}" | xargs)
+
+    if [[ -z "${split0}" || -z "${split1}" || -n "${split2}" ]]; then
+        tee_echo "\tLine format error:\n\t\t${subscri}"
+        singleton_clean_up; exit 1
+    fi
+
     configFNameDotExtension=${arrSplit[1]}
     # https://www.google.com/search?q=%24%7Bvar%23%23*%2F%7D&pws=0&gl=us&gws_rd=cr
     configFNameDotExtension2=${configFNameDotExtension##*/}
