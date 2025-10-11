@@ -409,9 +409,9 @@ function combine_subscri() {
 
 
 ###############################################################################
-######################### function: Function to simulate an assertion #########
+######################### function: assert_true ###############################
 ###############################################################################
-assert_true() {
+function assert_true() {
     local condition="$1"
     local message="${2:-Assertion failed!}"
 
@@ -420,7 +420,6 @@ assert_true() {
         singleton_clean_up; exit 1
     fi
 }
-
 ## Example usage:
 #VALUE=10
 #assert_true "[ $VALUE -eq 10 ]" "Value is not 10"
