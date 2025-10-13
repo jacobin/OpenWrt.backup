@@ -63,19 +63,19 @@ if [ ! -f "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" ]; then
     singleton_clean_up 1
 fi
 
-file_hash=$(sha256sum "ClashNodeSubcri.etc_config_openclash.const" | awk '{print $1}')
+file_hash=$(sha256sum "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" | awk '{print $1}')
 if [ "$file_hash" != "68a4dc90fd87e52ed9707c53b89ff9b199b68dc8516350449b76e06554e99406" ]; then
     tee_echo "\tThe SHA256 of file \"${DIR0}/ClashNodeSubcri.etc_config_openclash.const\" is incorrect, please check"
     singleton_clean_up 1
 fi
 
-if [ ! -d "/www/Hxy/openclash/original" ]; then
-    tee_echo "\tFolder \"/www/Hxy/openclash/original\" not found!"
+if [ ! -d "${DATA_DIR}/original" ]; then
+    tee_echo "\tFolder \"${DATA_DIR}/original\" not found!"
     singleton_clean_up 1
 fi
 
-if [ ! -d "/www/Hxy/openclash/pass2subconverter" ]; then
-    tee_echo "\tFolder \"/www/Hxy/openclash/pass2subconverter\" not found!"
+if [ ! -d "${DATA_DIR}/pass2subconverter" ]; then
+    tee_echo "\tFolder \"${DATA_DIR}/pass2subconverter\" not found!"
     singleton_clean_up 1
 fi
 
