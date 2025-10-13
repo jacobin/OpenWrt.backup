@@ -63,7 +63,7 @@ if [ ! -f "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" ]; then
     singleton_clean_up 1
 fi
 
-file_hash=$(sha256sum "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" | awk '{print $1}')
+file_hash=$(sha256sum "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" 2>/dev/null | awk '{print $1}')
 if [ "$file_hash" != "68a4dc90fd87e52ed9707c53b89ff9b199b68dc8516350449b76e06554e99406" ]; then
     tee_echo "\tThe SHA256 of file \"${DIR0}/ClashNodeSubcri.etc_config_openclash.const\" is incorrect, please check"
     singleton_clean_up 1
