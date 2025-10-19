@@ -149,7 +149,7 @@ unset clashConfigNames
 ###############################################################################
 ## 最多尝试5次，把所订阅的原始的数据下载到本地${DATA_DIR}/original ############
 ###############################################################################
-for (( k=1; k<=6; k++ )); do rm "${DIR0}/ClashNodeSubcri.loop$k" > /dev/null 2>&1; done
+rm -f "${DIR0}/ClashNodeSubcri.loop?" > /dev/null 2>&1
 cp -f "${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.loop1"
 rm "${DIR0}/ClashNodeSubcri.127.urls" > /dev/null 2>&1
 for (( i=1; i<=5; i++ )); do
@@ -179,7 +179,7 @@ for (( i=1; i<=5; i++ )); do
                     else
                         echo ${url},${fname} >> "${DIR0}/ClashNodeSubcri.loop$j"
                     fi
-                    del /F /Q "${DATA_DIR}/original/${fname}.tmp" > NUL 2>&1
+                    rm -f "${DATA_DIR}/original/${fname}.tmp" > /dev/null 2>&1
                 else
                     tee_echo "\tURL \"${url}\" does not exist"
                 fi
