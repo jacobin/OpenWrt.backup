@@ -44,6 +44,7 @@ CONVERTER="http://127.0.0.1:25511"
 WEB_PASS2SUBCONVERTER="http://127.0.0.1/Hxy/openclash/pass2subconverter"
 ACCEPTABLE_DAYs=7
 
+
 ###############################################################################
 ## 主程序开始运行 #############################################################
 ###############################################################################
@@ -184,7 +185,6 @@ for (( i=1; i<=5; i++ )); do
         thisFileSize=$(get_file_size "${DATA_DIR}/original/${fname}.tmp")
         if ! [[ 0 < ${thisFileSize} ]]; then
             tee_echo "\tThe size of URL \"${url}\" is zero"
-            rm -f "${DATA_DIR}/original/${fname}.tmp" > /dev/null 2>&1
             continue
         fi
 
@@ -197,15 +197,14 @@ for (( i=1; i<=5; i++ )); do
             [[ $((nowDatetime - oldFiletime)) -gt $((${ACCEPTABLE_DAYs}*24*60*60)) ]] && bTooOldFile=true || bTooOldFile=false
             if [[ "${bTooOldFile}" == "true" ]]; then
                 tee_echo "\tFile \"${url}\" is too old and has NOT been updated for more than ${ACCEPTABLE_DAYs} days"
-                rm -f "${DATA_DIR}/original/${fname}.tmp" > /dev/null 2>&1
                 continue
             fi
         else
             mv -f "${DATA_DIR}/original/${fname}.tmp" "${DATA_DIR}/original/${fname}"
         fi
         echo "${WEB_ORIG_DAT}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.urls"
-        rm -f "${DATA_DIR}/original/${fname}.tmp" > /dev/null 2>&1
     done
+    rm -f "${DATA_DIR}/original/"*".tmp" > /dev/null 2>&1
 done
 
 
