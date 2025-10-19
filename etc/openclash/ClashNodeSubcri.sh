@@ -154,39 +154,58 @@ rm -f "${DIR0}/ClashNodeSubcri.loop"? > /dev/null 2>&1
 cp -f "${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.loop1"
 rm "${DIR0}/ClashNodeSubcri.127.urls" > /dev/null 2>&1
 for (( i=1; i<=5; i++ )); do
-    if [ -f "${DIR0}/ClashNodeSubcri.loop$i" ]; then
-        # https://unix.stackexchange.com/questions/485221/read-lines-into-array-one-element-per-line-using-bash
-        # https://www.google.com/search?q=bash+read+line+except+comment&pws=0&gl=us&gws_rd=cr
-        readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.loop$i" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d' )
-        subsSize=${#arrSubscri[@]}
-        if (( subsSize > 0 )); then
-            let j=$i+1
-            for subscri in "${arrSubscri[@]}"; do
-                # https://stackoverflow.com/questions/918886/how-do-i-split-a-string-on-a-delimiter-in-bash
-                arrSplit=(${subscri//,/ })
-                # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
-                url=$(echo "${arrSplit[0]}" | xargs)
-                fname=$(echo "${arrSplit[1]}" | xargs)
-                if wget --spider "${url}" 2>/dev/null; then
-                    wget --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=5 "${url}" -O"${DATA_DIR}/original/${fname}.tmp"
-                    if [[ $? -eq 0 && -f "${DATA_DIR}/original/${fname}.tmp" ]]; then
-                        thisFileSize=$(get_file_size "${DATA_DIR}/original/${fname}.tmp")
-                        if [[ 0 < ${thisFileSize} ]]; then
-                            mv -f "${DATA_DIR}/original/${fname}.tmp" "${DATA_DIR}/original/${fname}"
-                            echo "${WEB_ORIG_DAT}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.urls"
-                        else
-                            tee_echo "\tThe size of URL \"${url}\" is zero"
-                        fi
-                    else
-                        echo ${url},${fname} >> "${DIR0}/ClashNodeSubcri.loop$j"
-                    fi
-                    rm -f "${DATA_DIR}/original/${fname}.tmp" > /dev/null 2>&1
-                else
-                    tee_echo "\tURL \"${url}\" does not exist"
-                fi
-            done
+    if ! [ -f "${DIR0}/ClashNodeSubcri.loop$i" ]; then break; fi
+
+    # https://unix.stackexchange.com/questions/485221/read-lines-into-array-one-element-per-line-using-bash
+    # https://www.google.com/search?q=bash+read+line+except+comment&pws=0&gl=us&gws_rd=cr
+    readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.loop$i" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d' )
+    subsSize=${#arrSubscri[@]}
+    if (( subsSize <= 0 )); then break; fi
+
+    let j=$i+1
+    for subscri in "${arrSubscri[@]}"; do
+        # https://stackoverflow.com/questions/918886/how-do-i-split-a-string-on-a-delimiter-in-bash
+        arrSplit=(${subscri//,/ })
+        # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
+        url=$(echo "${arrSplit[0]}" | xargs)
+        fname=$(echo "${arrSplit[1]}" | xargs)
+
+        if ! wget --spider "${url}" 2>/dev/null; then
+            echo ${url},${fname} >> "${DIR0}/ClashNodeSubcri.loop$j"
+            continue
         fi
-    fi
+
+        wget --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=5 "${url}" -O"${DATA_DIR}/original/${fname}.tmp"
+        if ! [[ $? -eq 0 && -f "${DATA_DIR}/original/${fname}.tmp" ]]; then
+            echo ${url},${fname} >> "${DIR0}/ClashNodeSubcri.loop$j"
+            continue
+        fi
+
+        thisFileSize=$(get_file_size "${DATA_DIR}/original/${fname}.tmp")
+        if ! [[ 0 < ${thisFileSize} ]]; then
+            tee_echo "\tThe size of URL \"${url}\" is zero"
+            rm -f "${DATA_DIR}/original/${fname}.tmp" > /dev/null 2>&1
+            continue
+        fi
+
+        oldHash=$(sha256sum "${DATA_DIR}/original/${fname}" 2>/dev/null | awk '{print $1}')
+        newHash=$(sha256sum "${DATA_DIR}/original/${fname}.tmp" 2>/dev/null | awk '{print $1}')
+        if [[ "$newHash" == "$oldHash" ]]; then
+            # https://stackoverflow.com/questions/16391208/print-a-files-last-modified-date-in-bash
+            oldFiletime=$(date -r "${DATA_DIR}/original/${fname}" +%s%3N)
+            nowDatetime=$(date +%s%3N)
+            [[ $((nowDatetime - oldFiletime)) -gt $((7*24*60*60)) ]] && gt10days=true || gt10days=false
+            if [[ "${gt10days}" == "true" ]]; then
+                tee_echo "\tFile \"${url}\" is too old and has NOT been updated for more than 7 days"
+                rm -f "${DATA_DIR}/original/${fname}.tmp" > /dev/null 2>&1
+                continue
+            fi
+        else
+            mv -f "${DATA_DIR}/original/${fname}.tmp" "${DATA_DIR}/original/${fname}"
+        fi
+        echo "${WEB_ORIG_DAT}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.urls"
+        rm -f "${DATA_DIR}/original/${fname}.tmp" > /dev/null 2>&1
+    done
 done
 
 
