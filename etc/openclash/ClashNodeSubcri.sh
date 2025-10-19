@@ -42,7 +42,7 @@ CONVERTER="http://127.0.0.1:25511"
                          DATA_DIR="/www/Hxy/openclash"
          WEB_ORIG_DAT="http://127.0.0.1/Hxy/openclash/original"
 WEB_PASS2SUBCONVERTER="http://127.0.0.1/Hxy/openclash/pass2subconverter"
-
+ACCEPTABLE_DAYs=7
 
 ###############################################################################
 ## 主程序开始运行 #############################################################
@@ -194,9 +194,9 @@ for (( i=1; i<=5; i++ )); do
             # https://stackoverflow.com/questions/16391208/print-a-files-last-modified-date-in-bash
             oldFiletime=$(date -r "${DATA_DIR}/original/${fname}" +%s%3N)
             nowDatetime=$(date +%s%3N)
-            [[ $((nowDatetime - oldFiletime)) -gt $((7*24*60*60)) ]] && bTooOldFile=true || bTooOldFile=false
+            [[ $((nowDatetime - oldFiletime)) -gt $((${ACCEPTABLE_DAYs}*24*60*60)) ]] && bTooOldFile=true || bTooOldFile=false
             if [[ "${bTooOldFile}" == "true" ]]; then
-                tee_echo "\tFile \"${url}\" is too old and has NOT been updated for more than 7 days"
+                tee_echo "\tFile \"${url}\" is too old and has NOT been updated for more than ${ACCEPTABLE_DAYs} days"
                 rm -f "${DATA_DIR}/original/${fname}.tmp" > /dev/null 2>&1
                 continue
             fi
