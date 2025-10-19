@@ -179,6 +179,7 @@ for (( i=1; i<=5; i++ )); do
                     else
                         echo ${url},${fname} >> "${DIR0}/ClashNodeSubcri.loop$j"
                     fi
+                    del /F /Q "${DATA_DIR}/original/${fname}.tmp" > NUL 2>&1
                 else
                     tee_echo "\tURL \"${url}\" does not exist"
                 fi
