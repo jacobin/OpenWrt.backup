@@ -149,7 +149,8 @@ unset clashConfigNames
 ###############################################################################
 ## 最多尝试5次，把所订阅的原始的数据下载到本地${DATA_DIR}/original ############
 ###############################################################################
-rm -f "${DIR0}/ClashNodeSubcri.loop?" > /dev/null 2>&1
+# https://stackoverflow.com/questions/62021429/why-does-command-line-rm-not-accept-quotation-marks-for-directories-with-spaces
+rm -f "${DIR0}/ClashNodeSubcri.loop"? > /dev/null 2>&1
 cp -f "${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.loop1"
 rm "${DIR0}/ClashNodeSubcri.127.urls" > /dev/null 2>&1
 for (( i=1; i<=5; i++ )); do
