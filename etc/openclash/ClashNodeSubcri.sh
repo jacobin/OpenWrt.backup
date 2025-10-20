@@ -185,6 +185,7 @@ for (( i=1; i<=5; i++ )); do
         thisFileSize=$(get_file_size "${DATA_DIR}/original/${fname}.tmp")
         if ! [[ 0 < ${thisFileSize} ]]; then
             tee_echo "\tThe size of URL \"${url}\" is zero"
+            echo "$(date +%Y%m%d_%H%M%S) ${url}" >> "${DIR0}/ClashNodeSubcri.0size"
             continue
         fi
 
@@ -197,6 +198,7 @@ for (( i=1; i<=5; i++ )); do
             [[ $((nowDatetime - oldFiletime)) -gt $((${ACCEPTABLE_DAYs}*24*60*60)) ]] && bTooOldFile=true || bTooOldFile=false
             if [[ "${bTooOldFile}" == "true" ]]; then
                 tee_echo "\tFile \"${url}\" is too old and has NOT been updated for more than ${ACCEPTABLE_DAYs} days"
+                echo "$(date +%Y%m%d_%H%M%S) ${url}" >> "${DIR0}/ClashNodeSubcri.oldsubs"
                 continue
             fi
         else
