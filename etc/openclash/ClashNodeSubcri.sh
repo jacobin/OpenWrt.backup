@@ -148,6 +148,17 @@ unset clashConfigNames
 
 
 ###############################################################################
+## 如果网络还在工作，那么就取消此次的订阅 #####################################
+###############################################################################
+readarray -t arrSpeedTestResult < <( wget -p -O/dev/null "http://www.youtube.com" --dns-timeout=10 --connect-timeout=10 --read-timeout=10 --tries=1 2>&1 | grep -o "[0-9.]\\+ [KM]*B/s" )
+speedSize=${#arrSpeedTestResult[@]}
+if [[ 0 < ${speedSize} ]]; then
+    tee_echo "\tThe network is still available. Exit this time."
+    singleton_clean_up 1
+fi
+
+
+###############################################################################
 ## 最多尝试5次，把所订阅的原始的数据下载到本地${DATA_DIR}/original ############
 ###############################################################################
 # https://stackoverflow.com/questions/62021429/why-does-command-line-rm-not-accept-quotation-marks-for-directories-with-spaces
