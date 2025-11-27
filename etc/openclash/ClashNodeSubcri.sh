@@ -159,16 +159,16 @@ fi
 unset arrSpeedTestResult; unset speedSize
 
 
-###############################################################################
-## 如果外网尚且可用，那么就取消此次的订阅 #####################################
-###############################################################################
-readarray -t arrSpeedTestResult < <( wget -p -O/dev/null "http://www.youtube.com" --dns-timeout=10 --connect-timeout=10 --read-timeout=10 --tries=3 --waitretry=4 2>&1 | grep -o "[0-9.]\\+ [KM]*B/s" )
-speedSize=${#arrSpeedTestResult[@]}
-if [[ 0 < ${speedSize} ]]; then
-    tee_echo "\tThe Youtube is still available. Exit this time."
-    singleton_clean_up 1
-fi
-unset arrSpeedTestResult; unset speedSize
+#    ###############################################################################
+#    ## 如果外网尚且可用，那么就取消此次的订阅 #####################################
+#    ###############################################################################
+#    readarray -t arrSpeedTestResult < <( wget -p -O/dev/null "http://www.youtube.com" --dns-timeout=10 --connect-timeout=10 --read-timeout=10 --tries=3 --waitretry=4 2>&1 | grep -o "[0-9.]\\+ [KM]*B/s" )
+#    speedSize=${#arrSpeedTestResult[@]}
+#    if [[ 0 < ${speedSize} ]]; then
+#        tee_echo "\tThe Youtube is still available. Exit this time."
+#        singleton_clean_up 1
+#    fi
+#    unset arrSpeedTestResult; unset speedSize
 
 
 ###############################################################################
