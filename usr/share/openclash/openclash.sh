@@ -265,57 +265,59 @@ change_dns()
 
 config_download_direct()
 {
-   if pidof clash >/dev/null && [ "$router_self_proxy" = 1 ]; then
-      kill_streaming_unlock
-      procd_send_signal "openclash" "openclash-watchdog" STOP
-      /etc/init.d/openclash reload "revert" >/dev/null 2>&1
-      sleep 3
-
-      config_download
-
-      if [ "${PIPESTATUS[0]}" -eq 0 ] && [ -s "$CFG_FILE" ]; then
-         #prevent ruby unexpected error
-         sed -i -E 's/protocol-param: ([^,'"'"'"''}( *#)\n\r]+)/protocol-param: "\1"/g' "$CFG_FILE" 2>/dev/null
-         sed -i '/^ \{0,\}enhanced-mode:/d' "$CFG_FILE" >/dev/null 2>&1
-         config_test
-         if [ $? -ne 0 ]; then
-            LOG_OUT "Error: Config File Tested Faild, Please Check The Log Infos!"
-            change_dns
-            config_error
-            return
-         fi
-         ruby -ryaml -rYAML -I "/usr/share/openclash" -E UTF-8 -e "
-         begin
-         YAML.load_file('$CFG_FILE');
-         rescue Exception => e
-         YAML.LOG('Error: Unable To Parse Config File,【' + e.message + '】');
-         system 'rm -rf ${CFG_FILE} 2>/dev/null'
-         end
-         " 2>/dev/null >> $LOG_FILE
-         if [ $? -ne 0 ]; then
-            LOG_OUT "Error: Ruby Works Abnormally, Please Check The Ruby Library Depends!"
-            only_download=1
-            change_dns
-            config_su_check
-         elif [ ! -f "$CFG_FILE" ]; then
-            LOG_OUT "Config File Format Validation Failed..."
-            change_dns
-            config_error
-         elif ! "$(ruby_read "$CFG_FILE" ".key?('proxies')")" && ! "$(ruby_read "$CFG_FILE" ".key?('proxy-providers')")" ; then
-            LOG_OUT "Error: Updated Config【$name】Has No Proxy Field, Update Exit..."
-            change_dns
-            config_error
-         else
-            change_dns
-            config_su_check
-         fi
-      else
-         change_dns
-         config_error
-      fi
-   else
-      config_error
-   fi
+    return
+### Harly.He@gmail.com commented on the following lines 27/11/2025 11:24 AM ###
+#   if pidof clash >/dev/null && [ "$router_self_proxy" = 1 ]; then
+#      kill_streaming_unlock
+#      procd_send_signal "openclash" "openclash-watchdog" STOP
+#      /etc/init.d/openclash reload "revert" >/dev/null 2>&1
+#      sleep 3
+#
+#      config_download
+#
+#      if [ "${PIPESTATUS[0]}" -eq 0 ] && [ -s "$CFG_FILE" ]; then
+#         #prevent ruby unexpected error
+#         sed -i -E 's/protocol-param: ([^,'"'"'"''}( *#)\n\r]+)/protocol-param: "\1"/g' "$CFG_FILE" 2>/dev/null
+#         sed -i '/^ \{0,\}enhanced-mode:/d' "$CFG_FILE" >/dev/null 2>&1
+#         config_test
+#         if [ $? -ne 0 ]; then
+#            LOG_OUT "Error: Config File Tested Faild, Please Check The Log Infos!"
+#            change_dns
+#            config_error
+#            return
+#         fi
+#         ruby -ryaml -rYAML -I "/usr/share/openclash" -E UTF-8 -e "
+#         begin
+#         YAML.load_file('$CFG_FILE');
+#         rescue Exception => e
+#         YAML.LOG('Error: Unable To Parse Config File,【' + e.message + '】');
+#         system 'rm -rf ${CFG_FILE} 2>/dev/null'
+#         end
+#         " 2>/dev/null >> $LOG_FILE
+#         if [ $? -ne 0 ]; then
+#            LOG_OUT "Error: Ruby Works Abnormally, Please Check The Ruby Library Depends!"
+#            only_download=1
+#            change_dns
+#            config_su_check
+#         elif [ ! -f "$CFG_FILE" ]; then
+#            LOG_OUT "Config File Format Validation Failed..."
+#            change_dns
+#            config_error
+#         elif ! "$(ruby_read "$CFG_FILE" ".key?('proxies')")" && ! "$(ruby_read "$CFG_FILE" ".key?('proxy-providers')")" ; then
+#            LOG_OUT "Error: Updated Config【$name】Has No Proxy Field, Update Exit..."
+#            change_dns
+#            config_error
+#         else
+#            change_dns
+#            config_su_check
+#         fi
+#      else
+#         change_dns
+#         config_error
+#      fi
+#   else
+#      config_error
+#   fi
 }
 
 server_key_match()
@@ -517,6 +519,12 @@ sub_info_get()
 #分别获取订阅信息进行处理
 config_load "openclash"
 config_foreach sub_info_get "config_subscribe" "$1"
+
+###### Harly.He@gmail.com added the following lines 27/11/2025 11:23 AM #####{{
+/etc/init.d/openclash restart
+sleep 3
+#############################################################################}}
+
 uci -q delete openclash.config.config_update_path
 uci commit openclash
 
