@@ -5,7 +5,6 @@
 #*/1 * * * * /etc4444/subconverter/watchdog.subconverter.sh
 */1 * * * * /etc/subconverter.MetaCubeX/watchdog.subconverter.sh
 #*/1 * * * * /etc4444/subconverter.asdlokj1qpi233/watchdog.subconverter.sh
-1 2 * * * lua /usr/share/ttnode/main.lua
 0 0 * * 5 /usr/share/openclash/openclash_rule.sh
 0 0 * * 1 /usr/share/openclash/openclash_ipdb.sh
 0 0 * * 3 /usr/share/openclash/openclash_geosite.sh

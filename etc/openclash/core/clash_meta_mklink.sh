@@ -1,5 +1,5 @@
 #!/bin/bash
 
-target=./mihomo-linux-amd64-compatible-v1.19.12
+target=./mihomo-linux-amd64-compatible-v1.19.16
 chmod +x "${target}"
 ln -sf "${target}" clash_meta
