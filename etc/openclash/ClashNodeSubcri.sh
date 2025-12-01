@@ -129,10 +129,9 @@ for (( j=0; j<${subsSize}; j++ )); do
         singleton_clean_up 1
     fi
 
-    configFNameDotExtension=${arrSplit[1]}
-    # https://www.google.com/search?q=%24%7Bvar%23%23*%2F%7D&pws=0&gl=us&gws_rd=cr
-    configFNameDotExtension2=${configFNameDotExtension##*/}
-    configFName=(${configFNameDotExtension2//./ })
+    configFNameDotExtension=${split1}
+    # https://stackoverflow.com/questions/965053/extract-filename-and-extension-in-bash
+    configFName="${configFNameDotExtension%.*}"
     # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
     clashConfigNames[$j]=$(echo "${configFName}" | xargs)
 done
@@ -282,9 +281,8 @@ for (( j=0; j<${subsSize}; j++ )); do
         url_uhttpd=$(urlencode "${url}")
         url="${CONVERTER}/sub?target=clashr&url=${url_uhttpd}"
     fi
-    # https://www.google.com/search?q=%24%7Bvar%23%23*%2F%7D&pws=0&gl=us&gws_rd=cr
-    configFNameDotExtension2=${configFNameDotExtension##*/}
-    configFName=(${configFNameDotExtension2//./ })
+    # https://stackoverflow.com/questions/965053/extract-filename-and-extension-in-bash
+    configFName="${configFNameDotExtension%.*}"
     # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
     clashConfigNames[$j]=$(echo "${configFName}" | xargs)
     # https://stackoverflow.com/questions/525872/echo-tab-characters-in-bash-script
