@@ -54,6 +54,16 @@ tee_echo "Begin: $(date +%Y%m%d_%H%M%S)"
 ###############################################################################
 ## 检查系统的完备性 ###########################################################
 ###############################################################################
+if ! command -v yq &>/dev/null; then
+    tee_echo "\tThe YAML command-line tool yq is not installed on the system."
+    singleton_clean_up 1
+fi
+
+if [ ! -d "${DIR0}/loop6.bak" ]; then
+    tee_echo "\tFolder \"${DIR0}/loop6.bak\" not found!"
+    singleton_clean_up 1
+fi
+
 if [ ! -f "${DIR0}/ClashNodeSubcri.urls" ]; then
     tee_echo "\tFile \"${DIR0}/ClashNodeSubcri.urls\" not found!"
     singleton_clean_up 1
@@ -174,6 +184,9 @@ unset arrSpeedTestResult; unset speedSize
 ## 最多尝试5次，把所订阅的原始的数据下载到本地${DATA_DIR}/original ############
 ###############################################################################
 # https://stackoverflow.com/questions/62021429/why-does-command-line-rm-not-accept-quotation-marks-for-directories-with-spaces
+if [ -f "${DIR0}/ClashNodeSubcri.loop"6 ]; then
+    mv -f "${DIR0}/ClashNodeSubcri.loop"6 "${DIR0}/loop6.bak/ClashNodeSubcri.loop6.$(date +%Y%m%d_%H%M%S)" &> /dev/null
+fi
 rm -f "${DIR0}/ClashNodeSubcri.loop"? > /dev/null 2>&1
 cp -f "${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.loop1"
 rm "${DIR0}/ClashNodeSubcri.127.urls" > /dev/null 2>&1
@@ -324,7 +337,7 @@ cp -f "${DIR0}/ClashNodeSubcri.cfg" "/etc/config/openclash"
 
 
 ###############################################################################
-## 打包多余的config openclash文件。外头只留十个 ###############################
+## 打包多余的config openclash文件。外头只留5个 ###############################
 ###############################################################################
 if [ -f "/etc/config/openclash.backup.tar.gz" ]; then
     gzip -d "/etc/config/openclash.backup.tar.gz"
