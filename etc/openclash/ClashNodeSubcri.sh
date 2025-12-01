@@ -150,7 +150,7 @@ unset clashConfigNames
 ###############################################################################
 ## 如果连内网都已宕机，那么就取消此次的订阅 ###################################
 ###############################################################################
-readarray -t arrSpeedTestResult < <( wget -p -O/dev/null "http://www.baidu.com" --dns-timeout=10 --connect-timeout=10 --read-timeout=10 --tries=3 --waitretry=4 2>&1 | grep -o "[0-9.]\\+ [KM]*B/s" )
+readarray -t arrSpeedTestResult < <( wget --no-check-certificate -p -O/dev/null "http://www.baidu.com" --dns-timeout=10 --connect-timeout=10 --read-timeout=10 --tries=3 --waitretry=4 2>&1 | grep -o "[0-9.]\\+ [KM]*B/s" )
 speedSize=${#arrSpeedTestResult[@]}
 if (( speedSize <= 0 )); then
     tee_echo "\tThe Baidu is NOT available. Exit this time."
@@ -162,7 +162,7 @@ unset arrSpeedTestResult; unset speedSize
 #    ###############################################################################
 #    ## 如果外网尚且可用，那么就取消此次的订阅 #####################################
 #    ###############################################################################
-#    readarray -t arrSpeedTestResult < <( wget -p -O/dev/null "http://www.youtube.com" --dns-timeout=10 --connect-timeout=10 --read-timeout=10 --tries=3 --waitretry=4 2>&1 | grep -o "[0-9.]\\+ [KM]*B/s" )
+#    readarray -t arrSpeedTestResult < <( wget --no-check-certificate -p -O/dev/null "http://www.youtube.com" --dns-timeout=10 --connect-timeout=10 --read-timeout=10 --tries=3 --waitretry=4 2>&1 | grep -o "[0-9.]\\+ [KM]*B/s" )
 #    speedSize=${#arrSpeedTestResult[@]}
 #    if [[ 0 < ${speedSize} ]]; then
 #        tee_echo "\tThe Youtube is still available. Exit this time."
@@ -195,12 +195,12 @@ for (( i=1; i<=5; i++ )); do
         url=$(echo "${arrSplit[0]}" | xargs)
         fname=$(echo "${arrSplit[1]}" | xargs)
 
-        if ! wget --spider "${url}" 2>/dev/null; then
+        if ! wget --no-check-certificate --spider "${url}" 2>/dev/null; then
             echo ${url},${fname} >> "${DIR0}/ClashNodeSubcri.loop$j"
             continue
         fi
 
-        wget --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=5 "${url}" -O"${DATA_DIR}/original/${fname}.tmp"
+        wget --no-check-certificate --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=5 "${url}" -O"${DATA_DIR}/original/${fname}.tmp"
         if ! [[ $? -eq 0 && -f "${DATA_DIR}/original/${fname}.tmp" ]]; then
             echo ${url},${fname} >> "${DIR0}/ClashNodeSubcri.loop$j"
             continue
