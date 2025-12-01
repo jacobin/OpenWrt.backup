@@ -243,14 +243,20 @@ for subscri in "${arrSubscri[@]}"; do
     fname=${arrSplit[1]}
     operation="ln"
     assert_true "[ -f \"${DATA_DIR}/original/${fname}\" ]" "File \"${DATA_DIR}/original/${fname}\" that should exist does not exist"
-    if base64 --decode --ignore-garbage "${DATA_DIR}/original/${fname}" &>/dev/null; then
-        ln -sf "${DATA_DIR}/original/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
-    else
-        if ! [[ "${fname}" == *.yaml || "${fname}" == *.yml ]]; then
-            base64 -w0 "${DATA_DIR}/original/${fname}" > "${DATA_DIR}/pass2subconverter/${fname}"
-            operation="base64"
+    if base64 --decode --ignore-garbage "${DATA_DIR}/original/${fname}" > "${DATA_DIR}/original/${fname}.base64decode.result" 2>/dev/null; then
+        # https://fabianlee.org/2024/06/22/yq-validate-yaml-syntax
+        if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/original/${fname}.base64decode.result" &>/dev/null; then
+            ln -sf "${DATA_DIR}/original/${fname}.base64decode.result" "${DATA_DIR}/pass2subconverter/${fname}"
         else
             ln -sf "${DATA_DIR}/original/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
+        fi
+    else
+        rm "${DATA_DIR}/original/${fname}.base64decode.result" > /dev/null 2>&1
+        if [[ "${fname}" == *.yaml || "${fname}" == *.yml ]] || yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/original/${fname}" &>/dev/null; then
+            ln -sf "${DATA_DIR}/original/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
+        else
+            base64 -w0 "${DATA_DIR}/original/${fname}" > "${DATA_DIR}/pass2subconverter/${fname}"
+            operation="base64"
         fi
     fi
     assert_true "[[ $? -eq 0 ]]" "Operation \"${operation}\" on file \"${DATA_DIR}/original/${fname}\" failed"
