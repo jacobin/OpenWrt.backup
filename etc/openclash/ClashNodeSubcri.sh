@@ -261,6 +261,7 @@ for subscri in "${arrSubscri[@]}"; do
         if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/original/${fname}.base64decode.result" &>/dev/null; then
             ln -sf "${DATA_DIR}/original/${fname}.base64decode.result" "${DATA_DIR}/pass2subconverter/${fname}"
         else
+            rm "${DATA_DIR}/original/${fname}.base64decode.result" > /dev/null 2>&1
             ln -sf "${DATA_DIR}/original/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
         fi
     else
