@@ -212,7 +212,7 @@ for (( i=1; i<=5; i++ )); do
             continue
         fi
 
-        wget --no-check-certificate --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=5 "${url}" -O"${DATA_DIR}/original/${fname}.tmp"
+        wget --no-check-certificate --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=2 "${url}" -O"${DATA_DIR}/original/${fname}.tmp"
         if ! [[ $? -eq 0 && -f "${DATA_DIR}/original/${fname}.tmp" ]]; then
             echo ${url},${fname} >> "${DIR0}/ClashNodeSubcri.loop$j"
             continue
