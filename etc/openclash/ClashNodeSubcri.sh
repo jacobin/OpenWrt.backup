@@ -342,7 +342,7 @@ cp -f "${DIR0}/ClashNodeSubcri.cfg" "/etc/config/openclash"
 ## 打包多余的config openclash文件。外头只留5个 ###############################
 ###############################################################################
 tar_old_files "/etc/config/openclash.backup" "/etc/config/openclash.2*" 5
-tar_old_files "/etc/openclash/yaml" "/etc/openclash/*.yaml" 2
+tar_old_files "/etc/openclash/yamls" "/etc/openclash/*.yaml" 2
 tar_old_files "/etc/openclash/wget.log" "/etc/openclash/wget-log*" 1
 
 
@@ -527,10 +527,12 @@ function tar_old_files() {
         rm_command_string="${rm_command_string} \"${arrOpenclashConfigBakup[$j]}\""
     done
 
-    eval "$tar_command_string"
-    eval "$rm_command_string"
-    gzip "${tarFPath}.tar"
-    assert_true "[[ -f \"${tarFPath}.tar.gz\" && ! -f \"${tarFPath}.tar\" ]]" "Compressed file \"${tarFPath}.tar\" failed."
+    if (( nReserve < bakSize )); then
+        eval "$tar_command_string"
+        eval "$rm_command_string"
+        gzip "${tarFPath}.tar"
+        assert_true "[[ -f \"${tarFPath}.tar.gz\" && ! -f \"${tarFPath}.tar\" ]]" "Compressed file \"${tarFPath}.tar\" failed."
+    fi
 }
 
 
