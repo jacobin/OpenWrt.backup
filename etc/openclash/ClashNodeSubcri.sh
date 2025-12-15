@@ -186,7 +186,7 @@ unset arrSpeedTestResult; unset speedSize
 # https://stackoverflow.com/questions/62021429/why-does-command-line-rm-not-accept-quotation-marks-for-directories-with-spaces
 if [ -f "${DIR0}/ClashNodeSubcri.loop"6 ]; then
     mv -f "${DIR0}/ClashNodeSubcri.loop"6 "${DIR0}/loop6.bak/ClashNodeSubcri.loop6.$(date +%Y%m%d_%H%M%S)" &> /dev/null
-    tar_old_files "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6" "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6"
+    tar_old_files "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6" "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6.2*" 5
 fi
 rm -f "${DIR0}/ClashNodeSubcri.loop"? > /dev/null 2>&1
 cp -f "${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.loop1"
@@ -341,7 +341,9 @@ cp -f "${DIR0}/ClashNodeSubcri.cfg" "/etc/config/openclash"
 ###############################################################################
 ## 打包多余的config openclash文件。外头只留5个 ###############################
 ###############################################################################
-tar_old_files "/etc/config/openclash.backup" "/etc/config/openclash.2"
+tar_old_files "/etc/config/openclash.backup" "/etc/config/openclash.2*" 5
+tar_old_files "/etc/openclash/yaml" "/etc/openclash/*.yaml" 2
+tar_old_files "/etc/openclash/wget.log" "/etc/openclash/wget-log*" 1
 
 
 ###############################################################################
@@ -501,7 +503,10 @@ function tee_echo() {
 function tar_old_files() {
     # https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
     tarFPath=$(echo "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    prefixFPath2tar=$(echo "$2" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    targetFPathMatchingPattern=$(echo "$2" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    nReserve=$(echo "$3" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+    # It must be ensured that "tarFPath" is not in the pattern matching of "targetFPathMatchingPattern"
 
     if [ -f "${tarFPath}.tar.gz" ]; then
         gzip -d "${tarFPath}.tar.gz"
@@ -514,22 +519,12 @@ function tar_old_files() {
 
     tar_command_string="tar c -v -f \"${tarFPath}.tar\""
     rm_command_string="rm -f"
-    #useWildcardsForPathsContainingSpaces="/tmp/tmp 2/openclash.2"
-    useWildcardsForPathsContainingSpaces=${prefixFPath2tar}
-    # https://stackoverflow.com/questions/6897190/problem-listing-files-in-bash-with-spaces-in-directory-path?rq=3
-    useWildcardsForPathsContainingSpacesEscaped=`echo "$useWildcardsForPathsContainingSpaces" | sed 's/[[:space:]]/\[[:space:]]/g'`
-    readarray -t arrOpenclashConfigBakup < <(ls -v -1 ${useWildcardsForPathsContainingSpacesEscaped}*)
-    n=${#useWildcardsForPathsContainingSpaces}  # Number of characters to compare
+    readarray -t arrOpenclashConfigBakup < <(ls -t -r -1 ${targetFPathMatchingPattern})
     bakSize=${#arrOpenclashConfigBakup[@]}
-    for (( j=0; j<bakSize-5; j++ )); do
-        thisOldConfig=${arrOpenclashConfigBakup[$j]}
-        # https://www.google.com/search?q=bash+string+compare+n+characters&pws=0&gl=us&gws_rd=cr
-        substring="${thisOldConfig:0:n}"
+    for (( j=0; j<bakSize-nReserve; j++ )); do
         # https://www.google.com/search?q=bash+string+equa+ignore+case&pws=0&gl=us&gws_rd=cr
-        if [[ "${substring,,}" == "${useWildcardsForPathsContainingSpaces,,}" ]]; then
-            tar_command_string="${tar_command_string} \"${arrOpenclashConfigBakup[$j]}\""
-            rm_command_string="${rm_command_string} \"${arrOpenclashConfigBakup[$j]}\""
-        fi
+        tar_command_string="${tar_command_string} \"${arrOpenclashConfigBakup[$j]}\""
+        rm_command_string="${rm_command_string} \"${arrOpenclashConfigBakup[$j]}\""
     done
 
     eval "$tar_command_string"
