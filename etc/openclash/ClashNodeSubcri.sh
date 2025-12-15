@@ -342,7 +342,7 @@ cp -f "${DIR0}/ClashNodeSubcri.cfg" "/etc/config/openclash"
 ## 打包多余的config openclash文件。外头只留5个 ###############################
 ###############################################################################
 tar_old_files "/etc/config/openclash.backup" "/etc/config/openclash.2*" 5
-tar_old_files "/etc/openclash/yaml" "/etc/openclash/*.yaml" 2
+tar_old_files "/etc/openclash/yamls" "/etc/openclash/*.yaml" 2
 tar_old_files "/etc/openclash/wget.log" "/etc/openclash/wget-log*" 1
 
 
