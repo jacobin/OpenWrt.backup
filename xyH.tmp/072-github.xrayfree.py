@@ -6,6 +6,7 @@ import logging
 import getopt
 import sys
 import os
+import re
 
 ###############################################################################
 ##### Evolved to using sessions instead of requests ###########################
@@ -121,13 +122,14 @@ def main():
         MyPrintErr(f"The response.status.code of webpage \"{input_url}\" return {response.status_code}.")
 
     soup=BeautifulSoup(response.text, 'html.parser')
-    v2rayNodes=soup.find( "div", class_="snippet-clipboard-content notranslate position-relative overflow-auto" )
+    # <p dir="auto"><a href="https://www.xrayvip.com/free.yaml" rel="nofollow">https://www.xrayvip.com/free.yaml</a></p>
+    v2rayNodes=soup.find( "a", string=re.compile("https://.*\.yaml") )
     if not v2rayNodes:
-        MyPrintErr("The tag\{\"div\", class_=\"snippet-clipboard-content notranslate position-relative overflow-auto\"\} NOT exists.")
+        MyPrintErr("The tag(\"a\", string=re.compile(\"https://.*\.yaml\") ) NOT exists.")
 
-    nodesInfo=v2rayNodes['data-snippet-clipboard-copy-content']
+    nodesInfo=v2rayNodes['href']
     if not nodesInfo:
-        MyPrintErr("v2rayNodes[\'data-snippet-clipboard-copy-content\'] not exists.")
+        MyPrintErr("v2rayNodes[\'href\'] not exists.")
 
     f=open(output_nodes_file, 'w')
     print(nodesInfo,file=f)

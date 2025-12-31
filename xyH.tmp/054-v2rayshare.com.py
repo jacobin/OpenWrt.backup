@@ -1,11 +1,14 @@
 ###############################################################################
-# https://zhuanlan.zhihu.com/p/546788844
 from bs4 import BeautifulSoup
 from datetime import datetime
-import logging
-import getopt
-import sys
 import os
+import re
+import sys
+import time
+import html
+import getopt
+import logging
+import os.path
 
 ###############################################################################
 ##### Evolved to using sessions instead of requests ###########################
@@ -29,21 +32,6 @@ def MyPrintWarning(s):
     logging.warning(s)
 
 ###############################################################################
-# https://www.google.com/search?q=python+print+to+tee
-class Tee:
-    def __init__(self, *files):
-        self.files = files
-
-    def write(self, text):
-        for f in self.files:
-            f.write(text)
-            f.flush() # Ensure real-time output
-
-    def flush(self):
-        for f in self.files:
-            f.flush()
-
-###############################################################################
 def main():
 
     #/////////////////////////////getopt//////// {{
@@ -54,6 +42,7 @@ def main():
         opts, args = getopt.getopt(sys.argv[1:], short_options, long_options)
     except getopt.GetoptError as err:
         MyPrintErr(str(err))
+        sys.exit(1)
 
     input_url = ""
     output_nodes_file = ""
@@ -75,13 +64,14 @@ def main():
         MyPrintWarning(f"Remaining arguments: {args}")
     #/////////////////////////////getopt//////// }}
 
-    ###############################################
-    # check the inputs
+    #### check the inputs #########################
     if not input_url:
         MyPrintErr("The relevant URL address must be specified.")
+        sys.exit(2)
 
-    if os.path.exists(output_nodes_file):
-        MyPrintErr(f"The specified node list file \"{output_nodes_file}\" already exists and cannot continue. Please handle this files beforehand.")
+    if os.path.exists(output_url_list_file):
+        MyPrintErr(f"The specified link list file \"{output_url_list_file}\" already exists and cannot continue. Please handle these two files beforehand.")
+        sys.exit(3)
 
     #### retry_strategy ###########################
     # Configure retry strategy
@@ -101,8 +91,8 @@ def main():
     # The User-Agent header is commonly set to mimic a web browser
     custom_headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Authorization': 'Bearer <your_token_here>'
+        'Accept-Language': 'en-US,en;q=0.9', # Simulate Language
+        'Authorization': 'Bearer <your_token_here>' # Sometimes a Referer header is needed to avoid being perceived as a direct request.
     }
 
     #### session ##################################
@@ -115,24 +105,28 @@ def main():
     session.mount('https://', adapter)
 
     #### session get, similar to requests GET #####
-    #url="https://github.com/githubvpn007/v2rayNvpn"
     response = session.get(input_url, timeout=5)
-    if response.status_code != 200:
-        MyPrintErr(f"The response.status.code of webpage \"{input_url}\" return {response.status_code}.")
+    html_content = response.content
+    soup = BeautifulSoup(html_content, 'html.parser')
+    LastestClashNodeLink=soup.find('a', title=re.compile("日」\d{4}年最新高速"))
+    if not LastestClashNodeLink:
+        MyPrintErr("The secondary link address cannot be found on the homepage.")
+        sys.exit(4)
+    time.sleep(1.5) # Pauses for 1.5 seconds
 
-    soup=BeautifulSoup(response.text, 'html.parser')
-    v2rayNodes=soup.find( "div", class_="snippet-clipboard-content notranslate position-relative overflow-auto" )
-    if not v2rayNodes:
-        MyPrintErr("The tag\{\"div\", class_=\"snippet-clipboard-content notranslate position-relative overflow-auto\"\} NOT exists.")
+    LastestClashNodeLink2=LastestClashNodeLink['href']
 
-    nodesInfo=v2rayNodes['data-snippet-clipboard-copy-content']
-    if not nodesInfo:
-        MyPrintErr("v2rayNodes[\'data-snippet-clipboard-copy-content\'] not exists.")
-
-    f=open(output_nodes_file, 'w')
-    print(nodesInfo,file=f)
+    # The 1st task was completed; the link address was extracted.
+    response = session.get(LastestClashNodeLink2, timeout=5)
+    html_content = response.content
+    soup = BeautifulSoup(html_content, 'html.parser')
+    tagYaml=soup.find('p', string=re.compile("v2rayshare.githubrowcontent.com/\d{4}/\d{2}/\d{4}\d{2}\d{2}.yaml"))
+    if not tagYaml:
+        MyPrintErr("The expected link \"v2rayshare.githubrowcontent.com/\d{4}/\d{2}/\d{4}\d{2}\d{2}.yaml\" was not found.")
+        sys.exit(5)
+    f = open(output_url_list_file, 'w')
+    print(tagYaml.get_text(),file=f)
     f.close()
-    session.close()
 
 ###############################################################################
 if __name__ == '__main__':

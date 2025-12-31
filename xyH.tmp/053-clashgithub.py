@@ -1,5 +1,6 @@
 ###############################################################################
 from bs4 import BeautifulSoup
+from datetime import datetime
 import os
 import re
 import sys
@@ -10,21 +11,25 @@ import logging
 import os.path
 
 ###############################################################################
+##### Evolved to using sessions instead of requests ###########################
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 ###############################################################################
-def MyPrintErr(str):
-    assert str
-    print(str,file=sys.stderr)
-    logging.error(str)
+def MyPrintErr(s):
+    assert s
+    now_time_string = str(datetime.now())
+    print(now_time_string+' '+s, file=sys.stderr)
+    logging.error(s)
+    sys.exit(1)
 
 ###############################################################################
-def MyPrintWarning(str):
-    assert str
-    print(str,file=sys.stderr)
-    logging.warning(str)
+def MyPrintWarning(s):
+    assert s
+    now_time_string = str(datetime.now())
+    print(now_time_string+' '+s,file=sys.stderr)
+    logging.warning(s)
 
 ###############################################################################
 def cfDecodeEmail(encodedString):
@@ -150,6 +155,9 @@ def main():
     html_content = response.content
     soup = BeautifulSoup(html_content, 'html.parser')
     tagYaml=soup.find(string=re.compile("\d{4}\d{2}\d{2}.yml"))
+    if not tagYaml:
+        MyPrintErr("The expected link \"v2rayshare.githubrowcontent.com/\d{4}/\d{2}/\d{4}\d{2}\d{2}.yaml\" was not found.")
+        sys.exit(5)
     f = open(output_url_list_file, 'w')
     print(tagYaml,file=f)
     f.close()
@@ -197,7 +205,20 @@ def main():
 ###############################################################################
 if __name__ == '__main__':
     current_filename = os.path.basename(__file__)
+
     logging.basicConfig(filename=f'{current_filename}.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+    #### Tee assist ################ {{
+    # https://www.google.com/search?q=python+print+to+tee
+    # Save the original standard error and open a new log file to track only errors.
+    save_original_stderr = sys.stderr #  sys.__stderr__
+    errlog_file = open(f'{current_filename}.track.err', 'w')
+    # Redirect sys.stderr to the Tee class
+    sys.stderr = Tee(save_original_stderr, errlog_file)
+    ################################ }}
+    # Data Stream:
+    #    Python --> MyPrintErr --> { stderr --> Tee[save_stderr/original_stderr, errlog_file], logging }
+
     main()
 
 ################################## END ########################################

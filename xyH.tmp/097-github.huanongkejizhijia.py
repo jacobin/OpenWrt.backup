@@ -6,6 +6,7 @@ import logging
 import getopt
 import sys
 import os
+import re
 
 ###############################################################################
 ##### Evolved to using sessions instead of requests ###########################
@@ -115,19 +116,19 @@ def main():
     session.mount('https://', adapter)
 
     #### session get, similar to requests GET #####
-    #url="https://github.com/githubvpn007/v2rayNvpn"
     response = session.get(input_url, timeout=5)
     if response.status_code != 200:
         MyPrintErr(f"The response.status.code of webpage \"{input_url}\" return {response.status_code}.")
 
     soup=BeautifulSoup(response.text, 'html.parser')
-    v2rayNodes=soup.find( "div", class_="snippet-clipboard-content notranslate position-relative overflow-auto" )
+    # <p dir="auto"><a href="https://clashnode.com/wp-content/uploads/2023/07/20230708.yaml" rel="nofollow">https://clashnode.com/wp-content/uploads/2023/07/20230708.yaml</a></p>
+    v2rayNodes=soup.find("a", href=re.compile("https://clashnode\.com/wp-content/uploads/\d{4}/\d{2}/\d{4}\d{2}\d{2}.yaml"))
     if not v2rayNodes:
-        MyPrintErr("The tag\{\"div\", class_=\"snippet-clipboard-content notranslate position-relative overflow-auto\"\} NOT exists.")
+        MyPrintErr("The tag (\"a\", href=re.compile(\"https://clashnode.com/wp-content/uploads/\d{4}/\d{2}/\d{4}\d{2}\d{2}.yaml\")) NOT exists.")
 
-    nodesInfo=v2rayNodes['data-snippet-clipboard-copy-content']
+    nodesInfo=v2rayNodes['href']
     if not nodesInfo:
-        MyPrintErr("v2rayNodes[\'data-snippet-clipboard-copy-content\'] not exists.")
+        MyPrintErr("v2rayNodes[\'href\'] fail.")
 
     f=open(output_nodes_file, 'w')
     print(nodesInfo,file=f)
