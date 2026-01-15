@@ -8,11 +8,27 @@ Vivamus nec <a class="someLink" href="example.com">arcu</a> erat. <br>
 </div>
 """
 
+print( "++++++++++++++++++case 1-----------------")
+soup = BeautifulSoup(html_doc, 'html.parser')
+
+# Now, get the text of the div
+text = soup.get_text()
+print(text)
+
+print( "++++++++++++++++++case 2-----------------")
 soup = BeautifulSoup(html_doc, 'html.parser')
 
 # Replace <br> tags with '\n'
 for br in soup.find_all('br'):
     br.replace_with('\n')
+
+# Now, get the text of the div
+text = soup.get_text(separator="\n", strip=True)
+print(text)
+
+
+print( "++++++++++++++++++case 3-----------------")
+soup = BeautifulSoup(html_doc, 'html.parser')
 
 # Now, get the text of the div
 text = soup.get_text(separator="\n", strip=True)

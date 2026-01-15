@@ -29,6 +29,8 @@ import sys
 import tempfile
 import time
 import urllib.parse
+import zipfile
+
 
 ###############################################################################
 def main():
@@ -36,84 +38,150 @@ def main():
     __func__ = inspect.currentframe().f_code.co_name
     __script_name__ = os.path.basename(__file__)
 
-    #### Parameter preparation via getopt ###### {{
+
+    #### Global variables that are referenced #############################
+    global TELEGRAM_URLs
+    global SUPPORTED_FANQIANG_PROTOCALs
+    global PRESENT_DNSs
+    global IPV6ADDR
+    global GEO_DB_PATH
+
+
+    #{{{ Parameter preparation via getopt {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ {{
     bRedownload = False
     sDnsServer = '8.8.8.8'
-    nMaximumEffectiveMinutes = 60
+    nDnsMaxSurvivalMinutes = 30
 
     argv = sys.argv[1:]
     try:
-        opts, args = getopt.getopt(argv, "hrd:m:", ["help", "redownload", "dnsserver=", "effectiveminutes"])
+        opts, args = getopt.getopt(argv, "hrd:g:t:", ["help", "redownload", "dnsserver", "geo_db_path", "dns_max_survival_minutes" ])
 
     except getopt.GetoptError:
-        print(f'Usage: {__script_name__} -r<redownload> -d <dnsserver> -m <effectiveminutes>')
+        print(f'Usage: {__script_name__} -r<redownload> -d <dnsserver> -g <geo_db_path> -t <dns_max_survival_minutes>')
         sys.exit(2)
 
     for opt, arg in opts:
         if opt in ("-h", "--help"):
-            print(f'Usage: {__script_name__} -r<redownload> -d <dnsserver> -m <effectiveminutes>')
+            print(f'Usage: {__script_name__} -r<redownload> -d <dnsserver> -g <geo_db_path> -t <dns_max_survival_minutes>')
             sys.exit()
         elif opt in ("-r", "--redownload"):
             bRedownload = True
         elif opt in ("-d", "--dnsserver"):
             sDnsServer = arg
-        elif opt in ("-m", "--effectiveminutes"):
-            nMaximumEffectiveMinutes = arg
+        elif opt in ("-g", "--geo_db_path"):
+            GEO_DB_PATH = arg
+        elif opt in ("-t", "--dns_max_survival_minutes"):
+            nDnsMaxSurvivalMinutes = arg
         else:
-            print(f'Usage: {__script_name__} -r<redownload> -d <dnsserver> -m <effectiveminutes>')
+            print(f'Usage: {__script_name__} -r<redownload> -d <dnsserver> -g <geo_db_path> -t <dns_max_survival_minutes>')
             sys.exit(3)
-    #------------------------------------------- }}
+    #}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}} }}
 
-    #### global variable ##################################################
-    global TELEGRAM_URLs
-    global SUPPORTED_FANQIANG_PROTOCALs
-    global PRESENT_DNSs
+    if not is_valid_ip( sDnsServer ):
+        print( f"The specified dnsserver parameter '{sDnsServer}' is not an IP address." )
+        sys.exit(4)
+
+    if not nDnsMaxSurvivalMinutes.isnumeric():
+        print( f"The specified dns_max_survival_minutes parameter '{nDnsMaxSurvivalMinutes}' is not a number." )
+        sys.exit(5)
+
+    if not os.path.exists(GEO_DB_PATH):
+        print( f"The specified IP map file '{GEO_DB_PATH}' does not exist." )
+        sys.exit(6)
+
 
     #### Preparation of environment variables 2 ###
     __script_dir__ = Path(__file__).resolve().parent
-    __web_download_dir__ = f"{__script_dir__}/Epodonios/bulk"
+    __web_download_dir__ = f"{__script_dir__}/Epodonios/downloads"
+    __Ford_assembly_line__ = f"{__script_dir__}/Epodonios/Fordline"
+    F = f"{__Ford_assembly_line__}/"
+    __timestamp_str__ = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
 
     #### Redirect print to logfile ########################################
     original_stdout = sys.stdout
     log_file = open(f'{__script_name__}.log', 'a', encoding='utf-8')
     sys.stdout = Tee(original_stdout, log_file)
 
+
     #### Check system environment #########################################
+    bFirstRun = False
     if not os.path.exists(__web_download_dir__):
+        bFirstRun = True
         os.makedirs(__web_download_dir__)
     if not Path(__web_download_dir__).exists():
         print(f"{__func__}(): Folder '{__web_download_dir__}' dose NOT exist.")
-        sys.exit(4)
+        sys.exit(7)
+    #----------------------------------------------------------------------
+    if not os.path.exists(__Ford_assembly_line__):
+        bFirstRun = True
+        os.makedirs(__Ford_assembly_line__)
+    if not Path(__Ford_assembly_line__).exists():
+        print(f"{__func__}(): Folder '{__Ford_assembly_line__}' dose NOT exist.")
+        sys.exit(8)
+
+
+    #### Backup the history data ##########################################
+    if not bFirstRun:
+        temp_dir = tempfile.gettempdir()
+        zip_root_dir = f"{temp_dir}/Epodonios{__timestamp_str__}"
+        assert not os.path.exists( zip_root_dir )
+        os.makedirs( zip_root_dir )
+
+        src = f"{__script_dir__}/Epodonios"
+        dst_parent = zip_root_dir # e.g., destination_folder
+        dst = os.path.join(dst_parent, __timestamp_str__)
+        shutil.copytree(src, dst) # This will create destination_folder/source_folder
+
+        backupzip = f"{__script_dir__}/BackupEpodonios.zip"
+        if os.path.exists( backupzip ):
+            with zipfile.ZipFile( backupzip, 'r' ) as zip_ref:
+                zip_ref.extractall( zip_root_dir )
+
+        create_zip_from_folder( zip_root_dir, backupzip )
+
+        assert os.path.exists( zip_root_dir ) and os.path.isdir( zip_root_dir )
+        try:
+            shutil.rmtree( zip_root_dir )
+        except Exception as e:
+            print( f"Deleting directory '{zip_root_dir}' failed: {e}" )
+            sys.exit(9)
 
     #### Do you want to skip the download? ################################
     if bRedownload:
-        download(TELEGRAM_URLs, __web_download_dir__, "list_downloaded_file.txt")
-        now = datetime.now()
-        timestamp_str = now.strftime("%Y-%m-%d_%H-%M-%S")
-        filter_acceptable_files( "list_downloaded_file.txt", "accept_file.txt", f"dead_link_{timestamp_str}.txt", 7 )
+        download(TELEGRAM_URLs, __web_download_dir__, f"{F}a.list_downloaded_file.txt")
+        filter_acceptable_files( f"{F}a.list_downloaded_file.txt", f"{F}b.accept_file.txt", f"{F}c.dead_link.txt", 7 )
+
+    if not os.path.exists(f"{F}b.accept_file.txt"):
+        print("Please use the -r option to download first.")
+        sys.exit(10)
+
 
     #### extract all the v2ray links ######################################
     all_v2ray_configs = []
-    with open( "accept_file.txt", "r", encoding='utf-8' ) as f:
+    with open( f"{F}b.accept_file.txt", "r", encoding='utf-8' ) as f:
         for htmlfpath in f:
             v2ray_configs = extract_all_v2ray_links( htmlfpath.strip(), 365, SUPPORTED_FANQIANG_PROTOCALs )
             if v2ray_configs:
                 all_v2ray_configs.extend( v2ray_configs )
 
+
     #### dump all the v2ray configs to file ###############################
-    with open("bulk-xray.txt", 'w', encoding="utf-8") as f:
+    with open(f"{F}1.data_incomplete.txt", 'w', encoding="utf-8") as f:
         f.writelines("\n\n\n\n\n".join(all_v2ray_configs))
+
 
     #### Filter out all lines that do not begin with .*:// ################
     all_double_fslash = re.compile(".*://.*")
-    with open("bulk-xray.txt", 'r', encoding='utf-8') as f, open("bulk-xray2.txt", 'w', encoding='utf-8') as f2:
+    with open(f"{F}1.data_incomplete.txt", 'r', encoding='utf-8') as f, open(f"{F}2.data_incomplete.txt", 'w', encoding='utf-8') as f2:
         for line in f:
             cleaned_line = line.strip()
             if all_double_fslash.match(cleaned_line):
                 f2.write(cleaned_line + "\n")
 
+
     #### Split a row containing information about multiple nodes into rows where each node occupies a separate row.
-    with open("bulk-xray2.txt", 'r', encoding='utf-8') as f, open("bulk-xray3.txt", 'w', encoding='utf-8') as f2:
+    with open(f"{F}2.data_incomplete.txt", 'r', encoding='utf-8') as f, open(f"{F}3.data_incomplete.txt", 'w', encoding='utf-8') as f2:
         for line in f:
             protocals = copy.deepcopy( SUPPORTED_FANQIANG_PROTOCALs )
             protocals.append( "http://" )
@@ -121,11 +189,14 @@ def main():
             nodes = split_nodes( line, protocals )
             f2.writelines( "\n".join( nodes ) )
 
-    sort_and_unique_file_lines("bulk-xray3.txt", "bulk-xray4.txt")
 
-    remove_unsupported_protocols("bulk-xray4.txt", "bulk-xray5.txt", SUPPORTED_FANQIANG_PROTOCALs )
+    sort_and_unique_file_lines(f"{F}3.data_incomplete.txt", f"{F}4.data_incomplete.txt")
 
-    with open("bulk-xray5.txt", 'r', encoding='utf-8') as f, open("bulk-xray6.txt", 'w', encoding='utf-8') as f2, open("urls_where_host_extraction_failed.txt", 'w', encoding='utf-8') as f3:
+
+    remove_unsupported_protocols(f"{F}4.data_incomplete.txt", f"{F}5.data_incomplete.txt", SUPPORTED_FANQIANG_PROTOCALs )
+
+
+    with open(f"{F}5.data_incomplete.txt", 'r', encoding='utf-8') as f, open(f"{F}6.data_incomplete.txt", 'w', encoding='utf-8') as f2, open(f"{F}d.urls_where_host_extraction_failed.txt", 'w', encoding='utf-8') as f3:
         for url in f:
             # host
             url = url.strip()
@@ -142,12 +213,12 @@ def main():
             totalstring=f"{host},{url}"
             f2.write(totalstring + '\n')
 
-    f = open_file_to_read_if_recent('present_dns.json', 1)
+    f = open_file_to_read_if_recent('present_dns.json', nDnsMaxSurvivalMinutes)
     if f:
         PRESENT_DNSs = json.load(f)
         f.close
 
-    with open("bulk-xray6.txt", 'r', encoding='utf-8') as f, open("bulk-xray7.txt", 'w', encoding='utf-8') as f2:
+    with open(f"{F}6.data_incomplete.txt", 'r', encoding='utf-8') as f, open(f"{F}7.data_incomplete.txt", 'w', encoding='utf-8') as f2:
         for l in f:
             l=l.strip()
             domain, _, url = l.partition(",")
@@ -168,14 +239,14 @@ def main():
             # countryName
             countryName='NonExistentCountry'
             if 'UnableToObtain' != ip:
-                countryName2 = get_region_from_ip(ip)
+                countryName2 = get_region_from_ip( ip, GEO_DB_PATH )
                 if countryName2:
                     countryName = countryName2
 
             f2.write(f"{countryName},{url}\n")
 
     all_v2ray_configs = []
-    with open("bulk-xray7.txt", 'r', encoding='utf-8') as f:
+    with open(f"{F}7.data_incomplete.txt", 'r', encoding='utf-8') as f:
         all_v2ray_configs = f.readlines()
 
     if all_v2ray_configs:
@@ -196,7 +267,7 @@ def main():
 ###############################################################################
 ###############################################################################
 # format of list_downloaded_fpath: url, downloaded_tmpfile, downloaded_oldfile
-def download(telegram_urls, web_download_folder, list_downloaded_fpath):
+def download( telegram_urls, web_download_folder, list_downloaded_fpath ):
         __func__ = inspect.currentframe().f_code.co_name
 
         telegram_urls = copy.deepcopy(telegram_urls)
@@ -264,8 +335,6 @@ def download(telegram_urls, web_download_folder, list_downloaded_fpath):
 ###############################################################################
 def filter_acceptable_files( list_downloaded_fpath, list_accept_fpath, list_dead_links, no_changes_in_days ):
     now = datetime.now()
-    timestamp_str = now.strftime("%Y-%m-%d_%H-%M-%S")
-    #with open( "list_downloaded_file.txt", "r", encoding='utf-8') as f, open( "accept_file.txt", "w", encoding='utf-8' ) as f2, open( f"dead_link_{timestamp_str}.txt", "w", encoding='utf-8' ) as f3:
     with \
       open( list_downloaded_fpath, "r", encoding='utf-8') as f, \
       open( list_accept_fpath, "w", encoding='utf-8' ) as f2, \
@@ -309,7 +378,7 @@ def filter_acceptable_files( list_downloaded_fpath, list_accept_fpath, list_dead
                 f2.write(f"{oldFPath}\n")
 
 ###############################################################################
-def is_valid_ip(ip_string):
+def is_valid_ip( ip_string ):
     __func__ = inspect.currentframe().f_code.co_name
     try:
         ipaddress.ip_address(ip_string)
@@ -322,7 +391,7 @@ def is_valid_ip(ip_string):
 
 ###############################################################################
 # Performs a DNS A record lookup for a domain using a specified DNS server.
-def dns_lookup_with_specific_server(domain_name, dns_server_ip):
+def dns_lookup_with_specific_server( domain_name, dns_server_ip ):
     __func__ = inspect.currentframe().f_code.co_name
     # Create a custom resolver object
     my_resolver = dns.resolver.Resolver()
@@ -336,10 +405,16 @@ def dns_lookup_with_specific_server(domain_name, dns_server_ip):
         ip_addresses = [str(answer) for answer in answers]
         return ip_addresses
     except dns.resolver.LifetimeTimeout:
-        print(f"{__func__}(): Resolve '{domain_name}' error -- DNS server '{dns_server_ip}' timed out")
+        print(f"{__func__}(): Resolve '{domain_name}' exception -- DNS server '{dns_server_ip}' timed out.")
         return None
+    #except dns.resolver.NXDOMAIN as e:
+    #    print(f"{__func__}(): Resolve '{domain_name}' exception -- The DNS query name does not exist. Details: {e}")
+    #    return None
+    #except dns.resolver.NoNameservers as e:
+    #    print(f"{__func__}(): Resolve '{domain_name}' exception -- All nameservers failed to answer the query. Details: {e}")
+    #    return None
     except Exception as e:
-        print(f"{__func__}(): Resolve '{domain_name}' error during DNS resolution: {e}")
+        print(f"{__func__}(): Resolve '{domain_name}' exception. Details: {e}")
         return None
 
 ###############################################################################
@@ -358,12 +433,19 @@ class Tee:
             f.flush()
 
 ###############################################################################
-def extract_all_v2ray_links(htmlfile, days_ago, protocals):
+def extract_all_v2ray_links( htmlfile, days_ago, protocals ):
     __func__ = inspect.currentframe().f_code.co_name
 
     with open(htmlfile, 'r', encoding='utf-8') as f: html_content = f.read()
     soup = BeautifulSoup(html_content, 'html.parser')
-    #for br in soup.find_all("br"): br.replace_with("\n")
+
+    '''
+    Replace <br> with Newline Characters (\n) (Recommended for formatted text)
+    This method modifies the parse tree in memory, replacing each <br> tag with a string newline character before extracting the text.
+    This is often the most effective way to preserve the original line breaks in the output.
+    '''
+    for br in soup.find_all("br"):
+        br.replace_with("\n")
 
     now = datetime.now()
     time_ago = now - timedelta(days=days_ago, hours=0, minutes=0)
@@ -383,16 +465,22 @@ def extract_all_v2ray_links(htmlfile, days_ago, protocals):
         if not timeline_arrived:
             continue
         assert timeline_arrived
-        TEXT = tag.get_text(separator="\n\n\n", strip=True)
+
+        '''
+        Avoid using `strip=true` here, as it will negate the purpose of `replace br with '\n'`.
+        Also, avoid using `separator=" "` or `separator="\n"`, because these will cause expressions like `vless://...sni=<a>www.goo.en</a>` to insert a space after `sni="`, resulting in `vless://...sni= www.goo.en`.
+        '''
+        #TEXT = tag.get_text(separator="\n\n\n", strip=True)
+        TEXT = tag.get_text()
         TEXTi = TEXT.lower()
         for item in protocals:
             if TEXTi.startswith(item):
-                v2ray_configs.append(TEXT)
+                v2ray_configs.append(f"{TEXT}")
                 break
     return v2ray_configs
 
 ###############################################################################
-def sort_and_unique_file_lines(input_filename, output_filename):
+def sort_and_unique_file_lines( input_filename, output_filename ):
     __func__ = inspect.currentframe().f_code.co_name
     # Use a set to automatically handle uniqueness as we read lines
     unique_lines = set()
@@ -420,7 +508,7 @@ def sort_and_unique_file_lines(input_filename, output_filename):
         return
 
 ###############################################################################
-def remove_unsupported_protocols(input_filename, output_filename, protocals):
+def remove_unsupported_protocols( input_filename, output_filename, protocals ):
     __func__ = inspect.currentframe().f_code.co_name
     try:
         with open(input_filename, 'r', encoding='utf-8') as f, open(output_filename, 'w', encoding='utf-8') as f2:
@@ -432,7 +520,7 @@ def remove_unsupported_protocols(input_filename, output_filename, protocals):
         print(f"{__func__}(): An error occurred during processing: {e}")
 
 ###############################################################################
-def extract_host_from_url(url):
+def extract_host_from_url( url ):
     __func__ = inspect.currentframe().f_code.co_name
     protocal_prefix, _, protocal_data = url.partition("://")
     if protocal_prefix == 'vmess': # Note: not all vmess links contain base64 encrypted content.
@@ -482,9 +570,8 @@ def extract_host_from_url(url):
     return host
 
 ###############################################################################
-def get_region_from_ip(ip):
+def get_region_from_ip( ip, geo_db_path ):
     __func__ = inspect.currentframe().f_code.co_name
-    geo_db_path = 'GeoLite2-City.mmdb'
     try:
         with geoip2.database.Reader(geo_db_path) as reader:
             response = reader.city(ip)
@@ -514,7 +601,7 @@ def open_file_to_read_if_recent(file_path, max_minutes=30):
     return f
 
 ###############################################################################
-def save_configs_by_region(configs):
+def save_configs_by_region( configs ):
     __func__ = inspect.currentframe().f_code.co_name
     CONFIG_FOLDER = "sub"
 
@@ -578,7 +665,7 @@ def create_sub_section():
         print(f"{__func__}(): An exception occurred when file '{README_PATH}' was opened for writing.: {e}")
 
 ###############################################################################
-def _retrive_marks(aLine, fanqiang_protocals):
+def _retrive_marks( aLine, fanqiang_protocals ):
     # Preventing the confusion of inclusion
     taboo_pairs = [ ( "vmess://", "vmeEE://" ), ( "vless://", "vleEE://" ) ]
     for a, b in taboo_pairs:
@@ -600,8 +687,8 @@ def _retrive_marks(aLine, fanqiang_protocals):
     return sorted_all_marks
 
 ###############################################################################
-def split_nodes(aLine, fanqiang_protocals):
-    all_marks = _retrive_marks(aLine, fanqiang_protocals)
+def split_nodes( aLine, fanqiang_protocals ):
+    all_marks = _retrive_marks( aLine, fanqiang_protocals )
 
     nodes=[]
     if all_marks:
@@ -615,10 +702,24 @@ def split_nodes(aLine, fanqiang_protocals):
     return nodes
 
 ###############################################################################
-def extract_filename_from_url(url):
+def extract_filename_from_url( url ):
     parsed_url = urlparse(url)
     decoded_path = unquote(parsed_url.path)
     return Path(decoded_path).name
+
+###############################################################################
+# https://www.google.com/search?q=python+compress+a+folder&pws=0&gl=us&gws_rd=cr
+def create_zip_from_folder( folder_path, zip_name ):
+    # Open the zip file in write mode with DEFLATED compression
+    with zipfile.ZipFile( zip_name, "w", zipfile.ZIP_DEFLATED ) as zipf:
+        # Walk through the directory tree
+        for root, dirs, files in os.walk( folder_path ):
+            for file in files:
+                # Construct the full file path
+                file_path = os.path.join( root, file )
+                # Add the file to the zip, specifying the relative path
+                # so the internal archive structure mirrors the folder structure
+                zipf.write( file_path, os.path.relpath( file_path, start = folder_path ) )
 
 ###############################################################################
 TELEGRAM_URLs = [
@@ -718,7 +819,6 @@ TELEGRAM_URLs = [
 ]
 TELEGRAM_URLs = sorted( set( TELEGRAM_URLs ), key = str.casefold )
 
-
 ###############################################################################
 SUPPORTED_FANQIANG_PROTOCALs = [
     'vmess://'    ,
@@ -747,15 +847,15 @@ PRESENT_DNSs = {}
 ###############################################################################
 
 
-############################################################################ {{
-#### check ipv4/ipv6 ##########################################################
+#### CHECK IPV4/IPV6 ####################################################### {{
 # https://gist.githubusercontent.com/dfee/6ed3a4b05cfe7a6faf40a2102408d5d8/raw/9a6e81e7b4cd0d092c62d70ea1c8016f1b56b706/ip_regex.py
 #------------------------------------------------------------------------------
 # Constructed with help from
 # http://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 # Try it on regex101: https://regex101.com/r/yVdrJQ/1
 
-# import re
+#------- TEST CASE / EXAMPLE, PART 1 ------------------------------------------
+#   import re
 
 IPV4SEG  = r'(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])'
 IPV4ADDR = r'(?:(?:' + IPV4SEG + r'\.){3,3}' + IPV4SEG + r')'
@@ -776,60 +876,65 @@ IPV6GROUPS = (
 )
 IPV6ADDR = '|'.join(['(?:{})'.format(g) for g in IPV6GROUPS[::-1]])  # Reverse rows for greedy match
 
-#tests = [
-#    '1::',
-#    '1:2:3:4:5:6:7::',
-#    '1::8',
-#    '1:2:3:4:5:6::8',
-#    '1:2:3:4:5:6::8',
-#    '1::7:8',
-#    '1:2:3:4:5::7:8',
-#    '1:2:3:4:5::8',
-#    '1::6:7:8',
-#    '1:2:3:4::6:7:8',
-#    '1:2:3:4::8',
-#    '1::5:6:7:8',
-#    '1:2:3::5:6:7:8',
-#    '1:2:3::8',
-#    '1::4:5:6:7:8',
-#    '1:2::4:5:6:7:8',
-#    '1:2::8',
-#    '1::3:4:5:6:7:8',
-#    '1::3:4:5:6:7:8',
-#    '1::8',
-#    '::2:3:4:5:6:7:8',
-#    '::2:3:4:5:6:7:8',
-#    '::8',
-#    '::',
-#    'fe80::7:8%eth0',
-#    'fe80::7:8%1',
-#    '::255.255.255.255',
-#    '::ffff:255.255.255.255',
-#    '::ffff:0:255.255.255.255',
-#    '2001:db8:3:4::192.0.2.33',
-#    '64:ff9b::192.0.2.33',
-#]
+#------- TEST CASE / EXAMPLE, PART 2 ------------------------------------------
+#   tests = [
+#       '1::',
+#       '1:2:3:4:5:6:7::',
+#       '1::8',
+#       '1:2:3:4:5:6::8',
+#       '1:2:3:4:5:6::8',
+#       '1::7:8',
+#       '1:2:3:4:5::7:8',
+#       '1:2:3:4:5::8',
+#       '1::6:7:8',
+#       '1:2:3:4::6:7:8',
+#       '1:2:3:4::8',
+#       '1::5:6:7:8',
+#       '1:2:3::5:6:7:8',
+#       '1:2:3::8',
+#       '1::4:5:6:7:8',
+#       '1:2::4:5:6:7:8',
+#       '1:2::8',
+#       '1::3:4:5:6:7:8',
+#       '1::3:4:5:6:7:8',
+#       '1::8',
+#       '::2:3:4:5:6:7:8',
+#       '::2:3:4:5:6:7:8',
+#       '::8',
+#       '::',
+#       'fe80::7:8%eth0',
+#       'fe80::7:8%1',
+#       '::255.255.255.255',
+#       '::ffff:255.255.255.255',
+#       '::ffff:0:255.255.255.255',
+#       '2001:db8:3:4::192.0.2.33',
+#       '64:ff9b::192.0.2.33',
+#   ]
 #
-## IPV6ADDR Tests
-#def test_individual(tests):
-#    for t in tests:
-#        assert re.search(IPV6ADDR, t).group() == t
+#   # IPV6ADDR Tests
+#   def test_individual(tests):
+#       for t in tests:
+#           assert re.search(IPV6ADDR, t).group() == t
 #
-## MULTILINE
-#def test_multiline(tests):
-#    _tests = tests[:]
-#    for t in re.findall(IPV6ADDR, ' '.join(tests)):
-#        _tests.remove(t)
-#    assert not _tests
+#   # MULTILINE
+#   def test_multiline(tests):
+#       _tests = tests[:]
+#       for t in re.findall(IPV6ADDR, ' '.join(tests)):
+#           _tests.remove(t)
+#       assert not _tests
 #
-#test_individual(tests)
-#test_multiline(tests)
+#   test_individual(tests)
+#   test_multiline(tests)
 #
-#log_data = "Server started at 2001:db8::1:1:1:1:1, connection from 192.168.1.1, another ipv6: fe80::8329"
-#aIpv6 = re.findall(IPV6ADDR, log_data)
-#print(aIpv6)
-#aIpv4 = re.findall(IPV4ADDR, log_data)
-#print(aIpv4)
+#   log_data = "Server started at 2001:db8::1:1:1:1:1, connection from 192.168.1.1, another ipv6: fe80::8329"
+#   aIpv6 = re.findall(IPV6ADDR, log_data)
+#   print(aIpv6)
+#   aIpv4 = re.findall(IPV4ADDR, log_data)
+#   print(aIpv4)
+#}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}} }}
+
+GEO_DB_PATH = 'GeoLite2-City.mmdb'
+
 
 ###############################################################################
 if __name__ == "__main__":
