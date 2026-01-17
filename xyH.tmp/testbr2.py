@@ -12,7 +12,7 @@ print (title)
 
 
 
-# ³¶Ö±ÁË²âÊÔ
+# æ‰¯ç›´äº†æµ‹è¯•
 page = '''<h1 class="para-title">A quick brown fox jumps over</br>the lazy dog<span>some stuff here</span></h1>'''
 
 soup = BeautifulSoup(page, 'html.parser')

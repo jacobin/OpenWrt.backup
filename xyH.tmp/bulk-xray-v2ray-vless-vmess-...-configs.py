@@ -19,6 +19,7 @@ import hashlib
 import inspect
 import ipaddress
 import json
+import lzma
 import os
 import os.path
 import re
@@ -51,6 +52,7 @@ def main():
     bRedownload = False
     sDnsServer = '8.8.8.8'
     nDnsMaxSurvivalMinutes = 30
+    sDnsMaxSurvivalMinutes = '30'
 
     argv = sys.argv[1:]
     try:
@@ -71,7 +73,7 @@ def main():
         elif opt in ("-g", "--geo_db_path"):
             GEO_DB_PATH = arg
         elif opt in ("-t", "--dns_max_survival_minutes"):
-            nDnsMaxSurvivalMinutes = arg
+            sDnsMaxSurvivalMinutes = arg
         else:
             print(f'Usage: {__script_name__} -r<redownload> -d <dnsserver> -g <geo_db_path> -t <dns_max_survival_minutes>')
             sys.exit(3)
@@ -81,9 +83,13 @@ def main():
         print( f"The specified dnsserver parameter '{sDnsServer}' is not an IP address." )
         sys.exit(4)
 
-    if not nDnsMaxSurvivalMinutes.isnumeric():
-        print( f"The specified dns_max_survival_minutes parameter '{nDnsMaxSurvivalMinutes}' is not a number." )
+    if not sDnsMaxSurvivalMinutes.isdigit():
+        print( f"The specified dns_max_survival_minutes parameter '{sDnsMaxSurvivalMinutes}' is not a number." )
         sys.exit(5)
+    nDnsMaxSurvivalMinutes = int(sDnsMaxSurvivalMinutes)
+    if nDnsMaxSurvivalMinutes < 0:
+        print( f"The dns_max_survival_minutes parameter '{nDnsMaxSurvivalMinutes}' cannot be less than zero." )
+        sys.exit(4)
 
     if not os.path.exists(GEO_DB_PATH):
         print( f"The specified IP map file '{GEO_DB_PATH}' does not exist." )
@@ -133,19 +139,18 @@ def main():
         dst = os.path.join(dst_parent, __timestamp_str__)
         shutil.copytree(src, dst) # This will create destination_folder/source_folder
 
-        backupzip = f"{__script_dir__}/BackupEpodonios.zip"
+        backupzip = f"{__script_dir__}/BackupEpodonios.tar.xz"
         if os.path.exists( backupzip ):
-            with zipfile.ZipFile( backupzip, 'r' ) as zip_ref:
-                zip_ref.extractall( zip_root_dir )
+            shutil.unpack_archive( backupzip, zip_root_dir)
 
-        create_zip_from_folder( zip_root_dir, backupzip )
+        shutil_compress( zip_root_dir, backupzip )
 
         assert os.path.exists( zip_root_dir ) and os.path.isdir( zip_root_dir )
-        try:
-            shutil.rmtree( zip_root_dir )
-        except Exception as e:
-            print( f"Deleting directory '{zip_root_dir}' failed: {e}" )
-            sys.exit(9)
+        #try:
+        #    shutil.rmtree( zip_root_dir )
+        #except Exception as e:
+        #    print( f"Deleting directory '{zip_root_dir}' failed: {e}" )
+        #    sys.exit(9)
 
     #### Do you want to skip the download? ################################
     if bRedownload:
@@ -708,18 +713,20 @@ def extract_filename_from_url( url ):
     return Path(decoded_path).name
 
 ###############################################################################
-# https://www.google.com/search?q=python+compress+a+folder&pws=0&gl=us&gws_rd=cr
-def create_zip_from_folder( folder_path, zip_name ):
-    # Open the zip file in write mode with DEFLATED compression
-    with zipfile.ZipFile( zip_name, "w", zipfile.ZIP_DEFLATED ) as zipf:
-        # Walk through the directory tree
-        for root, dirs, files in os.walk( folder_path ):
-            for file in files:
-                # Construct the full file path
-                file_path = os.path.join( root, file )
-                # Add the file to the zip, specifying the relative path
-                # so the internal archive structure mirrors the folder structure
-                zipf.write( file_path, os.path.relpath( file_path, start = folder_path ) )
+# https://www.google.com/search?q=python+compress+a+folder+best+rates
+def shutil_compress( source_dir, output_filename ):
+    # 'xztar' uses LZMA compression, which offers the best ratio
+    output_filename = output_filename.removesuffix( '.tar.xz' )
+    try:
+        output_path = shutil.make_archive(
+            output_filename,
+            'xztar', # Format: tar archive with xz compression
+            root_dir = source_dir,
+            base_dir = './'
+        )
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
 
 ###############################################################################
 TELEGRAM_URLs = [
