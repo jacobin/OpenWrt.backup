@@ -32,23 +32,20 @@ import time
 import urllib.parse
 import zipfile
 
-
 ###############################################################################
 def main():
-    #### Preparation of environment variables #####
+    #### Preparation of environment variables #############################
     __func__ = inspect.currentframe().f_code.co_name
     __script_name__ = os.path.basename(__file__)
 
-
-    #### Global variables that are referenced #############################
+    #### Global variables that are referenced #####
     global TELEGRAM_URLs
     global SUPPORTED_FANQIANG_PROTOCALs
     global PRESENT_DNSs
     global IPV6ADDR
     global GEO_DB_PATH
 
-
-    #{{{ Parameter preparation via getopt {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{ {{
+    #{{{ Parameter preparation via getopt {{{{{{{{{
     bRedownload = False
     sDnsServer = '8.8.8.8'
     nDnsMaxSurvivalMinutes = 30
@@ -77,7 +74,7 @@ def main():
         else:
             print(f'Usage: {__script_name__} -r<redownload> -d <dnsserver> -g <geo_db_path> -t <dns_max_survival_minutes>')
             sys.exit(3)
-    #}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}} }}
+    #}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 
     if not is_valid_ip( sDnsServer ):
         print( f"The specified dnsserver parameter '{sDnsServer}' is not an IP address." )
@@ -95,7 +92,6 @@ def main():
         print( f"The specified IP map file '{GEO_DB_PATH}' does not exist." )
         sys.exit(6)
 
-
     #### Preparation of environment variables 2 ###
     __script_dir__ = Path(__file__).resolve().parent
     __web_download_dir__ = f"{__script_dir__}/Epodonios/downloads"
@@ -103,14 +99,12 @@ def main():
     F = f"{__Ford_assembly_line__}/"
     __timestamp_str__ = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-
-    #### Redirect print to logfile ########################################
+    #### Redirect print to logfile ################
     original_stdout = sys.stdout
     log_file = open(f'{__script_name__}.log', 'a', encoding='utf-8')
     sys.stdout = Tee(original_stdout, log_file)
 
-
-    #### Check system environment #########################################
+    #### Check system environment #################
     bFirstRun = False
     if not os.path.exists(__web_download_dir__):
         bFirstRun = True
@@ -126,8 +120,7 @@ def main():
         print(f"{__func__}(): Folder '{__Ford_assembly_line__}' dose NOT exist.")
         sys.exit(8)
 
-
-    #### Backup the history data ##########################################
+    #### Backup the history data ##################
     if not bFirstRun:
         temp_dir = tempfile.gettempdir()
         zip_root_dir = f"{temp_dir}/Epodonios{__timestamp_str__}"
@@ -152,7 +145,7 @@ def main():
         #    print( f"Deleting directory '{zip_root_dir}' failed: {e}" )
         #    sys.exit(9)
 
-    #### Do you want to skip the download? ################################
+    #### Do you want to skip the download? ########
     if bRedownload:
         download(TELEGRAM_URLs, __web_download_dir__, f"{F}a.list_downloaded_file.txt")
         filter_acceptable_files( f"{F}a.list_downloaded_file.txt", f"{F}b.accept_file.txt", f"{F}c.dead_link.txt", 7 )
@@ -161,8 +154,7 @@ def main():
         print("Please use the -r option to download first.")
         sys.exit(10)
 
-
-    #### extract all the v2ray links ######################################
+    #### extract all the v2ray links ##############
     all_v2ray_configs = []
     with open( f"{F}b.accept_file.txt", "r", encoding='utf-8' ) as f:
         for htmlfpath in f:
@@ -170,20 +162,17 @@ def main():
             if v2ray_configs:
                 all_v2ray_configs.extend( v2ray_configs )
 
-
-    #### dump all the v2ray configs to file ###############################
+    #### dump all the v2ray configs to file #######
     with open(f"{F}1.data_incomplete.txt", 'w', encoding="utf-8") as f:
         f.writelines("\n\n\n\n\n".join(all_v2ray_configs))
 
-
-    #### Filter out all lines that do not begin with .*:// ################
+    #### Filter out not begining with .*:// #######
     all_double_fslash = re.compile(".*://.*")
     with open(f"{F}1.data_incomplete.txt", 'r', encoding='utf-8') as f, open(f"{F}2.data_incomplete.txt", 'w', encoding='utf-8') as f2:
         for line in f:
             cleaned_line = line.strip()
             if all_double_fslash.match(cleaned_line):
                 f2.write(cleaned_line + "\n")
-
 
     #### Split a row containing information about multiple nodes into rows where each node occupies a separate row.
     with open(f"{F}2.data_incomplete.txt", 'r', encoding='utf-8') as f, open(f"{F}3.data_incomplete.txt", 'w', encoding='utf-8') as f2:
@@ -194,12 +183,9 @@ def main():
             nodes = split_nodes( line, protocals )
             f2.writelines( "\n".join( nodes ) )
 
-
     sort_and_unique_file_lines(f"{F}3.data_incomplete.txt", f"{F}4.data_incomplete.txt")
 
-
     remove_unsupported_protocols(f"{F}4.data_incomplete.txt", f"{F}5.data_incomplete.txt", SUPPORTED_FANQIANG_PROTOCALs )
-
 
     with open(f"{F}5.data_incomplete.txt", 'r', encoding='utf-8') as f, open(f"{F}6.data_incomplete.txt", 'w', encoding='utf-8') as f2, open(f"{F}d.urls_where_host_extraction_failed.txt", 'w', encoding='utf-8') as f3:
         for url in f:
@@ -273,69 +259,69 @@ def main():
 ###############################################################################
 # format of list_downloaded_fpath: url, downloaded_tmpfile, downloaded_oldfile
 def download( telegram_urls, web_download_folder, list_downloaded_fpath ):
-        __func__ = inspect.currentframe().f_code.co_name
+    __func__ = inspect.currentframe().f_code.co_name
 
-        telegram_urls = copy.deepcopy(telegram_urls)
-        #### retry_strategy ###########################
-        # Configure retry strategy
-        retry_strategy = Retry(
-            total=3, # Total number of retries
-            status_forcelist=[429, 500, 502, 503, 504], # Which status codes to retrace
-            allowed_methods=["HEAD", "GET", "OPTIONS", "POST"], # Which HTTP methods are allowed to retrace
-            backoff_factor=1 # Backoff factor, used to calculate the latency between each retrieval
-        )
+    telegram_urls = copy.deepcopy(telegram_urls)
+    #### retry_strategy ###########################
+    # Configure retry strategy
+    retry_strategy = Retry(
+        total=3, # Total number of retries
+        status_forcelist=[429, 500, 502, 503, 504], # Which status codes to retrace
+        allowed_methods=["HEAD", "GET", "OPTIONS", "POST"], # Which HTTP methods are allowed to retrace
+        backoff_factor=1 # Backoff factor, used to calculate the latency between each retrieval
+    )
 
-        #### adapter ##################################
-        # Create an adapter configured with a connection pool to implement connection reuse and apply the retry strategy
-        # By default, requests already has similar behavior, but mount provides more fine-grained control
-        adapter = HTTPAdapter(max_retries=retry_strategy, pool_connections=100, pool_maxsize=100)
+    #### adapter ##################################
+    # Create an adapter configured with a connection pool to implement connection reuse and apply the retry strategy
+    # By default, requests already has similar behavior, but mount provides more fine-grained control
+    adapter = HTTPAdapter(max_retries=retry_strategy, pool_connections=100, pool_maxsize=100)
 
-        #### custom_headers ###########################
-        # The User-Agent header is commonly set to mimic a web browser
-        custom_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Authorization': 'Bearer <your_token_here>'
-        }
+    #### custom_headers ###########################
+    # The User-Agent header is commonly set to mimic a web browser
+    custom_headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Authorization': 'Bearer <your_token_here>'
+    }
 
-        #### session ##################################
-        # Create a Session object
-        session = requests.Session()
-        # Assign the headers to the session object
-        session.headers.update(custom_headers)
-        # Mount to HTTP and HTTPS (Global Configuration)
-        session.mount('http://', adapter)
-        session.mount('https://', adapter)
+    #### session ##################################
+    # Create a Session object
+    session = requests.Session()
+    # Assign the headers to the session object
+    session.headers.update(custom_headers)
+    # Mount to HTTP and HTTPS (Global Configuration)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
 
-        #### Download the orig webpages to htmlfile ###
-        success_count = 0
-        fList = open( list_downloaded_fpath, "w", encoding='utf-8')
-        for url in telegram_urls:
-            try:
-                response = session.get(url, timeout=5)
-                if response.status_code != 200:
-                    print(f"{__func__}(): Failed to fetch URL (Status Code: {response.status_code})")
-                    continue
-                filename=extract_filename_from_url(url)
-                with open(f"{web_download_folder}/{filename}.html.tmp", "w", encoding="utf-8") as f:
-                    f.write(response.text)
-                    fList.write( f"{url},{web_download_folder}/{filename}.html.tmp,{web_download_folder}/{filename}.html\n" )
-                    success_count +=1
-            except HTTPError as e:
-                print(f"{__func__}(): HTTP error occurred: {e}") # e.g., 404 Not Found, 500 Internal Server Error
-            except ConnectionError as e:
-                print(f"{__func__}(): Connection error occurred: {e}") # e.g., DNS failure, refused connection, no internet
-            except Timeout as e:
-                print(f"{__func__}(): Timeout error occurred: {e}") # Request took too long to respond
-            except RequestException as e:
-                # Catch any other general requests error that inherits from RequestException
-                print(f"{__func__}(): An unexpected request error occurred: {e}")
-            except Exception as e:
-                # Catch any other potential errors (e.g., issues with Beautiful Soup parsing)
-                print(f"{__func__}(): An unexpected error occurred during processing: {e}")
-        fList.close()
-        session.close()
-        return success_count
+    #### Download the orig webpages to htmlfile ###
+    success_count = 0
+    fList = open( list_downloaded_fpath, "w", encoding='utf-8')
+    for url in telegram_urls:
+        try:
+            response = session.get(url, timeout=5)
+            if response.status_code != 200:
+                print(f"{__func__}(): Failed to fetch URL (Status Code: {response.status_code})")
+                continue
+            filename=extract_filename_from_url(url)
+            with open(f"{web_download_folder}/{filename}.html.tmp", "w", encoding="utf-8") as f:
+                f.write(response.text)
+                fList.write( f"{url},{web_download_folder}/{filename}.html.tmp,{web_download_folder}/{filename}.html\n" )
+                success_count +=1
+        except HTTPError as e:
+            print(f"{__func__}(): HTTP error occurred: {e}") # e.g., 404 Not Found, 500 Internal Server Error
+        except ConnectionError as e:
+            print(f"{__func__}(): Connection error occurred: {e}") # e.g., DNS failure, refused connection, no internet
+        except Timeout as e:
+            print(f"{__func__}(): Timeout error occurred: {e}") # Request took too long to respond
+        except RequestException as e:
+            # Catch any other general requests error that inherits from RequestException
+            print(f"{__func__}(): An unexpected request error occurred: {e}")
+        except Exception as e:
+            # Catch any other potential errors (e.g., issues with Beautiful Soup parsing)
+            print(f"{__func__}(): An unexpected error occurred during processing: {e}")
+    fList.close()
+    session.close()
+    return success_count
 
 ###############################################################################
 def filter_acceptable_files( list_downloaded_fpath, list_accept_fpath, list_dead_links, no_changes_in_days ):
@@ -727,7 +713,6 @@ def shutil_compress( source_dir, output_filename ):
     except Exception as e:
         print(f"An error occurred: {e}")
 
-
 ###############################################################################
 TELEGRAM_URLs = [
     "https://t.me/s/v2line"             ,
@@ -853,7 +838,6 @@ PRESENT_DNSs = {}
 
 ###############################################################################
 
-
 #### CHECK IPV4/IPV6 ####################################################### {{
 # https://gist.githubusercontent.com/dfee/6ed3a4b05cfe7a6faf40a2102408d5d8/raw/9a6e81e7b4cd0d092c62d70ea1c8016f1b56b706/ip_regex.py
 #------------------------------------------------------------------------------
@@ -941,7 +925,6 @@ IPV6ADDR = '|'.join(['(?:{})'.format(g) for g in IPV6GROUPS[::-1]])  # Reverse r
 #}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}} }}
 
 GEO_DB_PATH = 'GeoLite2-City.mmdb'
-
 
 ###############################################################################
 if __name__ == "__main__":
