@@ -1,6 +1,7 @@
 ###############################################################################
 # https://github.com/Epodonios/bulk-xray-v2ray-vless-vmess-...-configs/blob/main/main.py
 from bs4 import BeautifulSoup, NavigableString, Tag
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from requests.adapters import HTTPAdapter
@@ -139,11 +140,11 @@ def main():
         shutil_compress( zip_root_dir, backupzip )
 
         assert os.path.exists( zip_root_dir ) and os.path.isdir( zip_root_dir )
-        #try:
-        #    shutil.rmtree( zip_root_dir )
-        #except Exception as e:
-        #    print( f"Deleting directory '{zip_root_dir}' failed: {e}" )
-        #    sys.exit(9)
+        try:
+            shutil.rmtree( zip_root_dir )
+        except Exception as e:
+            print( f"Deleting directory '{zip_root_dir}' failed: {e}" )
+            sys.exit(9)
 
     #### Do you want to skip the download? ########
     if bRedownload:
@@ -242,6 +243,7 @@ def main():
 
     if all_v2ray_configs:
         save_configs_by_region(all_v2ray_configs)
+        create_nodes_section()
         create_sub_section()
         print("Configs saved successfully.")
     else:
@@ -254,8 +256,6 @@ def main():
     sys.stdout = original_stdout
     log_file.close()
 
-###############################################################################
-###############################################################################
 ###############################################################################
 # format of list_downloaded_fpath: url, downloaded_tmpfile, downloaded_oldfile
 def download( telegram_urls, web_download_folder, list_downloaded_fpath ):
@@ -605,55 +605,105 @@ def save_configs_by_region( configs ):
     if not os.path.exists(CONFIG_FOLDER):
         os.makedirs(CONFIG_FOLDER)
 
+    # https://www.google.com/search?q=python+dict+string+key+list+value
+    # Create a defaultdict with a default factory of list
+    map_region_urls = defaultdict( list )
     for config in configs:
         region, _, url = config.partition(",")
         assert region
         assert url
-        region_folder = os.path.join(CONFIG_FOLDER, region)
-        if not os.path.exists(region_folder):
+        map_region_urls[ f'{region}' ].append( url )
+
+    try:
+        for region, urls in map_region_urls.items():
+            region_folder = os.path.join(CONFIG_FOLDER, region)
+            assert not os.path.exists(region_folder)
             os.makedirs(region_folder)
-        try:
-            with open(os.path.join(region_folder, 'config.txt'), 'a', encoding='utf-8') as file:
-                file.write(url.strip() + '\n')
-        except Exception as e:
-            print(f"{__func__}(): An error occurred: {e}")
+            with open(os.path.join(region_folder, 'config.txt'), 'w', encoding='utf-8') as file:
+                for url in urls:
+                    file.write(url.strip() + '\n')
+    except Exception as e:
+        print(f"{__func__}(): An error occurred: {e}")
 
 ###############################################################################
 def create_sub_section():
-    __func__ = inspect.currentframe().f_code.co_name
-    README_PATH = "README.md"
-    CONFIG_FOLDER = "sub"
+    create_new_section( \
+        "README.md", \
+        "Sub", \
+        "| Sub |", \
+        generate_sub_table( "sub" ) )
 
-    found_sub_section = False
-    content=""
-    if os.path.exists(README_PATH):
+###############################################################################
+def create_nodes_section():
+    create_new_section( \
+        "README.md", \
+        "Nodes", \
+        "| Nodes | Node Links | Node Links | Node Links | Node Links |", \
+        generate_nodes_table( TELEGRAM_URLs ) )
+
+###############################################################################
+def create_new_section(MDFile, section_name, table_header, new_table_content ):
+    __func__ = inspect.currentframe().f_code.co_name
+    found_the_section = False
+    old_content=""
+    if os.path.exists(MDFile):
         try:
-            with open(README_PATH, 'r', encoding='utf-8') as readme_file:
-                content = readme_file.read()
-                if '## Sub' in content:
-                    found_sub_section = True
+            with open(MDFile, 'r', encoding='utf-8') as f:
+                old_content = f.read()
+                if f'## {section_name}' in old_content:
+                    found_the_section = True
         except Exception as e:
-            print(f"{__func__}(): An exception occurred when file '{README_PATH}' was opened for reading.: {e}")
+            print(f"{__func__}(): An exception occurred when file '{MDFile}' was opened for reading.: {e}")
+
+    nColumn = table_header.count( '|' ) - 1
 
     new_content = ""
-    new_content += "## Sub\n"
-    new_content += "| Sub |\n"
-    new_content += "|-----|\n"
+    new_content += f"## {section_name}\n{table_header}\n|"
+    new_content += "---|" * nColumn
+    new_content += f"\n{new_table_content.strip()}\n\n"
+    try:
+        with open(MDFile, 'w', encoding='utf-8') as f:
+            if found_the_section:
+                # r'\|\s*(\r?\n){2,}' -- Search | followed by a space or two or more newline characters (newline characters can be LF for *nx or CRLF for win).
+                f.write( old_content.replace( old_content[ old_content.find( f'## {section_name}' ) : old_content.find( r'\|\s*(\r?\n){2,}', old_content.find( f'## {section_name}' ) ) ], new_content ) )
+            else:
+                f.write( old_content + new_content )
+    except Exception as e:
+        print(f"{__func__}(): An exception occurred when file '{MDFile}' was opened for writing.: {e}")
 
-    for root, dirs, files in os.walk(CONFIG_FOLDER):
+###############################################################################
+def generate_nodes_table( telegramUrls ):
+    content = ""
+    # | [V2Line](https://t.me/s/v2line) | [PrivateVPNs](https://t.me/s/PrivateVPNs) | [VlessConfig](https://t.me/s/VlessConfig) | [V2pedia](https://t.me/s/V2pedia) | [v2rayNG_Matsuri](https://t.me/s/v2rayNG_Matsuri) |
+    # | [inikotesla](https://t.me/s/inikotesla) | [forwardv2ray](https://t.me/s/forwardv2ray) |  |  |  |
+    wrap = 0
+    for url in telegramUrls:
+        nodeName = extract_filename_from_url( url )
+        if wrap % 5 == 0:
+            content += f"\n| [{nodeName}]({url})"
+        elif wrap % 5 == 4:
+            content += f" | [{nodeName}]({url}) |"
+        else:
+            content += f" | [{nodeName}]({url})"
+        wrap += 1
+
+    nLastGroupCount = len( telegramUrls ) % 5
+    if 0 != nLastGroupCount:
+        for i in range( nLastGroupCount + 2 ):
+            content += " | "
+
+    return "\n" + content.strip() + "\n\n"
+
+###############################################################################
+def generate_sub_table( config_folder ):
+    content = ""
+    for root, dirs, files in os.walk( config_folder ):
         for directory in dirs:
             config_path = os.path.join(root, directory, 'config.txt')
-            if os.path.exists(config_path):
+            if os.path.exists( config_path ):
                 url = f"https://raw.githubusercontent.com/Epodonios/bulk-xray-v2ray-vless-vmess-...-configs/main/sub/{urllib.parse.quote(directory)}/config.txt"
-                new_content += f"| [{directory}]({url}) |\n"
-    try:
-        with open(README_PATH, 'w', encoding='utf-8') as readme_file:
-            if found_sub_section:
-                readme_file.write(content.replace(content[content.find('## Sub'):content.find('\n\n', content.find('## Sub'))], new_content))
-            else:
-                readme_file.write(content + new_content)
-    except Exception as e:
-        print(f"{__func__}(): An exception occurred when file '{README_PATH}' was opened for writing.: {e}")
+                content += f"| [{directory}]({url}) |\n"
+    return content
 
 ###############################################################################
 def _retrive_marks( aLine, fanqiang_protocals ):
