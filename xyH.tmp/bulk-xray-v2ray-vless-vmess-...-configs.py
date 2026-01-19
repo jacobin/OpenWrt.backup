@@ -325,6 +325,7 @@ def download( telegram_urls, web_download_folder, list_downloaded_fpath ):
 
 ###############################################################################
 def filter_acceptable_files( list_downloaded_fpath, list_accept_fpath, list_dead_links, no_changes_in_days ):
+    __func__ = inspect.currentframe().f_code.co_name
     now = datetime.now()
     with \
       open( list_downloaded_fpath, "r", encoding='utf-8') as f, \
@@ -575,6 +576,7 @@ def get_region_from_ip( ip, geo_db_path ):
 
 ###############################################################################
 def open_file_to_read_if_recent(file_path, max_minutes=30):
+    __func__ = inspect.currentframe().f_code.co_name
     if not Path(file_path).is_file():
         return None
 
@@ -587,6 +589,7 @@ def open_file_to_read_if_recent(file_path, max_minutes=30):
         try:
             f = open(file_path, "r", encoding='utf-8')
         except Exception as e:
+            print(f"{__func__}(): An error occurred when opening '{file_path}': {e}")
             f = None
 
     return f
@@ -692,7 +695,7 @@ def generate_nodes_table( telegramUrls ):
         for i in range( nLastGroupCount + 2 ):
             content += " | "
 
-    return "\n" + content.strip() + "\n\n"
+    return content
 
 ###############################################################################
 def generate_sub_table( config_folder ):
@@ -751,6 +754,7 @@ def extract_filename_from_url( url ):
 ###############################################################################
 # https://www.google.com/search?q=python+compress+a+folder+best+rates
 def shutil_compress( source_dir, output_filename ):
+    __func__ = inspect.currentframe().f_code.co_name
     # 'xztar' uses LZMA compression, which offers the best ratio
     output_filename = output_filename.removesuffix( '.tar.xz' )
     try:
@@ -761,7 +765,7 @@ def shutil_compress( source_dir, output_filename ):
             base_dir = './'
         )
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"{__func__}(): An error occurred: {e}")
 
 ###############################################################################
 TELEGRAM_URLs = [
