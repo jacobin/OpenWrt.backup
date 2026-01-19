@@ -113,7 +113,7 @@ def main():
     if not Path(__web_download_dir__).exists():
         print(f"{__func__}(): Folder '{__web_download_dir__}' dose NOT exist.")
         sys.exit(7)
-    #----------------------------------------------------------------------
+    #----------------------------------------------
     if not os.path.exists(__Ford_assembly_line__):
         bFirstRun = True
         os.makedirs(__Ford_assembly_line__)
@@ -169,14 +169,18 @@ def main():
 
     #### Filter out not begining with .*:// #######
     all_double_fslash = re.compile(".*://.*")
-    with open(f"{F}1.data_incomplete.txt", 'r', encoding='utf-8') as f, open(f"{F}2.data_incomplete.txt", 'w', encoding='utf-8') as f2:
+    with \
+        open(f"{F}1.data_incomplete.txt", 'r', encoding='utf-8') as f, \
+        open(f"{F}2.data_incomplete.txt", 'w', encoding='utf-8') as f2:
         for line in f:
             cleaned_line = line.strip()
             if all_double_fslash.match(cleaned_line):
                 f2.write(cleaned_line + "\n")
 
     #### Split a row containing information about multiple nodes into rows where each node occupies a separate row.
-    with open(f"{F}2.data_incomplete.txt", 'r', encoding='utf-8') as f, open(f"{F}3.data_incomplete.txt", 'w', encoding='utf-8') as f2:
+    with \
+        open(f"{F}2.data_incomplete.txt", 'r', encoding='utf-8') as f, \
+        open(f"{F}3.data_incomplete.txt", 'w', encoding='utf-8') as f2:
         for line in f:
             protocals = copy.deepcopy( SUPPORTED_FANQIANG_PROTOCALs )
             protocals.append( "http://" )
@@ -188,7 +192,10 @@ def main():
 
     remove_unsupported_protocols(f"{F}4.data_incomplete.txt", f"{F}5.data_incomplete.txt", SUPPORTED_FANQIANG_PROTOCALs )
 
-    with open(f"{F}5.data_incomplete.txt", 'r', encoding='utf-8') as f, open(f"{F}6.data_incomplete.txt", 'w', encoding='utf-8') as f2, open(f"{F}d.urls_where_host_extraction_failed.txt", 'w', encoding='utf-8') as f3:
+    with \
+        open(f"{F}5.data_incomplete.txt", 'r', encoding='utf-8') as f, \
+        open(f"{F}6.data_incomplete.txt", 'w', encoding='utf-8') as f2, \
+        open(f"{F}d.urls_where_host_extraction_failed.txt", 'w', encoding='utf-8') as f3:
         for url in f:
             # host
             url = url.strip()
@@ -210,7 +217,9 @@ def main():
         PRESENT_DNSs = json.load(f)
         f.close
 
-    with open(f"{F}6.data_incomplete.txt", 'r', encoding='utf-8') as f, open(f"{F}7.data_incomplete.txt", 'w', encoding='utf-8') as f2:
+    with \
+        open(f"{F}6.data_incomplete.txt", 'r', encoding='utf-8') as f, \
+        open(f"{F}7.data_incomplete.txt", 'w', encoding='utf-8') as f2:
         for l in f:
             l=l.strip()
             domain, _, url = l.partition(",")
@@ -503,7 +512,9 @@ def sort_and_unique_file_lines( input_filename, output_filename ):
 def remove_unsupported_protocols( input_filename, output_filename, protocals ):
     __func__ = inspect.currentframe().f_code.co_name
     try:
-        with open(input_filename, 'r', encoding='utf-8') as f, open(output_filename, 'w', encoding='utf-8') as f2:
+        with \
+            open(input_filename, 'r', encoding='utf-8') as f, \
+            open(output_filename, 'w', encoding='utf-8') as f2:
             for line in f:
                 for item in protocals:
                     if line.startswith(item):
@@ -622,9 +633,9 @@ def save_configs_by_region( configs ):
             region_folder = os.path.join(CONFIG_FOLDER, region)
             assert not os.path.exists(region_folder)
             os.makedirs(region_folder)
-            with open(os.path.join(region_folder, 'config.txt'), 'w', encoding='utf-8') as file:
+            with open(os.path.join(region_folder, 'config.txt'), 'w', encoding='utf-8') as f:
                 for url in urls:
-                    file.write(url.strip() + '\n')
+                    f.write(url.strip() + '\n')
     except Exception as e:
         print(f"{__func__}(): An error occurred: {e}")
 
