@@ -1,8 +1,8 @@
 ###############################################################################
 # https://github.com/Epodonios/bulk-xray-v2ray-vless-vmess-...-configs/blob/main/main.py
-from bs4 import BeautifulSoup, NavigableString, Tag
+from bs4 import BeautifulSoup
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 from requests.adapters import HTTPAdapter
 from requests.exceptions import RequestException, HTTPError, ConnectionError, Timeout
@@ -16,22 +16,18 @@ import filecmp
 import geoip2.database
 import geoip2.errors
 import getopt
-import hashlib
 import inspect
 import ipaddress
 import json
-import lzma
 import os
 import os.path
 import re
 import requests
 import shutil
-import socket
 import sys
 import tempfile
 import time
 import urllib.parse
-import zipfile
 
 ###############################################################################
 def main():
@@ -137,6 +133,14 @@ def main():
         if os.path.exists( backupzip ):
             shutil.unpack_archive( backupzip, zip_root_dir)
 
+        sorted_dirs = sorted( list( Path( zip_root_dir ).iterdir() ) )
+        for n in range( len(sorted_dirs) - 5 ):
+            try:
+                shutil.rmtree( sorted_dirs[n] )
+            except Exception as e:
+                print( f"{__func__}(): Deleting directory '{sorted_dirs[n]}' failed. Detail: {e}" )
+                sys.exit(9)
+
         shutil_compress( zip_root_dir, backupzip )
 
         assert os.path.exists( zip_root_dir ) and os.path.isdir( zip_root_dir )
@@ -144,7 +148,7 @@ def main():
             shutil.rmtree( zip_root_dir )
         except Exception as e:
             print( f"Deleting directory '{zip_root_dir}' failed: {e}" )
-            sys.exit(9)
+            sys.exit(10)
 
     #### Do you want to skip the download? ########
     if bRedownload:
@@ -153,7 +157,7 @@ def main():
 
     if not os.path.exists(f"{F}b.accept_file.txt"):
         print("Please use the -r option to download first.")
-        sys.exit(10)
+        sys.exit(11)
 
     #### extract all the v2ray links ##############
     all_v2ray_configs = []
@@ -188,9 +192,9 @@ def main():
             nodes = split_nodes( line, protocals )
             f2.writelines( "\n".join( nodes ) )
 
-    sort_and_unique_file_lines(f"{F}3.data_incomplete.txt", f"{F}4.data_incomplete.txt")
+    sort_and_unique_file_lines( f"{F}3.data_incomplete.txt", f"{F}4.data_incomplete.txt")
 
-    remove_unsupported_protocols(f"{F}4.data_incomplete.txt", f"{F}5.data_incomplete.txt", SUPPORTED_FANQIANG_PROTOCALs )
+    remove_unsupported_protocols( f"{F}4.data_incomplete.txt", f"{F}5.data_incomplete.txt", SUPPORTED_FANQIANG_PROTOCALs )
 
     with \
         open(f"{F}5.data_incomplete.txt", 'r', encoding='utf-8') as f, \
@@ -435,8 +439,6 @@ class Tee:
 
 ###############################################################################
 def extract_all_v2ray_links( htmlfile, days_ago, protocals ):
-    __func__ = inspect.currentframe().f_code.co_name
-
     with open(htmlfile, 'r', encoding='utf-8') as f: html_content = f.read()
     soup = BeautifulSoup(html_content, 'html.parser')
 
@@ -494,7 +496,7 @@ def sort_and_unique_file_lines( input_filename, output_filename ):
                 if stripped_line: # Avoid adding empty lines
                     unique_lines.add(stripped_line)
     except Exception as e:
-        print(f"{__func__}(): An exception occurred when file '{input_filename}' was opened for reading.")
+        print(f"{__func__}(): An exception occurred. Detail: {e}")
         return
 
     # Convert the set to a list and sort it
@@ -505,7 +507,7 @@ def sort_and_unique_file_lines( input_filename, output_filename ):
         with open(output_filename, 'w', encoding='utf-8') as f:
             f.writelines(line + '\n' for line in sorted_unique_lines)
     except Exception as e:
-        print(f"{__func__}(): An exception occurred when file '{output_filename}' was opened for writing.")
+        print(f"{__func__}(): An exception occurred. Detail: {e}")
         return
 
 ###############################################################################
@@ -539,7 +541,7 @@ def extract_host_from_url( url ):
             #{"add":"hgtrojan.zabc.net","aid":"0","alpn":"","fp":"","host":"hgtrojan.zabc.net","id":"e6395c20-4571-4b34-d6b1-55a5d36e49ea","net":"ws","path":"/e6395c20","port":"2083","ps":"@Network_442_ 🇺🇸 (6)","scy":"auto","sni":"hgtrojan.zabc.net","tls":"tls","type":"","v":"2"}
             #{"add":"sy4.620720.xyz","aid":"0","alpn":"","fp":"","host":"sy4.620720.xyz","id":"516d8a7a-3f0b-41d3-bad0-246116381516","net":"ws","path":"/","port":"443","ps":"@Network_442_ 🇺🇸 (9)","scy":"auto","sni":"sy4.620720.xyz","tls":"tls","type":"","v":"2"}
             json_string = decoded_string;
-        except Exception as e:
+        except Exception:
             json_string = None
 
         # If the base64 ciphertext is successfully decoded
@@ -931,63 +933,7 @@ IPV6GROUPS = (
     r'(?:' + IPV6SEG + r':){1,4}:[^\s:]' + IPV4ADDR,          # 2001:db8:3:4::192.0.2.33  64:ff9b::192.0.2.33 (IPv4-Embedded IPv6 Address)
 )
 IPV6ADDR = '|'.join(['(?:{})'.format(g) for g in IPV6GROUPS[::-1]])  # Reverse rows for greedy match
-
-#------- TEST CASE / EXAMPLE, PART 2 ------------------------------------------
-#   tests = [
-#       '1::',
-#       '1:2:3:4:5:6:7::',
-#       '1::8',
-#       '1:2:3:4:5:6::8',
-#       '1:2:3:4:5:6::8',
-#       '1::7:8',
-#       '1:2:3:4:5::7:8',
-#       '1:2:3:4:5::8',
-#       '1::6:7:8',
-#       '1:2:3:4::6:7:8',
-#       '1:2:3:4::8',
-#       '1::5:6:7:8',
-#       '1:2:3::5:6:7:8',
-#       '1:2:3::8',
-#       '1::4:5:6:7:8',
-#       '1:2::4:5:6:7:8',
-#       '1:2::8',
-#       '1::3:4:5:6:7:8',
-#       '1::3:4:5:6:7:8',
-#       '1::8',
-#       '::2:3:4:5:6:7:8',
-#       '::2:3:4:5:6:7:8',
-#       '::8',
-#       '::',
-#       'fe80::7:8%eth0',
-#       'fe80::7:8%1',
-#       '::255.255.255.255',
-#       '::ffff:255.255.255.255',
-#       '::ffff:0:255.255.255.255',
-#       '2001:db8:3:4::192.0.2.33',
-#       '64:ff9b::192.0.2.33',
-#   ]
-#
-#   # IPV6ADDR Tests
-#   def test_individual(tests):
-#       for t in tests:
-#           assert re.search(IPV6ADDR, t).group() == t
-#
-#   # MULTILINE
-#   def test_multiline(tests):
-#       _tests = tests[:]
-#       for t in re.findall(IPV6ADDR, ' '.join(tests)):
-#           _tests.remove(t)
-#       assert not _tests
-#
-#   test_individual(tests)
-#   test_multiline(tests)
-#
-#   log_data = "Server started at 2001:db8::1:1:1:1:1, connection from 192.168.1.1, another ipv6: fe80::8329"
-#   aIpv6 = re.findall(IPV6ADDR, log_data)
-#   print(aIpv6)
-#   aIpv4 = re.findall(IPV4ADDR, log_data)
-#   print(aIpv4)
-#}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}} }}
+############################################################################ }}
 
 GEO_DB_PATH = 'GeoLite2-City.mmdb'
 
