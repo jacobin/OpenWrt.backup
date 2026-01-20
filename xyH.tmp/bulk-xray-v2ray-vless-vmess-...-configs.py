@@ -136,7 +136,7 @@ def main():
         try:
             shutil.rmtree( zip_root_dir )
         except Exception as e:
-            MyPrintErr( f"Deleting directory '{zip_root_dir}' failed: {e}" )
+            MyPrintErr( f"{__func__}(): Deleting directory '{zip_root_dir}' failed. Exception: {e}" )
 
     #### Do you want to skip the download? ########
     if bRedownload:
@@ -304,17 +304,17 @@ def download( telegram_urls, web_download_folder, list_downloaded_fpath ):
                 fList.write( f"{url},{web_download_folder}/{filename}.html.tmp,{web_download_folder}/{filename}.html\n" )
                 success_count +=1
         except HTTPError as e:
-            MyPrintWarning(f"{__func__}(): HTTP error occurred: {e}") # e.g., 404 Not Found, 500 Internal Server Error
+            MyPrintWarning(f"{__func__}(): HTTP error occurred. Details: {e}") # e.g., 404 Not Found, 500 Internal Server Error
         except ConnectionError as e:
-            MyPrintWarning(f"{__func__}(): Connection error occurred: {e}") # e.g., DNS failure, refused connection, no internet
+            MyPrintWarning(f"{__func__}(): Connection error occurred. Details: {e}") # e.g., DNS failure, refused connection, no internet
         except Timeout as e:
-            MyPrintWarning(f"{__func__}(): Timeout error occurred: {e}") # Request took too long to respond
+            MyPrintWarning(f"{__func__}(): Timeout error occurred. Details: {e}") # Request took too long to respond
         except RequestException as e:
             # Catch any other general requests error that inherits from RequestException
-            MyPrintWarning(f"{__func__}(): An unexpected request error occurred: {e}")
+            MyPrintWarning(f"{__func__}(): An unexpected request error occurred. Details: {e}")
         except Exception as e:
             # Catch any other potential errors (e.g., issues with Beautiful Soup parsing)
-            MyPrintWarning(f"{__func__}(): An unexpected error occurred during processing: {e}")
+            MyPrintWarning(f"{__func__}(): An unexpected error occurred during processing. Details: {e}")
     fList.close()
     session.close()
     return success_count
@@ -354,14 +354,14 @@ def filter_acceptable_files( list_downloaded_fpath, list_accept_fpath, list_dead
                     if os.path.exists(oldFPath):
                         os.remove(oldFPath)
                     os.rename(tmpFPath, oldFPath)
-                except FileNotFoundError:
-                    MyPrintWarning(f"{__func__}(): File not found.")
-                except FileExistsError:
-                    MyPrintWarning(f"{__func__}(): New file name already exists.")
-                except PermissionError:
-                    MyPrintWarning(f"{__func__}(): Permission denied. Unable to rename the file.")
-                except Exception as e:
-                    MyPrintWarning(f"{__func__}(): An unexpected error occurred during processing: {e}")
+                except FileNotFoundError as e:
+                    MyPrintWarning(f"{__func__}(): File not found. Details: {e}" )
+                except FileExistsError as e:
+                    MyPrintWarning(f"{__func__}(): New file name already exists. Details: {e}" )
+                except PermissionError as e:
+                    MyPrintWarning(f"{__func__}(): Permission denied. Unable to rename the file. Details: {e}" )
+                except Exception as e :
+                    MyPrintWarning(f"{__func__}(): An unexpected error occurred during processing: {e}" )
 
                 f2.write(f"{oldFPath}\n")
 
@@ -374,7 +374,7 @@ def is_valid_ip( ip_string ):
     except ValueError:
         return False
     except Exception as e:
-        MyPrintWarning(f"{__func__}(): An exception other than a value error occurred: {e}")
+        MyPrintWarning(f"{__func__}(): An exception other than a ValueError occurred. Details: {e}")
         return False
 
 ###############################################################################
@@ -392,8 +392,8 @@ def dns_lookup_with_specific_server( domain_name, dns_server_ip ):
         #print( f"type:{type(answers)}\ndata:{answers}" )
         ip_addresses = [str(answer) for answer in answers]
         return ip_addresses
-    except dns.resolver.LifetimeTimeout:
-        MyPrintWarning(f"{__func__}(): Resolve '{domain_name}' exception -- DNS server '{dns_server_ip}' timed out.")
+    except dns.resolver.LifetimeTimeout as e:
+        MyPrintWarning(f"{__func__}(): Resolve '{domain_name}' exception -- DNS server '{dns_server_ip}' timed out. Details: {e}")
         return None
     #except dns.resolver.NXDOMAIN as e:
     #    MyPrintWarning(f"{__func__}(): Resolve '{domain_name}' exception -- The DNS query name does not exist. Details: {e}")
@@ -501,7 +501,7 @@ def sort_and_unique_file_lines( input_filename, output_filename ):
                 if stripped_line: # Avoid adding empty lines
                     unique_lines.add(stripped_line)
     except Exception as e:
-        MyPrintWarning(f"{__func__}(): An exception occurred. ")
+        MyPrintWarning( f"{__func__}(): An exception occurred. Details: {e}" )
         return
 
     # Convert the set to a list and sort it
@@ -511,8 +511,8 @@ def sort_and_unique_file_lines( input_filename, output_filename ):
         # Write the sorted unique lines to a new file
         with open(output_filename, 'w', encoding='utf-8') as f:
             f.writelines(line + '\n' for line in sorted_unique_lines)
-    except Exception:
-        MyPrintWarning(f"{__func__}(): An exception occurred when file '{output_filename}' was opened for writing.")
+    except Exception as e:
+        MyPrintWarning( f"{__func__}(): An exception occurred. Details: {e}")
         return
 
 ###############################################################################
@@ -527,7 +527,7 @@ def remove_unsupported_protocols( input_filename, output_filename, protocals ):
                     if line.startswith(item):
                         f2.write(line)
     except Exception as e:
-        MyPrintWarning(f"{__func__}(): An error occurred during processing: {e}")
+        MyPrintWarning( f"{__func__}(): An error occurred. Details: {e}" )
 
 ###############################################################################
 def extract_host_from_url( url ):
@@ -562,7 +562,7 @@ def extract_host_from_url( url ):
                 if host:
                     return host
             except Exception as e:
-                MyPrintWarning(f"{__func__}(): An unexpected error occurred by Jsondecode(\"{json_string.strip()}\"): {e}")
+                MyPrintWarning(f"{__func__}(): An unexpected error occurred by Jsondecode(\"{json_string.strip()}\"). Details: {e}")
                 return None
 
     # Processing plaintext, including vmess plaintext
@@ -586,10 +586,10 @@ def get_region_from_ip( ip, geo_db_path ):
         with geoip2.database.Reader(geo_db_path) as reader:
             response = reader.city(ip)
             return response.country.name
-    except geoip2.errors.AddressNotFoundError:
-        print(f"{__func__}(): Location for IP {ip[0]} not found in the database.")
+    except geoip2.errors.AddressNotFoundError as e:
+        MyPrintWarning(f"{__func__}(): Location for IP {ip[0]} not found in the database. Details: {e}")
     except Exception as e:
-        print(f"{__func__}(): An error occurred: {e}")
+        MyPrintWarning(f"{__func__}(): An error occurred. Details: {e}")
     return None
 
 ###############################################################################
@@ -607,7 +607,7 @@ def open_file_to_read_if_recent(file_path, max_minutes=30):
         try:
             f = open(file_path, "r", encoding='utf-8')
         except Exception as e:
-            print(f"{__func__}(): An error occurred when opening '{file_path}': {e}")
+            MyPrintWarning(f"{__func__}(): An error occurred when opening '{file_path}'. Details: {e}")
             f = None
 
     return f
@@ -644,7 +644,7 @@ def save_configs_by_region( configs ):
                 for url in urls:
                     f.write(url.strip() + '\n')
     except Exception as e:
-        print(f"{__func__}(): An error occurred: {e}")
+        MyPrintWarning( f"{__func__}(): An error occurred. Details: {e}" )
 
 ###############################################################################
 def create_sub_section():
@@ -674,7 +674,7 @@ def create_new_section(MDFile, section_name, table_header, new_table_content ):
                 if f'## {section_name}' in old_content:
                     found_the_section = True
         except Exception as e:
-            print(f"{__func__}(): An exception occurred when file '{MDFile}' was opened for reading.: {e}")
+            MyPrintWarning( f"{__func__}(): An exception occurred when file '{MDFile}' was opened for reading. Details: {e}")
 
     nColumn = table_header.count( '|' ) - 1
 
@@ -690,7 +690,7 @@ def create_new_section(MDFile, section_name, table_header, new_table_content ):
             else:
                 f.write( old_content + new_content )
     except Exception as e:
-        print(f"{__func__}(): An exception occurred when file '{MDFile}' was opened for writing.: {e}")
+        MyPrintWarning( f"{__func__}(): An exception occurred when file '{MDFile}' was opened for writing. Details: {e}" )
 
 ###############################################################################
 def generate_nodes_table( telegramUrls ):
@@ -783,7 +783,7 @@ def shutil_compress( source_dir, output_filename ):
             base_dir = './'
         )
     except Exception as e:
-        print(f"{__func__}(): An error occurred: {e}")
+        MyPrintWarning( f"{__func__}(): An error occurred. Details: {e}" )
 
 ###############################################################################
 TELEGRAM_URLs = [
@@ -912,14 +912,9 @@ PRESENT_DNSs = {}
 
 #### CHECK IPV4/IPV6 ####################################################### {{
 # https://gist.githubusercontent.com/dfee/6ed3a4b05cfe7a6faf40a2102408d5d8/raw/9a6e81e7b4cd0d092c62d70ea1c8016f1b56b706/ip_regex.py
-#------------------------------------------------------------------------------
 # Constructed with help from
-# http://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
-# Try it on regex101: https://regex101.com/r/yVdrJQ/1
-
-#------- TEST CASE / EXAMPLE, PART 1 ------------------------------------------
-#   import re
-
+#    http://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
+#    Try it on regex101: https://regex101.com/r/yVdrJQ/1
 IPV4SEG  = r'(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])'
 IPV4ADDR = r'(?:(?:' + IPV4SEG + r'\.){3,3}' + IPV4SEG + r')'
 IPV6SEG  = r'(?:(?:[0-9a-fA-F]){1,4})'
