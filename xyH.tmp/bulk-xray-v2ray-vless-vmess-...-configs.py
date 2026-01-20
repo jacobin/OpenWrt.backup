@@ -19,6 +19,7 @@ import getopt
 import inspect
 import ipaddress
 import json
+import logging
 import os
 import os.path
 import re
@@ -31,7 +32,7 @@ import urllib.parse
 
 ###############################################################################
 def main():
-    #### Preparation of environment variables #############################
+    #### Preparation of environment variables #####
     __func__ = inspect.currentframe().f_code.co_name
     __script_name__ = os.path.basename(__file__)
 
@@ -41,6 +42,8 @@ def main():
     global PRESENT_DNSs
     global IPV6ADDR
     global GEO_DB_PATH
+
+    MyPrintInfo( "Start downloading, analyzing, and extracting subscription information." )
 
     #{{{ Parameter preparation via getopt {{{{{{{{{
     bRedownload = False
@@ -52,9 +55,8 @@ def main():
     try:
         opts, args = getopt.getopt(argv, "hrd:g:t:", ["help", "redownload", "dnsserver", "geo_db_path", "dns_max_survival_minutes" ])
 
-    except getopt.GetoptError:
-        print(f'Usage: {__script_name__} -r<redownload> -d <dnsserver> -g <geo_db_path> -t <dns_max_survival_minutes>')
-        sys.exit(2)
+    except getopt.GetoptError as e:
+        MyPrintErr( f'{__func__}(): An exception occurred. Details: {e}\nUsage: {__script_name__} -r<redownload> -d <dnsserver> -g <geo_db_path> -t <dns_max_survival_minutes>')
 
     for opt, arg in opts:
         if opt in ("-h", "--help"):
@@ -69,25 +71,20 @@ def main():
         elif opt in ("-t", "--dns_max_survival_minutes"):
             sDnsMaxSurvivalMinutes = arg
         else:
-            print(f'Usage: {__script_name__} -r<redownload> -d <dnsserver> -g <geo_db_path> -t <dns_max_survival_minutes>')
-            sys.exit(3)
+            MyPrintErr( f'{__func__}(): There are non-compliant argument.\nUsage: {__script_name__} -r<redownload> -d <dnsserver> -g <geo_db_path> -t <dns_max_survival_minutes>')
     #}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 
     if not is_valid_ip( sDnsServer ):
-        print( f"The specified dnsserver parameter '{sDnsServer}' is not an IP address." )
-        sys.exit(4)
+        MyPrintErr( f"{__func__}(): The specified dnsserver parameter '{sDnsServer}' is not an IP address." )
 
     if not sDnsMaxSurvivalMinutes.isdigit():
-        print( f"The specified dns_max_survival_minutes parameter '{sDnsMaxSurvivalMinutes}' is not a number." )
-        sys.exit(5)
+        MyPrintErr( f"{__func__}(): The specified dns_max_survival_minutes parameter '{sDnsMaxSurvivalMinutes}' is not a number." )
     nDnsMaxSurvivalMinutes = int(sDnsMaxSurvivalMinutes)
     if nDnsMaxSurvivalMinutes < 0:
-        print( f"The dns_max_survival_minutes parameter '{nDnsMaxSurvivalMinutes}' cannot be less than zero." )
-        sys.exit(4)
+        MyPrintErr( f"{__func__}(): The dns_max_survival_minutes parameter '{nDnsMaxSurvivalMinutes}' cannot be less than zero." )
 
-    if not os.path.exists(GEO_DB_PATH):
-        print( f"The specified IP map file '{GEO_DB_PATH}' does not exist." )
-        sys.exit(6)
+    if not os.path.exists( GEO_DB_PATH ):
+        MyPrintErr( f"{__func__}(): The specified IP map file '{GEO_DB_PATH}' does not exist." )
 
     #### Preparation of environment variables 2 ###
     __script_dir__ = Path(__file__).resolve().parent
@@ -96,26 +93,19 @@ def main():
     F = f"{__Ford_assembly_line__}/"
     __timestamp_str__ = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    #### Redirect print to logfile ################
-    original_stdout = sys.stdout
-    log_file = open(f'{__script_name__}.log', 'a', encoding='utf-8')
-    sys.stdout = Tee(original_stdout, log_file)
-
     #### Check system environment #################
     bFirstRun = False
     if not os.path.exists(__web_download_dir__):
         bFirstRun = True
         os.makedirs(__web_download_dir__)
     if not Path(__web_download_dir__).exists():
-        print(f"{__func__}(): Folder '{__web_download_dir__}' dose NOT exist.")
-        sys.exit(7)
+        MyPrintErr(f"{__func__}(): Folder '{__web_download_dir__}' dose NOT exist.")
     #----------------------------------------------
     if not os.path.exists(__Ford_assembly_line__):
         bFirstRun = True
         os.makedirs(__Ford_assembly_line__)
     if not Path(__Ford_assembly_line__).exists():
-        print(f"{__func__}(): Folder '{__Ford_assembly_line__}' dose NOT exist.")
-        sys.exit(8)
+        MyPrintErr(f"{__func__}(): Folder '{__Ford_assembly_line__}' dose NOT exist.")
 
     #### Backup the history data ##################
     if not bFirstRun:
@@ -138,8 +128,7 @@ def main():
             try:
                 shutil.rmtree( sorted_dirs[n] )
             except Exception as e:
-                print( f"{__func__}(): Deleting directory '{sorted_dirs[n]}' failed. Detail: {e}" )
-                sys.exit(9)
+                MyPrintErr( f"{__func__}(): An exception occurred. Details: {e}" )
 
         shutil_compress( zip_root_dir, backupzip )
 
@@ -147,8 +136,7 @@ def main():
         try:
             shutil.rmtree( zip_root_dir )
         except Exception as e:
-            print( f"Deleting directory '{zip_root_dir}' failed: {e}" )
-            sys.exit(10)
+            MyPrintErr( f"Deleting directory '{zip_root_dir}' failed: {e}" )
 
     #### Do you want to skip the download? ########
     if bRedownload:
@@ -156,8 +144,7 @@ def main():
         filter_acceptable_files( f"{F}a.list_downloaded_file.txt", f"{F}b.accept_file.txt", f"{F}c.dead_link.txt", 7 )
 
     if not os.path.exists(f"{F}b.accept_file.txt"):
-        print("Please use the -r option to download first.")
-        sys.exit(11)
+        MyPrintErr("Please use the -r option to download first.")
 
     #### extract all the v2ray links ##############
     all_v2ray_configs = []
@@ -258,16 +245,12 @@ def main():
         save_configs_by_region(all_v2ray_configs)
         create_nodes_section()
         create_sub_section()
-        print("Configs saved successfully.")
+        MyPrintInfo("Configs saved successfully.")
     else:
-        print("No V2Ray configs found.")
+        MyPrintInfo("No V2Ray configs found.")
 
     with open("present_dns.json", "w") as f:
         json.dump(PRESENT_DNSs, f, indent=4) # 'indent=4' makes the file human-readable
-
-    # To restore original behavior and close the file
-    sys.stdout = original_stdout
-    log_file.close()
 
 ###############################################################################
 # format of list_downloaded_fpath: url, downloaded_tmpfile, downloaded_oldfile
@@ -313,7 +296,7 @@ def download( telegram_urls, web_download_folder, list_downloaded_fpath ):
         try:
             response = session.get(url, timeout=5)
             if response.status_code != 200:
-                print(f"{__func__}(): Failed to fetch URL (Status Code: {response.status_code})")
+                MyPrintWarning(f"{__func__}(): Failed to fetch URL (Status Code: {response.status_code})")
                 continue
             filename=extract_filename_from_url(url)
             with open(f"{web_download_folder}/{filename}.html.tmp", "w", encoding="utf-8") as f:
@@ -321,17 +304,17 @@ def download( telegram_urls, web_download_folder, list_downloaded_fpath ):
                 fList.write( f"{url},{web_download_folder}/{filename}.html.tmp,{web_download_folder}/{filename}.html\n" )
                 success_count +=1
         except HTTPError as e:
-            print(f"{__func__}(): HTTP error occurred: {e}") # e.g., 404 Not Found, 500 Internal Server Error
+            MyPrintWarning(f"{__func__}(): HTTP error occurred: {e}") # e.g., 404 Not Found, 500 Internal Server Error
         except ConnectionError as e:
-            print(f"{__func__}(): Connection error occurred: {e}") # e.g., DNS failure, refused connection, no internet
+            MyPrintWarning(f"{__func__}(): Connection error occurred: {e}") # e.g., DNS failure, refused connection, no internet
         except Timeout as e:
-            print(f"{__func__}(): Timeout error occurred: {e}") # Request took too long to respond
+            MyPrintWarning(f"{__func__}(): Timeout error occurred: {e}") # Request took too long to respond
         except RequestException as e:
             # Catch any other general requests error that inherits from RequestException
-            print(f"{__func__}(): An unexpected request error occurred: {e}")
+            MyPrintWarning(f"{__func__}(): An unexpected request error occurred: {e}")
         except Exception as e:
             # Catch any other potential errors (e.g., issues with Beautiful Soup parsing)
-            print(f"{__func__}(): An unexpected error occurred during processing: {e}")
+            MyPrintWarning(f"{__func__}(): An unexpected error occurred during processing: {e}")
     fList.close()
     session.close()
     return success_count
@@ -372,13 +355,13 @@ def filter_acceptable_files( list_downloaded_fpath, list_accept_fpath, list_dead
                         os.remove(oldFPath)
                     os.rename(tmpFPath, oldFPath)
                 except FileNotFoundError:
-                    print(f"{__func__}(): File not found.")
+                    MyPrintWarning(f"{__func__}(): File not found.")
                 except FileExistsError:
-                    print(f"{__func__}(): New file name already exists.")
+                    MyPrintWarning(f"{__func__}(): New file name already exists.")
                 except PermissionError:
-                    print(f"{__func__}(): Permission denied. Unable to rename the file.")
+                    MyPrintWarning(f"{__func__}(): Permission denied. Unable to rename the file.")
                 except Exception as e:
-                    print(f"{__func__}(): An unexpected error occurred during processing: {e}")
+                    MyPrintWarning(f"{__func__}(): An unexpected error occurred during processing: {e}")
 
                 f2.write(f"{oldFPath}\n")
 
@@ -391,7 +374,7 @@ def is_valid_ip( ip_string ):
     except ValueError:
         return False
     except Exception as e:
-        print(f"{__func__}(): An exception other than a value error occurred: {e}")
+        MyPrintWarning(f"{__func__}(): An exception other than a value error occurred: {e}")
         return False
 
 ###############################################################################
@@ -410,17 +393,39 @@ def dns_lookup_with_specific_server( domain_name, dns_server_ip ):
         ip_addresses = [str(answer) for answer in answers]
         return ip_addresses
     except dns.resolver.LifetimeTimeout:
-        print(f"{__func__}(): Resolve '{domain_name}' exception -- DNS server '{dns_server_ip}' timed out.")
+        MyPrintWarning(f"{__func__}(): Resolve '{domain_name}' exception -- DNS server '{dns_server_ip}' timed out.")
         return None
     #except dns.resolver.NXDOMAIN as e:
-    #    print(f"{__func__}(): Resolve '{domain_name}' exception -- The DNS query name does not exist. Details: {e}")
+    #    MyPrintWarning(f"{__func__}(): Resolve '{domain_name}' exception -- The DNS query name does not exist. Details: {e}")
     #    return None
     #except dns.resolver.NoNameservers as e:
-    #    print(f"{__func__}(): Resolve '{domain_name}' exception -- All nameservers failed to answer the query. Details: {e}")
+    #    MyPrintWarning(f"{__func__}(): Resolve '{domain_name}' exception -- All nameservers failed to answer the query. Details: {e}")
     #    return None
     except Exception as e:
-        print(f"{__func__}(): Resolve '{domain_name}' exception. Details: {e}")
+        MyPrintWarning(f"{__func__}(): Resolve '{domain_name}' exception. Details: {e}")
         return None
+
+###############################################################################
+def MyPrintErr( s ):
+    assert s
+    now_time_string = str(datetime.now())
+    print(now_time_string+' '+s, file=sys.stderr)
+    logging.error( s )
+    sys.exit(1)
+
+###############################################################################
+def MyPrintWarning( s ):
+    assert s
+    now_time_string = str(datetime.now())
+    print(now_time_string+' '+s,file=sys.stderr)
+    logging.warning( s )
+
+###############################################################################
+def MyPrintInfo( s ):
+    assert s
+    now_time_string = str(datetime.now())
+    print(now_time_string+' '+s,file=sys.stdout)
+    logging.info( s )
 
 ###############################################################################
 # https://www.google.com/search?q=python+print+to+tee
@@ -496,7 +501,7 @@ def sort_and_unique_file_lines( input_filename, output_filename ):
                 if stripped_line: # Avoid adding empty lines
                     unique_lines.add(stripped_line)
     except Exception as e:
-        print(f"{__func__}(): An exception occurred. Detail: {e}")
+        MyPrintWarning(f"{__func__}(): An exception occurred. ")
         return
 
     # Convert the set to a list and sort it
@@ -506,8 +511,8 @@ def sort_and_unique_file_lines( input_filename, output_filename ):
         # Write the sorted unique lines to a new file
         with open(output_filename, 'w', encoding='utf-8') as f:
             f.writelines(line + '\n' for line in sorted_unique_lines)
-    except Exception as e:
-        print(f"{__func__}(): An exception occurred. Detail: {e}")
+    except Exception:
+        MyPrintWarning(f"{__func__}(): An exception occurred when file '{output_filename}' was opened for writing.")
         return
 
 ###############################################################################
@@ -522,7 +527,7 @@ def remove_unsupported_protocols( input_filename, output_filename, protocals ):
                     if line.startswith(item):
                         f2.write(line)
     except Exception as e:
-        print(f"{__func__}(): An error occurred during processing: {e}")
+        MyPrintWarning(f"{__func__}(): An error occurred during processing: {e}")
 
 ###############################################################################
 def extract_host_from_url( url ):
@@ -557,7 +562,7 @@ def extract_host_from_url( url ):
                 if host:
                     return host
             except Exception as e:
-                print(f"{__func__}(): An unexpected error occurred by Jsondecode(\"{json_string.strip()}\"): {e}")
+                MyPrintWarning(f"{__func__}(): An unexpected error occurred by Jsondecode(\"{json_string.strip()}\"): {e}")
                 return None
 
     # Processing plaintext, including vmess plaintext
@@ -939,6 +944,21 @@ GEO_DB_PATH = 'GeoLite2-City.mmdb'
 
 ###############################################################################
 if __name__ == "__main__":
+    current_filename = os.path.basename(__file__)
+
+    logging.basicConfig(filename=f'{current_filename}.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+    #### Tee assist ############################ {{
+    # https://www.google.com/search?q=python+print+to+tee
+    # Save the original standard error and open a new log file to track only errors.
+    save_original_stderr = sys.stderr #  sys.__stderr__
+    errlog_file = open(f'{current_filename}.track.err', 'w')
+    # Redirect sys.stderr to the Tee class
+    sys.stderr = Tee(save_original_stderr, errlog_file)
+    ############################################ }}
+    # Data Stream:
+    #    Python --> MyPrintErr --> { stderr --> Tee[save_stderr/original_stderr, errlog_file], logging }
+
     main()
 
 ################################## END ########################################
