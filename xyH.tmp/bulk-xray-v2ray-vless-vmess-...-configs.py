@@ -249,7 +249,7 @@ def main():
     else:
         MyPrintInfo("No V2Ray configs found.")
 
-    with open("present_dns.json", "w") as f:
+    with open("present_dns.json", "w", encoding='utf-8') as f:
         json.dump(PRESENT_DNSs, f, indent=4) # 'indent=4' makes the file human-readable
 
 ###############################################################################
@@ -947,7 +947,7 @@ if __name__ == "__main__":
     # https://www.google.com/search?q=python+print+to+tee
     # Save the original standard error and open a new log file to track only errors.
     save_original_stderr = sys.stderr #  sys.__stderr__
-    errlog_file = open(f'{current_filename}.track.err', 'w')
+    errlog_file = open(f'{current_filename}.track.err', 'w', encoding='utf-8')
     # Redirect sys.stderr to the Tee class
     sys.stderr = Tee(save_original_stderr, errlog_file)
     ############################################ }}
