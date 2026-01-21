@@ -51,6 +51,7 @@ def main():
     nDnsMaxSurvivalMinutes = 30
     sDnsMaxSurvivalMinutes = '30'
 
+    opts = None
     argv = sys.argv[1:]
     try:
         opts, args = getopt.getopt(argv, "hrd:g:t:", ["help", "redownload", "dnsserver", "geo_db_path", "dns_max_survival_minutes" ])
@@ -206,7 +207,7 @@ def main():
     f = open_file_to_read_if_recent('present_dns.json', nDnsMaxSurvivalMinutes)
     if f:
         PRESENT_DNSs = json.load(f)
-        f.close
+        f.close()
 
     with \
         open(f"{F}6.data_incomplete.txt", 'r', encoding='utf-8') as f, \
@@ -545,7 +546,7 @@ def extract_host_from_url( url ):
             #{"add":"173.249.209.146","aid":"0","alpn":"","fp":"","host":"","id":"3935c2dc-dbb0-43f7-b367-fe89abe87fdf","net":"ws","path":"/","port":"20086","ps":"@Network_442_(8)","scy":"auto","sni":"","tls":"","type":"","v":"2"}
             #{"add":"hgtrojan.zabc.net","aid":"0","alpn":"","fp":"","host":"hgtrojan.zabc.net","id":"e6395c20-4571-4b34-d6b1-55a5d36e49ea","net":"ws","path":"/e6395c20","port":"2083","ps":"@Network_442_ 🇺🇸 (6)","scy":"auto","sni":"hgtrojan.zabc.net","tls":"tls","type":"","v":"2"}
             #{"add":"sy4.620720.xyz","aid":"0","alpn":"","fp":"","host":"sy4.620720.xyz","id":"516d8a7a-3f0b-41d3-bad0-246116381516","net":"ws","path":"/","port":"443","ps":"@Network_442_ 🇺🇸 (9)","scy":"auto","sni":"sy4.620720.xyz","tls":"tls","type":"","v":"2"}
-            json_string = decoded_string;
+            json_string = decoded_string
         except Exception:
             json_string = None
 
@@ -648,18 +649,18 @@ def save_configs_by_region( configs ):
 
 ###############################################################################
 def create_sub_section():
-    create_new_section( \
-        "README.md", \
-        "Sub", \
-        "| Sub |", \
+    create_new_section(
+        "README.md",
+        "Sub",
+        "| Sub |",
         generate_sub_table( "sub" ) )
 
 ###############################################################################
 def create_nodes_section():
-    create_new_section( \
-        "README.md", \
-        "Nodes", \
-        "| Nodes | Node Links | Node Links | Node Links | Node Links |", \
+    create_new_section(
+        "README.md",
+        "Nodes",
+        "| Nodes | Node Links | Node Links | Node Links | Node Links |",
         generate_nodes_table( TELEGRAM_URLs ) )
 
 ###############################################################################
