@@ -224,7 +224,7 @@ def main():
                 ip = PRESENT_DNSs.get(domain, None)
                 if not ip:
                     ip = 'UnableToObtain'
-                    ips = dns_lookup_with_specific_server(domain, '8.8.8.8')
+                    ips = dns_lookup_with_specific_server(domain, sDnsServer)
                     if ips:
                         ip = ips[0]
                         PRESENT_DNSs[domain] = ip
