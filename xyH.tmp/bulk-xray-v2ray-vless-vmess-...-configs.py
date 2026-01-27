@@ -881,6 +881,7 @@ TELEGRAM_URLs = [
     "https://t.me/s/God_CONFIG"         ,
     "https://t.me/s/Configforvpn01"     ,
     "https://t.me/s/tg233boy"           ,
+    "https://t.me/s/yaney_01"           ,
 ]
 TELEGRAM_URLs = sorted( set( TELEGRAM_URLs ), key = str.casefold )
 
