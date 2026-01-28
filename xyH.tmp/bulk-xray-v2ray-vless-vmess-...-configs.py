@@ -791,6 +791,7 @@ def shutil_compress( source_dir, output_filename ):
 # https://github.com/bugbounted/telegram-configs-collector/blob/main/telegram%20channels.json
 # https://github.com/mermeroo/V2rayCollector ==> https://github.com/mrvcoder/V2rayCollector/blob/main/channels.csv
 # https://github.com/mermeroo/Tel-V2ray-Bot/blob/main/telegram%20channels.json
+# https://github.com/Kwinshadow/TelegramV2rayCollector/blob/main/README.md
 TELEGRAM_URLs = [
     "https://t.me/s/aak_vpn",
     "https://t.me/s/abadanvpn",
@@ -2314,6 +2315,14 @@ TELEGRAM_URLs = [
     "https://t.me/s/ztv2ray",
     "https://t.me/s/zvpnn",
     "https://t.me/s/zyfxlnn",
+    "https://t.me/s/nim_vpn_ir",
+    "https://t.me/s/outline_vpn",
+    "https://t.me/s/hope_net",
+    "https://t.me/s/proxystore11",
+    "https://t.me/s/yaney_01",
+    "https://t.me/s/fnet00",
+    "https://t.me/s/azadnet",
+    "https://t.me/s/customv2ray",
 ]
 TELEGRAM_URLs = sorted( set( TELEGRAM_URLs ), key = str.casefold )
 
