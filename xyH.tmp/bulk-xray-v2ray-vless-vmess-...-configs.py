@@ -50,18 +50,19 @@ def main():
     sDnsServer = '8.8.8.8'
     nDnsMaxSurvivalMinutes = 30
     sDnsMaxSurvivalMinutes = '30'
+    sTemporaryFolder = tempfile.gettempdir()
 
     opts = None
     argv = sys.argv[1:]
+    sUsage = f"Usage: {__script_name__} -r<redownload> -d <dnsserver> -g <geo_db_path> -t <dns_max_survival_minutes> -m <temporary_folder>"
     try:
-        opts, args = getopt.getopt(argv, "hrd:g:t:", ["help", "redownload", "dnsserver", "geo_db_path", "dns_max_survival_minutes" ])
-
+        opts, args = getopt.getopt(argv, "hrd:g:t:m:", ["help", "redownload", "dnsserver", "geo_db_path", "dns_max_survival_minutes", "temporary_folder" ])
     except getopt.GetoptError as e:
-        MyPrintErr( f'{__func__}(): An exception occurred. Details: {e}\nUsage: {__script_name__} -r<redownload> -d <dnsserver> -g <geo_db_path> -t <dns_max_survival_minutes>')
+        MyPrintErr( f'{__func__}(): An exception occurred. Details: {e}\n{sUsage}')
 
     for opt, arg in opts:
         if opt in ("-h", "--help"):
-            print(f'Usage: {__script_name__} -r<redownload> -d <dnsserver> -g <geo_db_path> -t <dns_max_survival_minutes>')
+            print({sUsage})
             sys.exit()
         elif opt in ("-r", "--redownload"):
             bRedownload = True
@@ -71,9 +72,23 @@ def main():
             GEO_DB_PATH = arg
         elif opt in ("-t", "--dns_max_survival_minutes"):
             sDnsMaxSurvivalMinutes = arg
+        elif opt in ("-m", "--temporary_folder"):
+            sTemporaryFolder = arg
         else:
-            MyPrintErr( f'{__func__}(): There are non-compliant argument.\nUsage: {__script_name__} -r<redownload> -d <dnsserver> -g <geo_db_path> -t <dns_max_survival_minutes>')
+            MyPrintErr( f'{__func__}(): There are non-compliant argument.\n{sUsage}')
     #}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+
+    if not os.path.exists( sTemporaryFolder ):
+        try:
+            os.makedirs( sTemporaryFolder )
+        except Exception:
+            MyPrintErr( f"{__func__}(): Make temporary folder '{sTemporaryFolder}' failed." )
+    assert os.path.exists( sTemporaryFolder )
+
+    # (total, used, freeDiskSpace) = shutil.disk_usage( sTemporaryFolder )
+    freeDiskSpace = shutil.disk_usage( sTemporaryFolder )[2]
+    if freeDiskSpace < 500 * 1024 * 1024:
+        MyPrintErr( f"{__func__}(): The temporary folder only has {freeDiskSpace/1024/1024}MB of free space. \nPlease ensure that the temporary directory has at least 500MB of free space." )
 
     if not is_valid_ip( sDnsServer ):
         MyPrintErr( f"{__func__}(): The specified dnsserver parameter '{sDnsServer}' is not an IP address." )
@@ -95,41 +110,60 @@ def main():
     __timestamp_str__ = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     #### Check system environment #################
+    freeDiskSpace = shutil.disk_usage( __script_dir__ )[2]
+    if freeDiskSpace < 500 * 1024 * 1024:
+        MyPrintErr( f"{__func__}(): The work folder only has {freeDiskSpace/1024/1024}MB of free space. \nPlease ensure that the work directory has at least 500MB of free space." )
+    #----------------------------------------------
     bFirstRun = False
     if not os.path.exists(__web_download_dir__):
         bFirstRun = True
-        os.makedirs(__web_download_dir__)
-    if not Path(__web_download_dir__).exists():
-        MyPrintErr(f"{__func__}(): Folder '{__web_download_dir__}' dose NOT exist.")
+        try:
+            os.makedirs(__web_download_dir__)
+        except Exception:
+            MyPrintErr( f"{__func__}(): Make web download folder '{__web_download_dir__}' failed." )
+    assert Path( __web_download_dir__ ).exists()
     #----------------------------------------------
     if not os.path.exists(__Ford_assembly_line__):
         bFirstRun = True
-        os.makedirs(__Ford_assembly_line__)
-    if not Path(__Ford_assembly_line__).exists():
-        MyPrintErr(f"{__func__}(): Folder '{__Ford_assembly_line__}' dose NOT exist.")
+        try:
+            os.makedirs(__Ford_assembly_line__)
+        except Exception:
+            MyPrintErr( f"{__func__}(): Make Ford assembly line folder '{__Ford_assembly_line__}' failed." )
+    assert Path(__Ford_assembly_line__).exists()
 
     #### Backup the history data ##################
     if not bFirstRun:
-        temp_dir = tempfile.gettempdir()
+        assert sTemporaryFolder
+        temp_dir = sTemporaryFolder
         zip_root_dir = f"{temp_dir}/Epodonios{__timestamp_str__}"
         assert not os.path.exists( zip_root_dir )
-        os.makedirs( zip_root_dir )
+        try:
+            os.makedirs( zip_root_dir )
+        except Exception:
+            MyPrintErr( f"{__func__}(): Make zip root folder '{zip_root_dir}' failed." )
+        assert os.path.exists( zip_root_dir )
 
         src = f"{__script_dir__}/Epodonios"
         dst_parent = zip_root_dir # e.g., destination_folder
         dst = os.path.join(dst_parent, __timestamp_str__)
-        shutil.copytree(src, dst) # This will create destination_folder/source_folder
+        try:
+            shutil.copytree(src, dst) # This will create destination_folder/source_folder
+        except Exception as e:
+            MyPrintErr( f"{__func__}(): Copy folder '{src}' to '{dst}' failed. Details: {e}" )
 
         backupzip = f"{__script_dir__}/BackupEpodonios.tar.xz"
         if os.path.exists( backupzip ):
-            shutil.unpack_archive( backupzip, zip_root_dir)
+            try:
+                shutil.unpack_archive( backupzip, zip_root_dir)
+            except Exception as e:
+                MyPrintErr( f"{__func__}(): An exception occurred. Details: {e}" )
 
         sorted_dirs = sorted( list( Path( zip_root_dir ).iterdir() ) )
-        for n in range( len(sorted_dirs) - 5 ):
+        for n in range( len(sorted_dirs) - 2 ):
             try:
                 shutil.rmtree( sorted_dirs[n] )
             except Exception as e:
-                MyPrintErr( f"{__func__}(): An exception occurred. Details: {e}" )
+                MyPrintErr( f"{__func__}(): Remove redundant folder '{sorted_dirs[n]}' failed. Details: {e}" )
 
         shutil_compress( zip_root_dir, backupzip )
 
@@ -137,7 +171,7 @@ def main():
         try:
             shutil.rmtree( zip_root_dir )
         except Exception as e:
-            MyPrintErr( f"{__func__}(): Deleting directory '{zip_root_dir}' failed. Exception: {e}" )
+            MyPrintErr( f"{__func__}(): Remove folder '{zip_root_dir}' failed. Details: {e}" )
 
     #### Do you want to skip the download? ########
     if bRedownload:
@@ -149,11 +183,13 @@ def main():
 
     #### extract all the v2ray links ##############
     all_v2ray_configs = []
-    with open( f"{F}b.accept_file.txt", "r", encoding='utf-8' ) as f:
+    with open( f"{F}b.accept_file.txt", "r", encoding='utf-8' ) as f, open( f"{F}d.dead_channel.txt", "w", encoding='utf-8' ) as f2:
         for htmlfpath in f:
             v2ray_configs = extract_all_v2ray_links( htmlfpath.strip(), 365, SUPPORTED_FANQIANG_PROTOCALs )
             if v2ray_configs:
                 all_v2ray_configs.extend( v2ray_configs )
+            else:
+                f2.write(htmlfpath.strip() + '\n')
 
     #### dump all the v2ray configs to file #######
     with open(f"{F}1.data_incomplete.txt", 'w', encoding="utf-8") as f:
@@ -187,7 +223,7 @@ def main():
     with \
         open(f"{F}5.data_incomplete.txt", 'r', encoding='utf-8') as f, \
         open(f"{F}6.data_incomplete.txt", 'w', encoding='utf-8') as f2, \
-        open(f"{F}d.urls_where_host_extraction_failed.txt", 'w', encoding='utf-8') as f3:
+        open(f"{F}e.urls_where_host_extraction_failed.txt", 'w', encoding='utf-8') as f3:
         for url in f:
             # host
             url = url.strip()
@@ -622,10 +658,17 @@ def save_configs_by_region( configs ):
         for folder in os.listdir(CONFIG_FOLDER):
             folder_path = os.path.join(CONFIG_FOLDER, folder)
             if os.path.isdir(folder_path):
-                shutil.rmtree(folder_path)
+                try:
+                    shutil.rmtree(folder_path)
+                except Exception:
+                    MyPrintErr( f"{__func__}(): Remove folder '{folder_path}' failed." )
 
     if not os.path.exists(CONFIG_FOLDER):
-        os.makedirs(CONFIG_FOLDER)
+        try:
+            os.makedirs(CONFIG_FOLDER)
+        except Exception:
+            MyPrintErr( f"{__func__}(): Make config folder '{CONFIG_FOLDER}' failed." )
+    assert os.path.exists( CONFIG_FOLDER )
 
     # https://www.google.com/search?q=python+dict+string+key+list+value
     # Create a defaultdict with a default factory of list
@@ -640,7 +683,12 @@ def save_configs_by_region( configs ):
         for region, urls in map_region_urls.items():
             region_folder = os.path.join(CONFIG_FOLDER, region)
             assert not os.path.exists(region_folder)
-            os.makedirs(region_folder)
+            try:
+                os.makedirs(region_folder)
+            except Exception:
+                MyPrintErr( f"{__func__}(): Make region folder '{region_folder}' failed." )
+            assert os.path.exists(region_folder)
+
             with open(os.path.join(region_folder, 'config.txt'), 'w', encoding='utf-8') as f:
                 for url in urls:
                     f.write(url.strip() + '\n')
