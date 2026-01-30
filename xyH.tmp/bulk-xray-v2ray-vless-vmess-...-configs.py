@@ -337,7 +337,7 @@ def filter_acceptable_files( list_downloaded_fpath, list_accept_fpath, list_dead
             oldFPath = result[2]
 
             noChanges = False
-            assert os.path.exists(tmpFPath)
+            assert os.path.exists(tmpFPath), f"{tmpFPath} not exist."
             if os.path.exists(oldFPath):
                 noChanges = filecmp.cmp(tmpFPath, oldFPath, False)
             if noChanges:
