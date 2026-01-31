@@ -23,6 +23,7 @@ import json
 import logging
 import os
 import os.path
+import portalocker
 import re
 import requests
 import shutil
@@ -902,7 +903,42 @@ IPV6ADDR = '|'.join(['(?:{})'.format(g) for g in IPV6GROUPS[::-1]])  # Reverse r
 GEO_DB_PATH = 'GeoLite2-City.mmdb'
 
 ###############################################################################
+# https://www.cnblogs.com/lsdb/p/12102418.html
+class CSingleRunningInstance():
+    def _get_lock(self):
+        file_name = os.path.basename(__file__)
+        # POSIX-like platforms such as Linux still use the standard /var/run, while other platforms such as NT use the current directory.
+        if os.name == "posix":
+            lock_file_name = f"/var/run/{file_name}.pid"
+        else:
+            lock_file_name = f"{file_name}.pid"
+        self.fd = open(lock_file_name, "w")
+        try:
+            portalocker.lock(self.fd, portalocker.LOCK_EX | portalocker.LOCK_NB)
+            # The current process ID is written to the file.
+            # If the lock cannot be acquired, an error would have occurred in the previous step, so there's no need to worry about overwriting.
+            self.fd.writelines(str(os.getpid()))
+            # Because the amount of data to be written is too small, it will be placed in a buffer by default. We force synchronous writing to the file.
+            self.fd.flush()
+        except:
+            print(f"{file_name} have another instance running.")
+            exit(1)
+
+    def __init__(self):
+        self._get_lock()
+
+    def hello_world(self):
+        print("hello world!")
+        time.sleep(30)
+        # This is slightly different from `fcntl` in Linux; `Portalocker` directly releases the lock using the `unlock()` method.
+        # Still, it's not necessary to manually release the lock at the end.
+        def __del__(self):
+        portalocker.unlock(self.fd)
+
+###############################################################################
 if __name__ == "__main__":
+    lockedObject = CSingleRunningInstance()
+
     current_filename = os.path.basename(__file__)
 
     logging.basicConfig(filename=f'{current_filename}.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
