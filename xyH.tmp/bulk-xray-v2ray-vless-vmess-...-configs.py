@@ -921,8 +921,8 @@ class CSingleRunningInstance():
             # Because the amount of data to be written is too small, it will be placed in a buffer by default. We force synchronous writing to the file.
             self.fd.flush()
         except:
-            print(f"{file_name} have another instance running.")
-            exit(1)
+            print(f"{str(datetime.now())} '{file_name}' have another instance running.")
+            sys.exit(1)
 
     def __init__(self):
         self._get_lock()
@@ -930,9 +930,10 @@ class CSingleRunningInstance():
     def hello_world(self):
         print("hello world!")
         time.sleep(30)
-        # This is slightly different from `fcntl` in Linux; `Portalocker` directly releases the lock using the `unlock()` method.
-        # Still, it's not necessary to manually release the lock at the end.
-        def __del__(self):
+
+    # This is slightly different from `fcntl` in Linux; `Portalocker` directly releases the lock using the `unlock()` method.
+    # Still, it's not necessary to manually release the lock at the end.
+    def __del__(self):
         portalocker.unlock(self.fd)
 
 ###############################################################################
