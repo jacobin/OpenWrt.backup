@@ -285,7 +285,7 @@ def main():
 
         # create_nodes_section( telegramUrls ) --}                                                                                     {--> generate_nodes_table( telegramUrls )
         #                                        } --> create_new_section( MDFile, section_name, table_header, new_table_content ) --> {
-        # create_sub_section( cfgs_folder ) -----}                                                                                     {--> generate_sub_table( config_folder )
+        # create_sub_section( cfgs_folder ) -----}                                                                                     {--> generate_sub_table( configs_folder )
         create_nodes_section( TELEGRAM_URLs )
         create_sub_section( "sub" )
         MyPrintInfo("Configs saved successfully.")
@@ -771,9 +771,9 @@ def generate_nodes_table( telegramUrls ):
     return content
 
 ###############################################################################
-def generate_sub_table( config_folder ):
+def generate_sub_table( configs_folder ):
     content = ""
-    for root, dirs, files in os.walk( config_folder ):
+    for root, dirs, files in os.walk( configs_folder ):
         for directory in dirs:
             config_path = os.path.join(root, directory, 'config.txt')
             if os.path.exists( config_path ):
