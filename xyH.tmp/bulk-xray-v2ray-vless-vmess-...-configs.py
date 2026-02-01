@@ -281,9 +281,13 @@ def main():
         all_v2ray_configs = f.readlines()
 
     if all_v2ray_configs:
-        save_configs_by_region(all_v2ray_configs)
-        create_nodes_section()
-        create_sub_section()
+        save_configs_by_region( all_v2ray_configs, "sub" )
+
+        # create_nodes_section( telegramUrls ) --}                                                                                     {--> generate_nodes_table( telegramUrls )
+        #                                        } --> create_new_section( MDFile, section_name, table_header, new_table_content ) --> {
+        # create_sub_section( cfgs_folder ) -----}                                                                                     {--> generate_sub_table( config_folder )
+        create_nodes_section( TELEGRAM_URLs )
+        create_sub_section( "sub" )
         MyPrintInfo("Configs saved successfully.")
     else:
         MyPrintInfo("No V2Ray configs found.")
@@ -652,9 +656,9 @@ def open_file_to_read_if_recent(file_path, max_minutes=30):
     return f
 
 ###############################################################################
-def save_configs_by_region( configs ):
+def save_configs_by_region( configs, cfgs_folder ):
     __func__ = inspect.currentframe().f_code.co_name
-    CONFIG_FOLDER = "sub"
+    CONFIG_FOLDER = cfgs_folder
 
     if os.path.exists(CONFIG_FOLDER):
         for folder in os.listdir(CONFIG_FOLDER):
@@ -698,20 +702,20 @@ def save_configs_by_region( configs ):
         MyPrintWarning( f"{__func__}(): An error occurred. Details: {e}" )
 
 ###############################################################################
-def create_sub_section():
+def create_sub_section( cfgs_folder ):
     create_new_section(
         "README.md",
         "Sub",
         "| Sub |",
-        generate_sub_table( "sub" ) )
+        generate_sub_table( cfgs_folder ) )
 
 ###############################################################################
-def create_nodes_section():
+def create_nodes_section( telegramUrls ):
     create_new_section(
         "README.md",
         "Nodes",
         "| Nodes | Node Links | Node Links | Node Links | Node Links |",
-        generate_nodes_table( TELEGRAM_URLs ) )
+        generate_nodes_table( telegramUrls ) )
 
 ###############################################################################
 def create_new_section(MDFile, section_name, table_header, new_table_content ):
