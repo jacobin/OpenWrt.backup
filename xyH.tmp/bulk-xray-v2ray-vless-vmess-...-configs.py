@@ -205,7 +205,22 @@ def main():
 
     #### Do you want to skip the download? ########
     if bRedownload:
-        download(TELEGRAM_URLs, __web_download_dir__, f"{F}b.list_downloaded_file.txt")
+        lsNetworkFailureChannels = TELEGRAM_URLs
+        for i in range( 6 ):
+            os.remove( f"{F}b.{i}.list_downloaded_file.txt" )
+
+        for i in range( 6 ):
+            ( lsSuccessChnnels, lsNot200, lsNetworkFailureChannels ) = download( lsNetworkFailureChannels, __web_download_dir__, f"{F}b.{i}.list_downloaded_file.txt")
+            if not lsNetworkFailureChannels:
+                break
+
+        with open(f"{F}b.list_downloaded_file.txt", "w") as outfile:
+            for i in range( 6 ):
+                if os.path.exists( f"{F}b.{i}.list_downloaded_file.txt" ):
+                    with open( f"{F}b.{i}.list_downloaded_file.txt", 'r' ) as infile:
+                        outfile.write(infile.read())
+                        outfile.write('\n')
+
         filter_acceptable_files( f"{F}b.list_downloaded_file.txt", f"{F}c.accept_file.txt", f"{F}d.dead_link.txt", 7 )
 
     if not os.path.exists(f"{F}c.accept_file.txt"):
@@ -360,20 +375,27 @@ def download( telegram_urls, web_download_folder, list_downloaded_fpath ):
     session.mount('http://', adapter)
     session.mount('https://', adapter)
 
+    ###############################################
+    lsNetworkFailureChannels = []
+    lsSuccessChnnels = []
+    lsNot200 = []
+
     #### Download the orig webpages to htmlfile ###
-    success_count = 0
     fList = open( list_downloaded_fpath, "w", encoding='utf-8')
     for url in telegram_urls:
+        bNetworkFailure = True
         try:
             response = session.get(url, timeout=5)
             if response.status_code != 200:
+                lsNot200.append(url)
                 MyPrintWarning(f"{__func__}(): Failed to fetch URL (Status Code: {response.status_code})")
-                continue
-            filename=extract_filename_from_url(url)
-            with open(f"{web_download_folder}/{filename}.html.tmp", "w", encoding="utf-8") as f:
-                f.write(response.text)
-                fList.write( f"{url},{web_download_folder}/{filename}.html.tmp,{web_download_folder}/{filename}.html\n" )
-                success_count +=1
+            else:
+                filename=extract_filename_from_url(url)
+                with open(f"{web_download_folder}/{filename}.html.tmp", "w", encoding="utf-8") as f:
+                    f.write(response.text)
+                    fList.write( f"{url},{web_download_folder}/{filename}.html.tmp,{web_download_folder}/{filename}.html\n" )
+                    lsSuccessChnnels.append(url)
+            bNetworkFailure = False
         except HTTPError as e:
             MyPrintWarning(f"{__func__}(): HTTP error occurred. Details: {e}") # e.g., 404 Not Found, 500 Internal Server Error
         except ConnectionError as e:
@@ -386,9 +408,15 @@ def download( telegram_urls, web_download_folder, list_downloaded_fpath ):
         except Exception as e:
             # Catch any other potential errors (e.g., issues with Beautiful Soup parsing)
             MyPrintWarning(f"{__func__}(): An unexpected error occurred during processing. Details: {e}")
+
+        if bNetworkFailure:
+            lsNetworkFailureChannels.append(url)
+
     fList.close()
     session.close()
-    return success_count
+
+    assert ( len(lsSuccessChnnels) + len(lsNot200) + len(lsNetworkFailureChannels) ) == len(telegram_urls)
+    return lsSuccessChnnels, lsNot200, lsNetworkFailureChannels
 
 ###############################################################################
 def filter_acceptable_files( list_downloaded_fpath, list_accept_fpath, list_dead_links, no_changes_in_days ):
@@ -400,6 +428,8 @@ def filter_acceptable_files( list_downloaded_fpath, list_accept_fpath, list_dead
       open( list_dead_links, "w", encoding='utf-8' ) as f3:
         for l in f:
             l=l.strip()
+            if not l:
+                continue
             result = re.split(r'[,]+', l)
 
             url = result[0]
