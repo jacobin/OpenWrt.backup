@@ -205,19 +205,37 @@ def main():
 
     #### Do you want to skip the download? ########
     if bRedownload:
+        nRetry = 6
         lsNetworkFailureChannels = TELEGRAM_URLs
-        for i in range( 6 ):
+        for i in range( nRetry ):
             if os.path.exists( f"{F}b.{i}.list_downloaded_file.txt" ):
                 assert os.path.isfile( f"{F}b.{i}.list_downloaded_file.txt" )
                 os.remove( f"{F}b.{i}.list_downloaded_file.txt" )
+            if os.path.exists( f"{F}b.{i}.success_channels.json" ):
+                assert os.path.isfile( f"{F}b.{i}.success_channels.json" )
+                os.remove( f"{F}b.{i}.success_channels.json" )
+            if os.path.exists( f"{F}b.{i}.not200_channels.json" ):
+                assert os.path.isfile( f"{F}b.{i}.not200_channels.json" )
+                os.remove( f"{F}b.{i}.not200_channels.json" )
+            if os.path.exists( f"{F}b.{i}.network_failure_channels.json" ):
+                assert os.path.isfile( f"{F}b.{i}.network_failure_channels.json" )
+                os.remove( f"{F}b.{i}.network_failure_channels.json" )
 
-        for i in range( 6 ):
+        for i in range( nRetry ):
             ( lsSuccessChnnels, lsNot200, lsNetworkFailureChannels ) = download( lsNetworkFailureChannels, __web_download_dir__, f"{F}b.{i}.list_downloaded_file.txt")
+            with \
+                open( f"{F}b.{i}.success_channels.json", "w", encoding='utf-8') as f, \
+                open( f"{F}b.{i}.not200_channels.json", "w", encoding='utf-8') as f1, \
+                open( f"{F}b.{i}.network_failure_channels.json", "w", encoding='utf-8') as f2:
+                json.dump(lsSuccessChnnels, f, indent=4) # 'indent=4' makes the file human-readable
+                json.dump(lsNot200, f1, indent=4)
+                json.dump(lsNetworkFailureChannels, f2, indent=4)
+
             if not lsNetworkFailureChannels:
                 break
 
         with open(f"{F}b.list_downloaded_file.txt", "w") as outfile:
-            for i in range( 6 ):
+            for i in range( nRetry ):
                 if os.path.exists( f"{F}b.{i}.list_downloaded_file.txt" ):
                     with open( f"{F}b.{i}.list_downloaded_file.txt", 'r' ) as infile:
                         outfile.write(infile.read())
