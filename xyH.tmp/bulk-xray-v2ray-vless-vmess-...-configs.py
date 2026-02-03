@@ -446,9 +446,9 @@ def filter_acceptable_files( list_downloaded_fpath, list_accept_fpath, list_dead
     __func__ = inspect.currentframe().f_code.co_name
     now = datetime.now()
     with \
-      open( list_downloaded_fpath, "r", encoding='utf-8') as f, \
-      open( list_accept_fpath, "w", encoding='utf-8' ) as f2, \
-      open( list_dead_links, "w", encoding='utf-8' ) as f3:
+        open( list_downloaded_fpath, "r", encoding='utf-8') as f, \
+        open( list_accept_fpath, "w", encoding='utf-8' ) as f2, \
+        open( list_dead_links, "w", encoding='utf-8' ) as f3:
         for l in f:
             l=l.strip()
             if not l:
