@@ -287,7 +287,10 @@ def main():
 
     f = open_file_to_read_if_recent('present_dns.json', nDnsMaxSurvivalMinutes)
     if f:
-        PRESENT_DNSs = json.load(f)
+        try:
+            PRESENT_DNSs = json.load(f)
+        except Exception as e:
+            MyPrintErr( f"{__func__}(): Json load 'present_dns.json' failed. Details: {e}" )
         f.close()
 
     with \
@@ -450,7 +453,6 @@ def filter_acceptable_files( list_downloaded_fpath, list_accept_fpath, list_dead
                     f2.write(f"{oldFPath}\n")
                 else:
                     f3.write(f"{url}\n")
-
             else:
                 assert not noChanges
                 try:
@@ -838,9 +840,9 @@ def generate_sub_table( configs_folder ):
     content = ""
     for root, dirs, files in os.walk( configs_folder ):
         for directory in dirs:
-            config_path = os.path.join(root, directory, 'config.txt')
-            if os.path.exists( config_path ):
-                assert os.path.isfile( config_path )
+            config_file = os.path.join(root, directory, 'config.txt')
+            if os.path.exists( config_file ):
+                assert os.path.isfile( config_file )
                 url = f"https://raw.githubusercontent.com/Epodonios/bulk-xray-v2ray-vless-vmess-...-configs/main/sub/{urllib.parse.quote(directory)}/config.txt"
                 content += f"| [{directory}]({url}) |\n"
     return content
