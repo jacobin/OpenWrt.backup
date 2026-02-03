@@ -85,7 +85,7 @@ def main():
             os.makedirs( sTemporaryFolder )
         except Exception:
             MyPrintErr( f"{__func__}(): Make temporary folder '{sTemporaryFolder}' failed." )
-    assert os.path.exists( sTemporaryFolder )
+    assert os.path.exists( sTemporaryFolder ) and os.path.isdir( sTemporaryFolder )
 
     # (total, used, freeDiskSpace) = shutil.disk_usage( sTemporaryFolder )
     freeDiskSpace = shutil.disk_usage( sTemporaryFolder )[2]
@@ -103,6 +103,7 @@ def main():
 
     if not os.path.exists( GEO_DB_PATH ):
         MyPrintErr( f"{__func__}(): The specified IP map file '{GEO_DB_PATH}' does not exist." )
+    assert os.path.exists( GEO_DB_PATH ) and os.path.isfile( GEO_DB_PATH )
 
     #### Preparation of environment variables 2 ###
     __script_dir__ = Path(__file__).resolve().parent
@@ -123,7 +124,7 @@ def main():
             os.makedirs(__web_download_dir__)
         except Exception:
             MyPrintErr( f"{__func__}(): Make web download folder '{__web_download_dir__}' failed." )
-    assert Path( __web_download_dir__ ).exists()
+    assert Path( __web_download_dir__ ).exists() and os.path.isdir( __web_download_dir__ )
     #----------------------------------------------
     if not os.path.exists(__Ford_assembly_line__):
         bFirstRun = True
@@ -131,7 +132,7 @@ def main():
             os.makedirs(__Ford_assembly_line__)
         except Exception:
             MyPrintErr( f"{__func__}(): Make Ford assembly line folder '{__Ford_assembly_line__}' failed." )
-    assert Path(__Ford_assembly_line__).exists()
+    assert Path(__Ford_assembly_line__).exists() and os.path.isdir( __Ford_assembly_line__ )
 
     #### Backup the history data ##################
     if not bFirstRun:
@@ -143,7 +144,7 @@ def main():
             os.makedirs( zip_root_dir )
         except Exception:
             MyPrintErr( f"{__func__}(): Make zip root folder '{zip_root_dir}' failed." )
-        assert os.path.exists( zip_root_dir )
+        assert os.path.exists( zip_root_dir ) and os.path.isdir( zip_root_dir )
 
         src = f"{__script_dir__}/Epodonios"
         dst_parent = zip_root_dir # e.g., destination_folder
@@ -155,6 +156,7 @@ def main():
 
         backupzip = f"{__script_dir__}/BackupEpodonios.tar.xz"
         if os.path.exists( backupzip ):
+            assert os.path.isfile( backupzip )
             try:
                 shutil.unpack_archive( backupzip, zip_root_dir)
             except Exception as e:
@@ -379,9 +381,11 @@ def filter_acceptable_files( list_downloaded_fpath, list_accept_fpath, list_dead
             oldFPath = result[2]
 
             noChanges = False
-            assert os.path.exists(tmpFPath), f"{tmpFPath} not exist."
+            assert os.path.exists(tmpFPath) and os.path.isfile(tmpFPath)
             if os.path.exists(oldFPath):
+                assert os.path.isfile( oldFPath )
                 noChanges = filecmp.cmp(tmpFPath, oldFPath, False)
+
             if noChanges:
                 oldFileModificationTimeStamp = os.path.getmtime(oldFPath)
                 oldFileModificationDatetime = datetime.fromtimestamp(oldFileModificationTimeStamp)
@@ -395,6 +399,7 @@ def filter_acceptable_files( list_downloaded_fpath, list_accept_fpath, list_dead
                 assert not noChanges
                 try:
                     if os.path.exists(oldFPath):
+                        assert os.path.isfile( oldFPath )
                         os.remove(oldFPath)
                     os.rename(tmpFPath, oldFPath)
                 except FileNotFoundError as e:
@@ -661,6 +666,7 @@ def save_configs_by_region( configs, cfgs_folder ):
     CONFIG_FOLDER = cfgs_folder
 
     if os.path.exists(CONFIG_FOLDER):
+        assert os.path.isdir(CONFIG_FOLDER)
         for folder in os.listdir(CONFIG_FOLDER):
             folder_path = os.path.join(CONFIG_FOLDER, folder)
             if os.path.isdir(folder_path):
@@ -674,7 +680,7 @@ def save_configs_by_region( configs, cfgs_folder ):
             os.makedirs(CONFIG_FOLDER)
         except Exception:
             MyPrintErr( f"{__func__}(): Make config folder '{CONFIG_FOLDER}' failed." )
-    assert os.path.exists( CONFIG_FOLDER )
+    assert os.path.exists( CONFIG_FOLDER ) and os.path.isdir( CONFIG_FOLDER )
 
     # https://www.google.com/search?q=python+dict+string+key+list+value
     # Create a defaultdict with a default factory of list
@@ -693,7 +699,7 @@ def save_configs_by_region( configs, cfgs_folder ):
                 os.makedirs(region_folder)
             except Exception:
                 MyPrintErr( f"{__func__}(): Make region folder '{region_folder}' failed." )
-            assert os.path.exists(region_folder)
+            assert os.path.exists(region_folder) and os.path.isdir(region_folder)
 
             with open(os.path.join(region_folder, 'config.txt'), 'w', encoding='utf-8') as f:
                 for url in urls:
@@ -723,6 +729,7 @@ def create_new_section(MDFile, section_name, table_header, new_table_content ):
     found_the_section = False
     old_content=""
     if os.path.exists(MDFile):
+        assert os.path.isfile(MDFile)
         try:
             with open(MDFile, 'r', encoding='utf-8') as f:
                 old_content = f.read()
@@ -777,6 +784,7 @@ def generate_sub_table( configs_folder ):
         for directory in dirs:
             config_path = os.path.join(root, directory, 'config.txt')
             if os.path.exists( config_path ):
+                assert os.path.isfile( config_path )
                 url = f"https://raw.githubusercontent.com/Epodonios/bulk-xray-v2ray-vless-vmess-...-configs/main/sub/{urllib.parse.quote(directory)}/config.txt"
                 content += f"| [{directory}]({url}) |\n"
     return content
