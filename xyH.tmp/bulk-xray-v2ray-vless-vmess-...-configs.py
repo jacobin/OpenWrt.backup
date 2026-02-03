@@ -53,12 +53,13 @@ def main():
     nDnsMaxSurvivalMinutes = 30
     sDnsMaxSurvivalMinutes = '30'
     sTemporaryFolder = tempfile.gettempdir()
+    sTelegramUrlsFPath = ""
 
     opts = None
     argv = sys.argv[1:]
-    sUsage = f"Usage: {__script_name__} -r<redownload> -d <dnsserver> -g <geo_db_path> -t <dns_max_survival_minutes> -m <temporary_folder>"
+    sUsage = f"Usage: {__script_name__} -r<redownload> -d <dnsserver> -g <geo_db_path> -t <dns_max_survival_minutes> -m <temporary_folder> -L <telegram_urls_fpath>"
     try:
-        opts, args = getopt.getopt(argv, "hrd:g:t:m:", ["help", "redownload", "dnsserver", "geo_db_path", "dns_max_survival_minutes", "temporary_folder" ])
+        opts, args = getopt.getopt(argv, "hrd:g:t:m:L:", ["help", "redownload", "dnsserver", "geo_db_path", "dns_max_survival_minutes", "temporary_folder", "telegram_urls_fpath" ])
     except getopt.GetoptError as e:
         MyPrintErr( f'{__func__}(): An exception occurred. Details: {e}\n{sUsage}')
 
@@ -76,6 +77,8 @@ def main():
             sDnsMaxSurvivalMinutes = arg
         elif opt in ("-m", "--temporary_folder"):
             sTemporaryFolder = arg
+        elif opt in ("-L", "--telegram_urls_fpath"):
+            sTelegramUrlsFPath = arg
         else:
             MyPrintErr( f'{__func__}(): There are non-compliant argument.\n{sUsage}')
     #}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
@@ -111,6 +114,29 @@ def main():
     __Ford_assembly_line__ = f"{__script_dir__}/Epodonios/Fordline"
     F = f"{__Ford_assembly_line__}/"
     __timestamp_str__ = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    ###############################################
+    if sTelegramUrlsFPath:
+        if not os.path.exists( sTelegramUrlsFPath ) or not os.path.isfile( sTelegramUrlsFPath ):
+            MyPrintErr( f"{__func__}(): The specified telegram channels path '{sTelegramUrlsFPath}' does not exist or is NOT a file." )
+
+        with \
+            open( sTelegramUrlsFPath, 'r', encoding='utf-8') as f, \
+            open( f'{F}a.telegram_channels.json', 'w', encoding='utf-8') as f1:
+            for line in f.readlines():
+                if not line.strip().startswith('#'):
+                    f1.write(line)
+        TELEGRAM_URLs = []
+        with open( f'{F}a.telegram_channels.json', 'r', encoding='utf-8' ) as f:
+            try:
+                TELEGRAM_URLs = json.load(f)
+            except Exception as e:
+                MyPrintErr( f"{__func__}(): Json load '{F}a.telegram_channels.json' failed. Details: {e}" )
+
+        TELEGRAM_URLs = sorted( set( TELEGRAM_URLs ), key = str.casefold )
+
+    if not 0 < len( TELEGRAM_URLs ):
+        MyPrintErr( f"{__func__}(): The number of specified telegram channels is zero." )
 
     #### Check system environment #################
     freeDiskSpace = shutil.disk_usage( __script_dir__ )[2]
@@ -179,15 +205,15 @@ def main():
 
     #### Do you want to skip the download? ########
     if bRedownload:
-        download(TELEGRAM_URLs, __web_download_dir__, f"{F}a.list_downloaded_file.txt")
-        filter_acceptable_files( f"{F}a.list_downloaded_file.txt", f"{F}b.accept_file.txt", f"{F}c.dead_link.txt", 7 )
+        download(TELEGRAM_URLs, __web_download_dir__, f"{F}b.list_downloaded_file.txt")
+        filter_acceptable_files( f"{F}b.list_downloaded_file.txt", f"{F}c.accept_file.txt", f"{F}d.dead_link.txt", 7 )
 
-    if not os.path.exists(f"{F}b.accept_file.txt"):
+    if not os.path.exists(f"{F}c.accept_file.txt"):
         MyPrintErr("Please use the -r option to download first.")
 
     #### extract all the v2ray links ##############
     all_v2ray_configs = []
-    with open( f"{F}b.accept_file.txt", "r", encoding='utf-8' ) as f, open( f"{F}d.dead_channel.txt", "w", encoding='utf-8' ) as f2:
+    with open( f"{F}c.accept_file.txt", "r", encoding='utf-8' ) as f, open( f"{F}e.dead_channel.txt", "w", encoding='utf-8' ) as f2:
         for htmlfpath in f:
             v2ray_configs = extract_all_v2ray_links( htmlfpath.strip(), 365, SUPPORTED_FANQIANG_PROTOCALs )
             if v2ray_configs:
@@ -227,7 +253,7 @@ def main():
     with \
         open(f"{F}5.data_incomplete.txt", 'r', encoding='utf-8') as f, \
         open(f"{F}6.data_incomplete.txt", 'w', encoding='utf-8') as f2, \
-        open(f"{F}e.urls_where_host_extraction_failed.txt", 'w', encoding='utf-8') as f3:
+        open(f"{F}f.urls_where_host_extraction_failed.txt", 'w', encoding='utf-8') as f3:
         for url in f:
             # host
             url = url.strip()
@@ -849,15 +875,100 @@ def shutil_compress( source_dir, output_filename ):
         MyPrintWarning( f"{__func__}(): An error occurred. Details: {e}" )
 
 ###############################################################################
-with \
-  open('bulk-xray-v2ray-vless-vmess-...-configs.telegram_channels.hjson', 'r', encoding='utf-8') as f, \
-  open('bulk-xray-v2ray-vless-vmess-...-configs.telegram_channels.json', 'w', encoding='utf-8') as f1:
-    for line in f.readlines():
-        if not (line.strip().startswith('#')):
-            f1.write(line)
-TELEGRAM_URLs = []
-with open('bulk-xray-v2ray-vless-vmess-...-configs.telegram_channels.json', 'r', encoding='utf-8') as f:
-    TELEGRAM_URLs = json.load(f)
+TELEGRAM_URLs = [
+    "https://t.me/s/v2line",
+    "https://t.me/s/forwardv2ray",
+    "https://t.me/s/inikotesla",
+    "https://t.me/s/PrivateVPNs",
+    "https://t.me/s/VlessConfig",
+    "https://t.me/s/V2pedia",
+    "https://t.me/s/v2rayNG_Matsuri",
+    "https://t.me/s/PrivateVPNs",
+    "https://t.me/s/proxystore11",
+    "https://t.me/s/DirectVPN",
+    "https://t.me/s/VmessProtocol",
+    "https://t.me/s/OutlineVpnOfficial",
+    "https://t.me/s/networknim",
+    "https://t.me/s/beiten",
+    "https://t.me/s/MsV2ray",
+    "https://t.me/s/foxrayiran",
+    "https://t.me/s/DailyV2RY",
+    "https://t.me/s/yaney_01",
+    "https://t.me/s/FreakConfig",
+    "https://t.me/s/EliV2ray",
+    "https://t.me/s/ServerNett",
+    "https://t.me/s/proxystore11",
+    "https://t.me/s/v2rayng_fa2",
+    "https://t.me/s/v2rayng_org",
+    "https://t.me/s/V2rayNGvpni",
+    "https://t.me/s/custom_14",
+    "https://t.me/s/v2rayNG_VPNN",
+    "https://t.me/s/v2ray_outlineir",
+    "https://t.me/s/v2_vmess",
+    "https://t.me/s/FreeVlessVpn",
+    "https://t.me/s/vmess_vless_v2rayng",
+    "https://t.me/s/PrivateVPNs",
+    "https://t.me/s/freeland8",
+    "https://t.me/s/vmessiran",
+    "https://t.me/s/Outline_Vpn",
+    "https://t.me/s/vmessq",
+    "https://t.me/s/WeePeeN",
+    "https://t.me/s/V2rayNG3",
+    "https://t.me/s/ShadowsocksM",
+    "https://t.me/s/shadowsocksshop",
+    "https://t.me/s/v2rayan",
+    "https://t.me/s/ShadowSocks_s",
+    "https://t.me/s/VmessProtocol",
+    "https://t.me/s/napsternetv_config",
+    "https://t.me/s/Easy_Free_VPN",
+    "https://t.me/s/V2Ray_FreedomIran",
+    "https://t.me/s/V2RAY_VMESS_free",
+    "https://t.me/s/v2ray_for_free",
+    "https://t.me/s/V2rayN_Free",
+    "https://t.me/s/free4allVPN",
+    "https://t.me/s/vpn_ocean",
+    "https://t.me/s/configV2rayForFree",
+    "https://t.me/s/FreeV2rays",
+    "https://t.me/s/DigiV2ray",
+    "https://t.me/s/v2rayNG_VPN",
+    "https://t.me/s/freev2rayssr",
+    "https://t.me/s/v2rayn_server",
+    "https://t.me/s/Shadowlinkserverr",
+    "https://t.me/s/iranvpnet",
+    "https://t.me/s/vmess_iran",
+    "https://t.me/s/mahsaamoon1",
+    "https://t.me/s/V2RAY_NEW",
+    "https://t.me/s/v2RayChannel",
+    "https://t.me/s/configV2rayNG",
+    "https://t.me/s/config_v2ray",
+    "https://t.me/s/vpn_proxy_custom",
+    "https://t.me/s/vpnmasi",
+    "https://t.me/s/v2ray_custom",
+    "https://t.me/s/VPNCUSTOMIZE",
+    "https://t.me/s/HTTPCustomLand",
+    "https://t.me/s/vpn_proxy_custom",
+    "https://t.me/s/ViPVpn_v2ray",
+    "https://t.me/s/FreeNet1500",
+    "https://t.me/s/v2ray_ar",
+    "https://t.me/s/beta_v2ray",
+    "https://t.me/s/vip_vpn_2022",
+    "https://t.me/s/FOX_VPN66",
+    "https://t.me/s/VorTexIRN",
+    "https://t.me/s/YtTe3la",
+    "https://t.me/s/V2RayOxygen",
+    "https://t.me/s/Network_442",
+    "https://t.me/s/VPN_443",
+    "https://t.me/s/v2rayng_v",
+    "https://t.me/s/ultrasurf_12",
+    "https://t.me/s/iSeqaro",
+    "https://t.me/s/frev2rayng",
+    "https://t.me/s/frev2ray",
+    "https://t.me/s/FreakConfig",
+    "https://t.me/s/Awlix_ir",
+    "https://t.me/s/v2rayngvpn",
+    "https://t.me/s/God_CONFIG",
+    "https://t.me/s/Configforvpn01",
+]
 TELEGRAM_URLs = sorted( set( TELEGRAM_URLs ), key = str.casefold )
 
 ###############################################################################
