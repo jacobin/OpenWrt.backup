@@ -207,7 +207,9 @@ def main():
     if bRedownload:
         lsNetworkFailureChannels = TELEGRAM_URLs
         for i in range( 6 ):
-            os.remove( f"{F}b.{i}.list_downloaded_file.txt" )
+            if os.path.exists( f"{F}b.{i}.list_downloaded_file.txt" ):
+                assert os.path.isfile( f"{F}b.{i}.list_downloaded_file.txt" )
+                os.remove( f"{F}b.{i}.list_downloaded_file.txt" )
 
         for i in range( 6 ):
             ( lsSuccessChnnels, lsNot200, lsNetworkFailureChannels ) = download( lsNetworkFailureChannels, __web_download_dir__, f"{F}b.{i}.list_downloaded_file.txt")
