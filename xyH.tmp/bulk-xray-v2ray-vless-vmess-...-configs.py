@@ -927,6 +927,7 @@ def shutil_compress( source_dir, output_filename ):
         MyPrintWarning( f"{__func__}(): An error occurred. Details: {e}" )
 
 ###############################################################################
+# https://github.com/Epodonios/bulk-xray-v2ray-vless-vmess-...-configs/blob/main/main.py
 TELEGRAM_URLs = [
     "https://t.me/s/v2line",
     "https://t.me/s/forwardv2ray",
