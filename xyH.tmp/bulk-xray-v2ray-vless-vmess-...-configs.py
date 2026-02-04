@@ -404,38 +404,37 @@ def download( telegram_urls, web_download_folder, list_downloaded_fpath ):
     lsNot200 = []
 
     #### Download the orig webpages to htmlfile ###
-    fList = open( list_downloaded_fpath, "w", encoding='utf-8')
-    for url in telegram_urls:
-        bNetworkFailure = True
-        try:
-            response = session.get(url, timeout=5)
-            if response.status_code != 200:
-                lsNot200.append(url)
-                MyPrintWarning(f"{__func__}(): Failed to fetch URL (Status Code: {response.status_code})")
-            else:
-                filename=extract_filename_from_url(url)
-                with open(f"{web_download_folder}/{filename}.html.tmp", "w", encoding="utf-8") as f:
-                    f.write(response.text)
-                    fList.write( f"{url},{web_download_folder}/{filename}.html.tmp,{web_download_folder}/{filename}.html\n" )
-                    lsSuccessChnnels.append(url)
-            bNetworkFailure = False
-        except HTTPError as e:
-            MyPrintWarning(f"{__func__}(): HTTP error occurred. Details: {e}") # e.g., 404 Not Found, 500 Internal Server Error
-        except ConnectionError as e:
-            MyPrintWarning(f"{__func__}(): Connection error occurred. Details: {e}") # e.g., DNS failure, refused connection, no internet
-        except Timeout as e:
-            MyPrintWarning(f"{__func__}(): Timeout error occurred. Details: {e}") # Request took too long to respond
-        except RequestException as e:
-            # Catch any other general requests error that inherits from RequestException
-            MyPrintWarning(f"{__func__}(): An unexpected request error occurred. Details: {e}")
-        except Exception as e:
-            # Catch any other potential errors (e.g., issues with Beautiful Soup parsing)
-            MyPrintWarning(f"{__func__}(): An unexpected error occurred during processing. Details: {e}")
+    with open( list_downloaded_fpath, "w", encoding='utf-8') as fList:
+        for url in telegram_urls:
+            bNetworkFailure = True
+            try:
+                response = session.get(url, timeout=5)
+                if response.status_code != 200:
+                    lsNot200.append(url)
+                    MyPrintWarning(f"{__func__}(): Failed to fetch URL (Status Code: {response.status_code})")
+                else:
+                    filename=extract_filename_from_url(url)
+                    with open(f"{web_download_folder}/{filename}.html.tmp", "w", encoding="utf-8") as f:
+                        f.write(response.text)
+                        fList.write( f"{url},{web_download_folder}/{filename}.html.tmp,{web_download_folder}/{filename}.html\n" )
+                        lsSuccessChnnels.append(url)
+                bNetworkFailure = False
+            except HTTPError as e:
+                MyPrintWarning(f"{__func__}(): HTTP error occurred. Details: {e}") # e.g., 404 Not Found, 500 Internal Server Error
+            except ConnectionError as e:
+                MyPrintWarning(f"{__func__}(): Connection error occurred. Details: {e}") # e.g., DNS failure, refused connection, no internet
+            except Timeout as e:
+                MyPrintWarning(f"{__func__}(): Timeout error occurred. Details: {e}") # Request took too long to respond
+            except RequestException as e:
+                # Catch any other general requests error that inherits from RequestException
+                MyPrintWarning(f"{__func__}(): An unexpected request error occurred. Details: {e}")
+            except Exception as e:
+                # Catch any other potential errors (e.g., issues with Beautiful Soup parsing)
+                MyPrintWarning(f"{__func__}(): An unexpected error occurred during processing. Details: {e}")
 
-        if bNetworkFailure:
-            lsNetworkFailureChannels.append(url)
+            if bNetworkFailure:
+                lsNetworkFailureChannels.append(url)
 
-    fList.close()
     session.close()
 
     assert ( len(lsSuccessChnnels) + len(lsNot200) + len(lsNetworkFailureChannels) ) == len(telegram_urls)
