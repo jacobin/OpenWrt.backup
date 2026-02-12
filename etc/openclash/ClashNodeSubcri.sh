@@ -517,10 +517,10 @@ function tar_old_files() {
         assert_true "[ ! -f \"${tarFPath}.tar\" ]" "Delete file \"${tarFPath}.tar\" failed."
     fi
 
-    tar_command_string="tar c -v -f \"${tarFPath}.tar\""
-    rm_command_string="rm -f"
     readarray -t arrOpenclashConfigBakup < <(ls -t -r -1 ${targetFPathMatchingPattern})
     bakSize=${#arrOpenclashConfigBakup[@]}
+    tar_command_string="tar c -v -f \"${tarFPath}.tar\""
+    rm_command_string="rm -f"
     for (( j=0; j<bakSize-nReserve; j++ )); do
         # https://www.google.com/search?q=bash+string+equa+ignore+case&pws=0&gl=us&gws_rd=cr
         tar_command_string="${tar_command_string} \"${arrOpenclashConfigBakup[$j]}\""
