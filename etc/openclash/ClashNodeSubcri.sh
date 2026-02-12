@@ -516,7 +516,7 @@ function tar_old_files() {
     if [ -f "${tarFPath}.tar.gz" ]; then
         gzip -d "${tarFPath}.tar.gz"
         assert_true "[ ! -f \"${tarFPath}.tar.gz\" ]" "Failed to unzip file \"${tarFPath}.tar.gz\"."
-        tar x -v -f "${tarFPath}.tar" -C "/"
+        tar x -v -f "${tarFPath}.tar" -C "/" >/dev/null 2>&1
         assert_true "[ -f \"${tarFPath}.tar\" ]" "tar's behavior towards file \"${tarFPath}.tar\" does not meet expectations."
         rm "${tarFPath}.tar" -f
         assert_true "[ ! -f \"${tarFPath}.tar\" ]" "Delete file \"${tarFPath}.tar\" failed."
@@ -559,6 +559,8 @@ function tar_old_files() {
         tar_command_string="${tar_command_string} \"${arrOpenclashConfigBakup[$j]}\""
         rm_command_string="${rm_command_string} \"${arrOpenclashConfigBakup[$j]}\""
     done
+    tar_command_string="${tar_command_string} >/dev/null 2>&1"
+    rm_command_string="${rm_command_string} >/dev/null 2>&1"
 
     if (( nReserve < bakSize )); then
         eval "$tar_command_string"
@@ -577,7 +579,7 @@ function is_valid_datetime() {
     # like YYYY-MM-DD hh:mm[:ss], [YYYY.]MM.DD-hh:mm[:ss],
     # or [[[[[YY]YY]MM]DD]hh]mm[.ss]. The command date -s is used to manually
     # set the system time, while ntpd -q -p is used for syncing via NTP.
-    date -D "%Y%m%d_%H%M%S" "$1" > NUL 2>&1
+    date -D "%Y%m%d_%H%M%S" "$1" >/dev/null 2>&1
     if [ $? -eq 0 ]; then
         return 0
     fi
