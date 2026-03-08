@@ -63,7 +63,7 @@ def main():
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             current_filename = os.path.basename(__file__)
-            print(f"Usage: {current_filename} -u <input_url> -f <output_nodes_file> -l <output_url_list_file>")
+            print(f"Usage: {current_filename} -u <input_url> -n <output_nodes_file> -r <output_url_list_file>")
             sys.exit()
         elif opt in ("-u", "--input_url"):
             input_url = arg
