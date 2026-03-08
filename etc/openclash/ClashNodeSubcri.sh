@@ -35,7 +35,12 @@ if ! is_not_running; then exit 1; fi
 ###############################################################################
 ## 从WAN上同步校准时间 ########################################################
 ###############################################################################
-ntpd -dnq -p pool.ntp.org -p 0.pool.ntp.org -p 1.pool.ntp.org -p 2.pool.ntp.org -p 3.pool.ntp.org
+ntpd -dnq             \
+    -p pool.ntp.org   \
+    -p 0.pool.ntp.org \
+    -p 1.pool.ntp.org \
+    -p 2.pool.ntp.org \
+    -p 3.pool.ntp.org   &>/dev/null
 
 
 ###############################################################################
@@ -44,7 +49,8 @@ ntpd -dnq -p pool.ntp.org -p 0.pool.ntp.org -p 1.pool.ntp.org -p 2.pool.ntp.org 
 EXISTENTIAL_CONFIGs="http://127.0.0.1:8080"
 # https://www.google.com/search?q=bash+get+absolute+dirname
 DIR0=$(dirname "$(readlink -f "$0")")
-CONVERTER="http://127.0.0.1:25511"
+CVT_PORT=25522
+CONVERTER="http://127.0.0.1:${CVT_PORT}"
                          DATA_DIR="/www/Hxy/openclash"
          WEB_ORIG_DAT="http://127.0.0.1/Hxy/openclash/original"
 WEB_PASS2SUBCONVERTER="http://127.0.0.1/Hxy/openclash/pass2subconverter"
@@ -82,7 +88,7 @@ if [ ! -f "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" ]; then
 fi
 
 file_hash=$(sha256sum "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" 2>/dev/null | awk '{print $1}')
-if [ "$file_hash" != "72336e7ade68ebb895ac9f1e230fa924eebc54e578b39fcf54c8c1ee3b779930" ]; then
+if [ "$file_hash" != "ca73a722c2715f21c464c20ad86fc7b9992578824fa7c08482959c1ac20e70cd" ]; then
     tee_echo "\tThe SHA256 of file \"${DIR0}/ClashNodeSubcri.etc_config_openclash.const\" is incorrect, please check"
     singleton_clean_up 1
 fi
@@ -113,9 +119,9 @@ if (( STATUS_CODE != 200 )); then
 fi
 
 # https://unix.stackexchange.com/questions/86556/testing-remote-tcp-port-using-telnet-by-running-a-one-line-command
-r=$(bash -c 'exec 3<> /dev/tcp/127.0.0.1/25511;echo $?' 2>/dev/null)
+r=$(bash -c 'exec 3<> /dev/tcp/127.0.0.1/'$CVT_PORT';echo $?' 2>/dev/null)
 if [ "$r" != "0" ]; then
-    tee_echo "Service \"subconverter:25511\" is not started!"
+    tee_echo "Service \"subconverter:${CVT_PORT}\" is not started!"
     singleton_clean_up 1
 fi
 
@@ -357,7 +363,7 @@ tar_old_files "/etc/openclash/config/config_yamls" "/etc/openclash/config/*.yaml
 ###############################################################################
 ## 重启 openclash #############################################################
 ###############################################################################
-# "/etc/init.d/openclash" restart;
+# "/etc/init.d/openclash" restart
 /usr/share/openclash/openclash.sh > /dev/null 2>&1
 
 
@@ -468,7 +474,7 @@ function combine_subscri() {
         echo -e "\toption sub_convert '0'"         >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
         echo -e "\toption enabled '1'"             >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
         echo -e "\toption name '${resultOptName}'" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
-        echo -e "\toption address '${CONVERTER}/sub?target=clashr&config=ACL4SSR_Online_Full_AdblockPlus.ini&emoji=true&list=false&udp=true&tfo=true&scv=true&fdn=true&enable_filter=true&append_type=true&filter_script=function%20filter%28N%29%7Bif%28N.Type%3D%3D%3D0%7C%7CN.Type%3D%3D%3D6%7C%7CN.Type%3D%3D%3D7%7C%7CN.Type%3D%3D%3D8%29%7Breturn%20true%3B%7Dlet%20M%3DN.EncryptMethod%3Bif%28M%3D%3D%3Dnull%7C%7CM.length%3D%3D%3D0%29%7Bif%28N.Type%3D%3D%3D1%29%7Breturn%20true%3B%7Dreturn%20false%3B%7Dlet%20C%3D%5B%27aes-128-cfb%27%2C%27aes-128-ctr%27%2C%27aes-128-gcm%27%2C%27aes-192-cfb%27%2C%27aes-192-ctr%27%2C%27aes-192-gcm%27%2C%27aes-256-cfb%27%2C%27aes-256-ctr%27%2C%27aes-256-gcm%27%2C%27auto%27%2C%27chacha20%27%2C%27chacha20-ietf%27%2C%27chacha20-ietf-poly1305%27%2C%27rc4-md5%27%2C%27xchacha20%27%2C%27xchacha20-ietf-poly1305%27%5D%3Blet%20m%3DM.toLowerCase%28%29%3Bfor%28let%20i%3D0%3Bi%3CC.length%3Bi%2B%2B%29%7Bif%28m%3D%3D%3DC%5Bi%5D%29%7Breturn%20false%3B%7D%7Dreturn%20true%3B%7D&exclude=%28CN%7CHK%7CHong%20Kong%7CHongKong%7Cv2cross%7CHONG%20KONG%7CHONGKONG%7CV2CROSS%7CHongkong%7C%E5%BB%A3%E6%9D%B1%7C%E5%8C%97%E4%BA%AC%7C%E5%B9%BF%E4%B8%9C%7C%E8%B4%B5%E5%B7%9E%7C%E4%B8%8A%E6%B5%B7%7C%E9%A6%99%E6%B8%AF%7C%E7%A7%BB%E5%8B%95%7C%E7%A7%BB%E5%8A%A8%7C%E4%B8%AD%E5%9C%8B%7C%E4%B8%AD%E5%9B%BD%7C%E8%B2%B4%E5%B7%9E%7C%E5%85%8D%E8%B4%B9%7C%E8%AE%A2%E9%98%85%7C%E8%AE%A2%E9%98%85%E9%9A%8F%E6%97%B6%E4%BC%9A%E5%A4%B1%E6%95%88%7C%E6%97%A5%E6%9C%9F%7C%E7%94%B5%E6%8A%A5%7C%E7%94%B5%E6%8A%A5%E7%BE%A4%7CHTTP%7CHTTPS%7CSOCKS5%29&url=${url_uhttpd}'" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+        echo -e "\toption address '${CONVERTER}/sub?target=clashr&config=ACL4SSR_Online_Full_AdblockPlus.ini&emoji=true&list=false&udp=true&tfo=true&scv=true&fdn=true&enable_filter=true&append_type=true&filter_script=function%20filter%28N%29%7Bif%28N.Type%3D%3D%3D0%7C%7CN.Type%3D%3D%3D1%7C%7CN.Type%3D%3D%3D2%7C%7CN.Type%3D%3D%3D6%7C%7CN.Type%3D%3D%3D7%7C%7CN.Type%3D%3D%3D8%29%7Breturn%20true%3B%7Dlet%20M%3DN.EncryptMethod%3Bif%28M%3D%3D%3Dnull%7C%7CM.length%3D%3D%3D0%29%7Bif%28N.Type%3D%3D%3D1%29%7Breturn%20true%3B%7Dreturn%20false%3B%7Dlet%20C%3D%5B%27aes-128-cfb%27%2C%27aes-128-ctr%27%2C%27aes-128-gcm%27%2C%27aes-192-cfb%27%2C%27aes-192-ctr%27%2C%27aes-192-gcm%27%2C%27aes-256-cfb%27%2C%27aes-256-ctr%27%2C%27aes-256-gcm%27%2C%27auto%27%2C%27chacha20%27%2C%27chacha20-ietf%27%2C%27chacha20-ietf-poly1305%27%2C%27rc4-md5%27%2C%27xchacha20%27%2C%27xchacha20-ietf-poly1305%27%5D%3Blet%20m%3DM.toLowerCase%28%29%3Bfor%28let%20i%3D0%3Bi%3CC.length%3Bi%2B%2B%29%7Bif%28m%3D%3D%3DC%5Bi%5D%29%7Breturn%20false%3B%7D%7Dreturn%20true%3B%7D&exclude=%28CN%7CHK%7CHong%20Kong%7CHongKong%7Cv2cross%7CHONG%20KONG%7CHONGKONG%7CV2CROSS%7CHongkong%7C%E5%BB%A3%E6%9D%B1%7C%E5%8C%97%E4%BA%AC%7C%E5%B9%BF%E4%B8%9C%7C%E8%B4%B5%E5%B7%9E%7C%E4%B8%8A%E6%B5%B7%7C%E9%A6%99%E6%B8%AF%7C%E7%A7%BB%E5%8B%95%7C%E7%A7%BB%E5%8A%A8%7C%E4%B8%AD%E5%9C%8B%7C%E4%B8%AD%E5%9B%BD%7C%E8%B2%B4%E5%B7%9E%7C%E5%85%8D%E8%B4%B9%7C%E8%AE%A2%E9%98%85%7C%E8%AE%A2%E9%98%85%E9%9A%8F%E6%97%B6%E4%BC%9A%E5%A4%B1%E6%95%88%7C%E6%97%A5%E6%9C%9F%7C%E7%94%B5%E6%8A%A5%7C%E7%94%B5%E6%8A%A5%E7%BE%A4%7CHTTP%7CHTTPS%7CSOCKS5%29&url=${url_uhttpd}'" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
         echo -e "" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
     done
 
