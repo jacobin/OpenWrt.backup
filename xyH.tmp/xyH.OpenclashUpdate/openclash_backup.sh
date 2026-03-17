@@ -1,3 +1,5 @@
+#!/bin/bash
+
 timeNow=`date '+%Y-%m-%d-%H-%M-%S'`
 tarFolder="/tmp/openclash_backup_$timeNow"
 

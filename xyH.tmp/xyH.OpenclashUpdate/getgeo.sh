@@ -1,4 +1,4 @@
-# Openclash --> È«¾ÖÉèÖÃ --> GEO Êý¾Ý¿â¶©ÔÄ --> ×Ô¶¨Òå
+#!/bin/bash
+# Openclash --> å…¨å±€è®¾ç½® --> GEO æ•°æ®åº“è®¢é˜… --> è‡ªå®šä¹‰
 curl -v https://fastly.jsdelivr.net/gh/alecthw/mmdb_china_ip_list@release/lite/Country.mmdb -o /etc/openclash/GeoSite.dat
 curl -v https://fastly.jsdelivr.net/gh/alecthw/mmdb_china_ip_list@release/Country.mmdb -o /etc/openclash/Country.mmdbs
-

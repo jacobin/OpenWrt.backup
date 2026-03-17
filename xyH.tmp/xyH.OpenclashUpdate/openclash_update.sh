@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # -----------------------------------------------------------------------------
 # https://www.cnblogs.com/jesn/p/17167544.html
 # Check whether the network is open
