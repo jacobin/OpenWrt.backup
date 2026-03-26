@@ -2,7 +2,7 @@
 
 START_LOG="/tmp/openclash_start.log"
 LOG_FILE="/tmp/openclash.log"
-		
+
 LOG_OUT()
 {
 	if [ -n "${1}" ]; then
