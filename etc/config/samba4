@@ -14,3 +14,11 @@ config sambashare
 	option inherit_owner 'yes'
 	option name 'shARed'
 
+config sambashare
+	option name 'xyH.tmp'
+	option path '/xyH.tmp'
+	option read_only 'no'
+	option guest_ok 'yes'
+	option inherit_owner 'yes'
+	option force_root '1'
+

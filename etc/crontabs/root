@@ -2,9 +2,9 @@
 3 3 12 12 * /usr/bin/nginx-util 'check_ssl'
 30 4 * * * /etc/openclash/ClashNodeSubcri.sh
 #*/59 * * * * /www/Hxy/eMule.server.mets/eMuleEd2k.sh
-#*/1 * * * * /etc4444/subconverter/watchdog.subconverter.sh
-*/1 * * * * /etc/subconverter.MetaCubeX/watchdog.subconverter.sh
-#*/1 * * * * /etc4444/subconverter.asdlokj1qpi233/watchdog.subconverter.sh
+#*/1 * * * * /etc/subconverter/watchdog.subconverter.sh
+#*/1 * * * * /etc/subconverter.MetaCubeX/watchdog.subconverter.sh
+*/1 * * * * /etc/subconverter.asdlokj1qpi233/watchdog.subconverter.sh
 0 1 * * 1 /usr/share/openclash/openclash_rule.sh
 0 1 * * 2 /usr/share/openclash/openclash_ipdb.sh
 0 1 * * 4 /usr/share/openclash/openclash_geosite.sh
