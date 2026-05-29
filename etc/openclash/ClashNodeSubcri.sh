@@ -46,7 +46,7 @@ WEB_PASS2SUBCONVERTER="http://127.0.0.1/Hxy/openclash/pass2subconverter"
 ACCEPTABLE_DAYs=7
 
 
-tee_echo "Synchronize and calibrate time from WAN"
+tee_echo "Try to synchronize and calibrate time from WAN"
 ###############################################################################
 ## 从WAN上同步校准时间 ########################################################
 ###############################################################################
