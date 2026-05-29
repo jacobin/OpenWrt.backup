@@ -635,7 +635,7 @@ function is_valid_datetime() { # 20260123_102345
     fi
 
     YYYYMMDD=$(echo $Date |cut -c 1-8)
-    CONNECTED_CHAR=$(echo $Date |cut -c 9-1)
+    CONNECTED_CHAR=$(echo $Date |cut -c 9-9)
     hhmmss=$(echo $Date |cut -c 10-15)
 
     if [ ! $CONNECTED_CHAR=="_" ];then
