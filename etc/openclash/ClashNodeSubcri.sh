@@ -545,15 +545,15 @@ function tar_old_files() {
     # https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
     tarFPath=$(echo "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     targetFPathMatchingPattern=$(echo "$2" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    nReserve=$(echo "$3" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    nReserve2=$(echo "$4" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    nOutside=$(echo "$3" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    nReserve=$(echo "$4" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
     # {0/filetime0}  {coordA/filetimeA}          coordB/filetimeB}
     #   ^                   ^                          ^
     #   |-------------------------- bakSize ---------------------------------|
-    #                                                  |<----- nReserve ---->|
-    #                       |<-------------- nReserve2 --------------------->|
-    assert_true "(( ${nReserve2} > ${nReserve} ))" "The number of files to be retained is less than the number of files to be left outside the package; this is incorrect."
+    #                                                  |<----- nOutside ---->|
+    #                       |<-------------- nReserve ---------------------->|
+    assert_true "(( ${nReserve} > ${nOutside} ))" "The number of files to be retained is less than the number of files to be left outside the package; this is incorrect."
 
     folder1="$(dirname "${tarFPath}")"
     folder2="$(dirname "${targetFPathMatchingPattern}")"
@@ -578,9 +578,9 @@ function tar_old_files() {
     bakSize=${#arrOpenclashConfigBakup[@]}
     if (( bakSize == 0 )); then return; fi
 
-    coordB=$((bakSize-nReserve))
+    coordB=$((bakSize-nOutside))
     if (( coordB <= 0  )); then return; fi
-    coordA=$((bakSize-nReserve2))
+    coordA=$((bakSize-nReserve))
     if (( coordA < 0  )); then let coordA=0; fi
     assert_true "(( $coordA < $coordB ))" ""
 
