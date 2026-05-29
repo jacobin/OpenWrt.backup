@@ -214,7 +214,7 @@ tee_echo "Download the subscribed raw data to local ${DATA_DIR}/original after a
 # https://stackoverflow.com/questions/62021429/why-does-command-line-rm-not-accept-quotation-marks-for-directories-with-spaces
 if [ -f "${DIR0}/ClashNodeSubcri.loop"6 ]; then
     mv -f "${DIR0}/ClashNodeSubcri.loop"6 "${DIR0}/loop6.bak/ClashNodeSubcri.loop6.$(date +%Y%m%d_%H%M%S)" &> /dev/null
-    tar_old_files "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6" "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6.2*" 5
+    tar_old_files "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6" "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6.2*" 5 20
 fi
 rm -f "${DIR0}/ClashNodeSubcri.loop"? > /dev/null 2>&1
 cp -f "${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.loop1"
@@ -373,10 +373,10 @@ tee_echo "Package redundant config Openclash files. Only 5 external files are le
 ###############################################################################
 ## 打包多余的config openclash文件。外头只留5个 ###############################
 ###############################################################################
-tar_old_files "/etc/config/openclash.backup" "/etc/config/openclash.2*" 5
-tar_old_files "/etc/openclash/yamls" "/etc/openclash/*.yaml" 2
-tar_old_files "/etc/openclash/wget.log" "/etc/openclash/wget-log*" 1
-tar_old_files "/etc/openclash/config/config_yamls" "/etc/openclash/config/*.yaml" 1
+tar_old_files "/etc/config/openclash.backup" "/etc/config/openclash.2*" 5 20
+tar_old_files "/etc/openclash/yamls" "/etc/openclash/*.yaml" 2 20
+tar_old_files "/etc/openclash/wget.log" "/etc/openclash/wget-log*" 1 20
+tar_old_files "/etc/openclash/config/config_yamls" "/etc/openclash/config/*.yaml" 1 20
 
 
 tee_echo "Restart Openclash."
@@ -546,6 +546,14 @@ function tar_old_files() {
     tarFPath=$(echo "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     targetFPathMatchingPattern=$(echo "$2" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     nReserve=$(echo "$3" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    nReserve2=$(echo "$4" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+    # {0/filetime0}  {coordA/filetimeA}          coordB/filetimeB}
+    #   ^                   ^                          ^
+    #   |-------------------------- bakSize ---------------------------------|
+    #                                                  |<----- nReserve ---->|
+    #                       |<-------------- nReserve2 --------------------->|
+    assert_true "(( ${nReserve2} > ${nReserve} ))" "The number of files to be retained is less than the number of files to be left outside the package; this is incorrect."
 
     folder1="$(dirname "${tarFPath}")"
     folder2="$(dirname "${targetFPathMatchingPattern}")"
@@ -568,6 +576,13 @@ function tar_old_files() {
     readarray -t arrOpenclashConfigBakup < <(cat "${ListFPathTemp}")
     rm "${ListFPathTemp}" -f
     bakSize=${#arrOpenclashConfigBakup[@]}
+    if (( bakSize == 0 )); then return; fi
+
+    coordB=$((bakSize-nReserve))
+    if (( coordB <= 0  )); then return; fi
+    coordA=$((bakSize-nReserve2))
+    if (( coordA < 0  )); then let coordA=0; fi
+    assert_true "(( $coordA < $coordB ))" ""
 
     NowDatetime="$(date +'%Y%m%d_%H%M%S')"
     for (( j=0; j<bakSize; j++ )); do
@@ -594,7 +609,11 @@ function tar_old_files() {
 
     tar_command_string="tar c -v -f \"${tarFPath}.tar\""
     rm_command_string="rm -f"
-    for (( j=0; j<bakSize-nReserve; j++ )); do
+    for (( j=0; j<coordA; j++ )); do
+        rm_command_string="${rm_command_string} \"${arrOpenclashConfigBakup[$j]}\""
+    done
+
+    for (( j=coordA; j<coordB; j++ )); do
         # https://www.google.com/search?q=bash+string+equa+ignore+case&pws=0&gl=us&gws_rd=cr
         tar_command_string="${tar_command_string} \"${arrOpenclashConfigBakup[$j]}\""
         rm_command_string="${rm_command_string} \"${arrOpenclashConfigBakup[$j]}\""
@@ -602,12 +621,10 @@ function tar_old_files() {
     tar_command_string="${tar_command_string} >/dev/null 2>&1"
     rm_command_string="${rm_command_string} >/dev/null 2>&1"
 
-    if (( nReserve < bakSize )); then
-        eval "$tar_command_string"
-        eval "$rm_command_string"
-        gzip "${tarFPath}.tar"
-        assert_true "[[ -f \"${tarFPath}.tar.gz\" && ! -f \"${tarFPath}.tar\" ]]" "Compressed file \"${tarFPath}.tar\" failed."
-    fi
+    eval "$tar_command_string"
+    eval "$rm_command_string"
+    gzip "${tarFPath}.tar"
+    assert_true "[[ -f \"${tarFPath}.tar.gz\" && ! -f \"${tarFPath}.tar\" ]]" "Compressed file \"${tarFPath}.tar\" failed."
 }
 
 
