@@ -161,6 +161,22 @@ unset clashConfigNames
 
 
 ###############################################################################
+## 检查有否可用的域名服务器 ###################################################
+###############################################################################
+directDns=
+dnsServers=("114.114.114.114" "114.114.115.115" "223.5.5.5" "223.6.6.6" "119.29.29.29" "1.2.4.8" "210.2.4.8" "114.114.114.119" "114.114.115.119" "211.138.180.2" "211.138.180.3" "211.136.192.6" "211.136.20.203")
+for dns in "${dnsServers[@]}"; do
+    if checkIP ${dns}; then
+        directDns=${dns}
+        break;
+    fi
+done
+if [ -z "${directDns}" ]; then
+    tee_echo "\tNo available DNS."; singleton_clean_up 1;
+fi
+
+
+###############################################################################
 ## 如果连内网都已宕机，那么就取消此次的订阅 ###################################
 ###############################################################################
 readarray -t arrSpeedTestResult < <( wget --no-check-certificate -p -O/dev/null "http://www.baidu.com" --dns-timeout=10 --connect-timeout=10 --read-timeout=10 --tries=3 --waitretry=4 2>&1 | grep -o "[0-9.]\\+ [KM]*B/s" )
@@ -293,6 +309,7 @@ fi
 
 rm "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" > /dev/null 2>&1
 echo -e "\toption config_path 'PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH'\n" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+echo -e "\toption custom_domain_dns_server '${directDns}'\n" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
 
 clashConfigNames=()
 readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls")
@@ -708,6 +725,43 @@ function is_valid_datetime() { # 20260123_102345
 # Testcase "20240228_120342"
 # Testcase "20240231_120342"
 # Testcase "20240232_120342"
+
+###############################################################################
+######################### function: checkIP ###################################
+###############################################################################
+function checkIP() {
+    ip=$1
+    ((count = 3))                           # Maximum number to try.
+    while [[ $count -ne 0 ]] ; do
+        ping -c 1 $ip  &>/dev/null          # Try once.
+        rc=$?
+        if [[ $rc -eq 0 ]] ; then
+            ((count = 1))                   # If okay, flag loop exit.
+        else
+            sleep 1                         # Minimise network storm.
+        fi
+        ((count = count - 1))               # So we don't go forever.
+    done
+
+    if [[ $rc -eq 0 ]] ; then               # Make final determination.
+        return 0
+    else
+        return 1
+    fi
+}
+
+# # Example Usage:
+# if checkIP "8.8.8.8"; then
+#     echo "8.8.8.8" is ok.
+# else
+#     echo "8.8.8.8" is bad.
+# fi
+#
+# if checkIP "114.114.114.114"; then
+#     echo "114.114.114.114" is ok.
+# else
+#     echo "114.114.114.114" is bad.
+# fi
 
 
 ###############################################################################

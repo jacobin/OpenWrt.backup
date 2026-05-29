@@ -258,7 +258,7 @@ config dns_servers
 	option disable_ipv6 '0'
 
 config dns_servers
-	option enabled '1'
+	option enabled '0'
 	option group 'nameserver'
 	option type 'udp'
 	option ip '127.0.0.1'
@@ -268,6 +268,19 @@ config dns_servers
 	option node_resolve '0'
 	option specific_group 'Disable'
 	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '1'
+	option group 'nameserver'
+	option type 'udp'
+	option ip '127.0.0.1'
+	option port '533'
+	option interface 'Disable'
+	option direct_nameserver '0'
+	option node_resolve '0'
+	option disable_ipv4 '0'
+	option disable_ipv6 '0'
+	option specific_group 'Disable'
 
 config rule_provider_config
 	option enabled '1'
@@ -358,7 +371,6 @@ config openclash 'config'
 	option geoasn_custom_url 'https://testingcf.jsdelivr.net/gh/xishang0128/geoip@release/GeoLite2-ASN.mmdb'
 	option chnr_auto_update '1'
 	option enable_custom_domain_dns_server '1'
-	option custom_domain_dns_server '114.114.114.114'
 	option enable_custom_dns '1'
 	option rule_source '1'
 	option enable_rule_proxy '1'
