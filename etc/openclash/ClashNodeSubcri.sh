@@ -67,39 +67,30 @@ tee_echo "Begin: $(date +%Y%m%d_%H%M%S)"
 ###############################################################################
 ## 检查系统的完备性 ###########################################################
 ###############################################################################
-if ! command -v yq &>/dev/null; then
-    tee_echo "\tThe YAML command-line tool yq is not installed on the system."
-    singleton_clean_up 1
-fi
+cmds=("yq" "cat" "curl" "wget" "grep" "sed" "xargs" "sort" "uniq" "tee" "mv" "rm" "cp" "awk" "base64" "ln" "flock" "date" "ls" "cut" "expr" "gzip" "eval")
+for cmd in "${cmds[@]}"; do
+    if ! command -v ${cmd} &>/dev/null; then tee_echo "\tThe command-line tool ${cmd} is not installed on the system."; singleton_clean_up 1; fi
+done
 
-if [ ! -d "${DIR0}/loop6.bak" ]; then
-    tee_echo "\tFolder \"${DIR0}/loop6.bak\" not found!"
-    singleton_clean_up 1
-fi
+existing_dirs=("${DIR0}/loop6.bak" "${DATA_DIR}/original" "${DATA_DIR}/pass2subconverter")
+for dir in "${existing_dirs[@]}"; do
+    if [ ! -d "${dir}" ]; then
+        tee_echo "\tFolder \"${dir}\" not found!"
+        singleton_clean_up 1
+    fi
+done
 
-if [ ! -f "${DIR0}/ClashNodeSubcri.urls" ]; then
-    tee_echo "\tFile \"${DIR0}/ClashNodeSubcri.urls\" not found!"
-    singleton_clean_up 1
-fi
-
-if [ ! -f "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" ]; then
-    tee_echo "\tFile \"${DIR0}/ClashNodeSubcri.etc_config_openclash.const\" not found!"
-    singleton_clean_up 1
-fi
+existing_files=("${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.etc_config_openclash.const")
+for fiLe in "${existing_files[@]}"; do
+    if [ ! -f "${fiLe}" ]; then
+        tee_echo "\tFile \"${fiLe}\" not found!"
+        singleton_clean_up 1
+    fi
+done
 
 file_hash=$(sha256sum "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" 2>/dev/null | awk '{print $1}')
-if [ "$file_hash" != "ca73a722c2715f21c464c20ad86fc7b9992578824fa7c08482959c1ac20e70cd" ]; then
+if [ "$file_hash" != "163e033e7f12bd178ecb4e8165bb9ab4a28255a83a5dfccd44c8cada0b44fd11" ]; then
     tee_echo "\tThe SHA256 of file \"${DIR0}/ClashNodeSubcri.etc_config_openclash.const\" is incorrect, please check"
-    singleton_clean_up 1
-fi
-
-if [ ! -d "${DATA_DIR}/original" ]; then
-    tee_echo "\tFolder \"${DATA_DIR}/original\" not found!"
-    singleton_clean_up 1
-fi
-
-if [ ! -d "${DATA_DIR}/pass2subconverter" ]; then
-    tee_echo "\tFolder \"${DATA_DIR}/pass2subconverter\" not found!"
     singleton_clean_up 1
 fi
 
