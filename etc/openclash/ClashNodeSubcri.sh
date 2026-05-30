@@ -759,6 +759,7 @@ function is_valid_datetime() { # 20260123_102345
 ###############################################################################
 ######################### function: checkIP ###################################
 ###############################################################################
+# https://stackoverflow.com/questions/6118948/bash-loop-ping-successful
 function checkIP() {
     ip=$1
     ((count = 3))                           # Maximum number to try.
