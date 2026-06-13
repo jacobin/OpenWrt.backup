@@ -40,7 +40,8 @@ echo ${newHash} > "${PreviousOne_china_domains}"
 
 nTotalLine=$(wc -l < "${dnsmasq_china_domains}")
 iProgress=1
-
+iProgressNextShow=1
+iProgressStep=$[nTotalLine/99]
 while IFS= read -r line; do
     dns=$(
             IFS='=\/' read i1 i2 i3 i4 <<< ${line}
@@ -52,8 +53,11 @@ while IFS= read -r line; do
         )
     echo $dns
 
-    sProgress=$(genProgressString "${iProgress}" "${nTotalLine}")
-    >&2 echo -ne "${sProgress}\r"
+    if [ ${iProgress} -ge ${iProgressNextShow} ] || [ ${iProgress} -ge ${nTotalLine} ]; then
+        sProgress=$(genProgressString "${iProgress}" "${nTotalLine}")
+        >&2 echo -ne "${sProgress}\r"
+        let "iProgressNextShow+=iProgressStep"
+    fi
     let "iProgress++"
 done < "${dnsmasq_china_domains}" > "${openclash_china_domains}"
 echo
