@@ -9,13 +9,14 @@ source <(sed '1,/^# HELPER FUNCTIONS #$/d' "$0")
 ###############################################################################
 ###############################################################################
 ###############################################################################
-               mybasename=$(basename ${0%\.*})
-                      url="https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/refs/heads/master/accelerated-domains.china.conf"
-PreviousOne_china_domains="/etc/openclash/custom/pre1_dnsmasq_chinadomain_list.conf"
-    dnsmasq_china_domains="/tmp/1.${mybasename}.dnsmasq_chinadomain_list.conf"
-  openclash_china_domains="/tmp/2.${mybasename}.oc_chinadomain_list.txt"
-    combile_china_domains="/tmp/3.${mybasename}.combile_chinadomain_list.txt"
-deduplicate_china_domains="/tmp/4.${mybasename}.deduplicate_chinadomain_list.txt"
+                mybasename=$(basename ${0%\.*})
+                       url="https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/refs/heads/master/accelerated-domains.china.conf"
+#PreviousOne_china_domains="/etc/openclash/custom/pre1_dnsmasq_chinadomain_list.conf"
+ PreviousOne_china_domains="/etc/openclash/custom/pre1_dnsmasq_chinadomain_list.conf.hash"
+     dnsmasq_china_domains="/tmp/1.${mybasename}.dnsmasq_chinadomain_list.conf"
+   openclash_china_domains="/tmp/2.${mybasename}.oc_chinadomain_list.txt"
+     combile_china_domains="/tmp/3.${mybasename}.combile_chinadomain_list.txt"
+ deduplicate_china_domains="/tmp/4.${mybasename}.deduplicate_chinadomain_list.txt"
 
 wget --no-check-certificate --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=2 "${url}" -O"${dnsmasq_china_domains}"
 if ! [[ $? -eq 0 && -f "${dnsmasq_china_domains}" ]]; then
@@ -24,7 +25,8 @@ if ! [[ $? -eq 0 && -f "${dnsmasq_china_domains}" ]]; then
 fi
 
 if [[ -f "${PreviousOne_china_domains}" ]]; then
-    oldHash=$(sha256sum "${PreviousOne_china_domains}" 2>/dev/null | awk '{print $1}')
+  # oldHash=$(sha256sum "${PreviousOne_china_domains}" 2>/dev/null | awk '{print $1}')
+    oldHash=$(head -n 1 "${PreviousOne_china_domains}")
     newHash=$(sha256sum "${dnsmasq_china_domains}" 2>/dev/null | awk '{print $1}')
     if [[ "$newHash" == "$oldHash" ]]; then
         echo The file content has not changed. exit here.
@@ -33,7 +35,8 @@ if [[ -f "${PreviousOne_china_domains}" ]]; then
     fi
 fi
 
-cp -f "${dnsmasq_china_domains}" "${PreviousOne_china_domains}"
+#cp -f "${dnsmasq_china_domains}" "${PreviousOne_china_domains}"
+echo ${newHash} > "${PreviousOne_china_domains}"
 
 nTotalLine=$(wc -l < "${dnsmasq_china_domains}")
 iProgress=1
