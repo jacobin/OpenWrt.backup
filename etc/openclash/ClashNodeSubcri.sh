@@ -277,9 +277,20 @@ for (( i=1; i<=5; i++ )); do
         if [[ -z "${disassemble}" ]]; then
             echo "${WEB_ORIG_DAT}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.urls"
         else
+            targetDisasFPath="${DATA_DIR}/original/${fname}"
+
+            # If the file is base64 encoded...
+            if base64 --decode --ignore-garbage "${targetDisasFPath}" > "${DATA_DIR}/original/${fname}.base64decode.result" 2>/dev/null; then
+                # https://fabianlee.org/2024/06/22/yq-validate-yaml-syntax
+                if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/original/${fname}.base64decode.result" &>/dev/null; then
+                    continue
+                fi
+                targetDisasFPath="${DATA_DIR}/original/${fname}.base64decode.result"
+            fi
+
             lineNo=1
             fileNo=1
-            readarray -t v2rayLines < <(cat "${DATA_DIR}/original/${fname}" | sort -u)
+            readarray -t v2rayLines < <(cat "${targetDisasFPath}" | sort -u)
             for v2rayLine in "${v2rayLines[@]}"; do
                 v2rayLine=$(trimstring "${v2rayLine}")
                 if ! [[ ${v2rayLine} == \#* || ${v2rayLine} == "ss://"* ]]; then
