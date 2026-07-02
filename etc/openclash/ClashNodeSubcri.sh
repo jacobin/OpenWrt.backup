@@ -76,7 +76,8 @@ for cmd in "${cmds[@]}"; do
     if ! command -v ${cmd} &>/dev/null; then tee_echo "\tThe command-line tool ${cmd} is not installed on the system."; singleton_clean_up 1; fi
 done
 
-existing_dirs=("${DIR0}/loop6.bak" "${DATA_DIR}/original" "${DATA_DIR}/disassemble" "${DATA_DIR}/pass2subconverter")
+existing_dirs=("${DIR0}/loop6.bak" "${DATA_DIR}" "${DATA_DIR}/original" "${DATA_DIR}/disassemble" "${DATA_DIR}/pass2subconverter")
+for dir in "${existing_dirs[@]}"; do mkdir -p "${dir}" > /dev/null 2>&1; done
 for dir in "${existing_dirs[@]}"; do
     if [ ! -d "${dir}" ]; then
         tee_echo "\tFolder \"${dir}\" not found!"
