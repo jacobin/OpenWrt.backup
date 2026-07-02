@@ -42,6 +42,7 @@ CVT_PORT=25522
 CONVERTER="http://127.0.0.1:${CVT_PORT}"
                          DATA_DIR="/www/Hxy/openclash"
          WEB_ORIG_DAT="http://127.0.0.1/Hxy/openclash/original"
+         WEB_DISA_DAT="http://127.0.0.1/Hxy/openclash/disassemble"
 WEB_PASS2SUBCONVERTER="http://127.0.0.1/Hxy/openclash/pass2subconverter"
 ACCEPTABLE_DAYs=7
 
@@ -75,7 +76,7 @@ for cmd in "${cmds[@]}"; do
     if ! command -v ${cmd} &>/dev/null; then tee_echo "\tThe command-line tool ${cmd} is not installed on the system."; singleton_clean_up 1; fi
 done
 
-existing_dirs=("${DIR0}/loop6.bak" "${DATA_DIR}/original" "${DATA_DIR}/pass2subconverter")
+existing_dirs=("${DIR0}/loop6.bak" "${DATA_DIR}/original" "${DATA_DIR}/disassemble" "${DATA_DIR}/pass2subconverter")
 for dir in "${existing_dirs[@]}"; do
     if [ ! -d "${dir}" ]; then
         tee_echo "\tFolder \"${dir}\" not found!"
@@ -142,7 +143,8 @@ for (( j=0; j<${subsSize}; j++ )); do
     split1=$(echo "${split1}" | xargs)
     split2=$(echo "${split2}" | xargs)
 
-    if [[ -z "${split0}" || -z "${split1}" || -n "${split2}" ]]; then
+   #if [[ -z "${split0}" || -z "${split1}" || -n "${split2}" ]]; then
+    if [[ -z "${split0}" || -z "${split1}" ]]; then
         tee_echo "\tLine format error:\n\t\t${subscri}"
         singleton_clean_up 1
     fi
@@ -235,6 +237,7 @@ for (( i=1; i<=5; i++ )); do
         # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
         url=$(echo "${arrSplit[0]}" | xargs)
         fname=$(echo "${arrSplit[1]}" | xargs)
+        disassemble=$(echo "${arrSplit[2]}" | xargs)
 
         if ! wget --no-check-certificate --spider "${url}" 2>/dev/null; then
             echo ${url},${fname} >> "${DIR0}/ClashNodeSubcri.loop$j"
@@ -269,7 +272,29 @@ for (( i=1; i<=5; i++ )); do
         else
             mv -f "${DATA_DIR}/original/${fname}.tmp" "${DATA_DIR}/original/${fname}"
         fi
-        echo "${WEB_ORIG_DAT}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.urls"
+
+        if [[ -z "${disassemble}" ]]; then
+            echo "${WEB_ORIG_DAT}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.urls"
+        else
+            lineNo=1
+            fileNo=1
+            readarray -t v2rayLines < <(cat "${DATA_DIR}/original/${fname}" | sort -u)
+            for v2rayLine in "${v2rayLines[@]}"; do
+                v2rayLine=$(trimstring "${v2rayLine}")
+                if ! [[ ${v2rayLine} == \#* || ${v2rayLine} == "ss://"* ]]; then
+                    if (( lineNo % 100 == 1 )); then
+                        newSubFName=${fname}.$(printf %05d ${fileNo}).txt
+                        echo "${WEB_DISA_DAT}/${newSubFName},${newSubFName}" >> "${DIR0}/ClashNodeSubcri.127.urls"
+                        echo "$v2rayLine" > "${DATA_DIR}/disassemble/${newSubFName}"
+                        ((fileNo++))
+                    else
+                        echo "$v2rayLine">> "${DATA_DIR}/disassemble/${newSubFName}"
+                    fi
+                    ((lineNo++))
+                fi
+            done
+        fi
+
     done
     rm -f "${DATA_DIR}/original/"*".tmp" > /dev/null 2>&1
 done
@@ -284,26 +309,28 @@ readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.urls")
 for subscri in "${arrSubscri[@]}"; do
     arrSplit=(${subscri//,/ })
     fname=${arrSplit[1]}
+    url127=${arrSplit[0]}
+    folderName=$( tweezers_original_folder_name "${url127}" )
     operation="ln"
-    assert_true "[ -f \"${DATA_DIR}/original/${fname}\" ]" "File \"${DATA_DIR}/original/${fname}\" that should exist does not exist"
-    if base64 --decode --ignore-garbage "${DATA_DIR}/original/${fname}" > "${DATA_DIR}/original/${fname}.base64decode.result" 2>/dev/null; then
+    assert_true "[ -f \"${DATA_DIR}/${folderName}/${fname}\" ]" "File \"${DATA_DIR}/${folderName}/${fname}\" that should exist does not exist"
+    if base64 --decode --ignore-garbage "${DATA_DIR}/${folderName}/${fname}" > "${DATA_DIR}/${folderName}/${fname}.base64decode.result" 2>/dev/null; then
         # https://fabianlee.org/2024/06/22/yq-validate-yaml-syntax
-        if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/original/${fname}.base64decode.result" &>/dev/null; then
-            ln -sf "${DATA_DIR}/original/${fname}.base64decode.result" "${DATA_DIR}/pass2subconverter/${fname}"
+        if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/${folderName}/${fname}.base64decode.result" &>/dev/null; then
+            ln -sf "${DATA_DIR}/${folderName}/${fname}.base64decode.result" "${DATA_DIR}/pass2subconverter/${fname}"
         else
-            rm "${DATA_DIR}/original/${fname}.base64decode.result" > /dev/null 2>&1
-            ln -sf "${DATA_DIR}/original/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
+            rm "${DATA_DIR}/${folderName}/${fname}.base64decode.result" > /dev/null 2>&1
+            ln -sf "${DATA_DIR}/${folderName}/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
         fi
     else
-        rm "${DATA_DIR}/original/${fname}.base64decode.result" > /dev/null 2>&1
-        if [[ "${fname}" == *.yaml || "${fname}" == *.yml ]] || yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/original/${fname}" &>/dev/null; then
-            ln -sf "${DATA_DIR}/original/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
+        rm "${DATA_DIR}/${folderName}/${fname}.base64decode.result" > /dev/null 2>&1
+        if [[ "${fname}" == *.yaml || "${fname}" == *.yml ]] || yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/${folderName}/${fname}" &>/dev/null; then
+            ln -sf "${DATA_DIR}/${folderName}/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
         else
-            base64 -w0 "${DATA_DIR}/original/${fname}" > "${DATA_DIR}/pass2subconverter/${fname}"
+            base64 -w0 "${DATA_DIR}/${folderName}/${fname}" > "${DATA_DIR}/pass2subconverter/${fname}"
             operation="base64"
         fi
     fi
-    assert_true "[[ $? -eq 0 ]]" "Operation \"${operation}\" on file \"${DATA_DIR}/original/${fname}\" failed"
+    assert_true "[[ $? -eq 0 ]]" "Operation \"${operation}\" on file \"${DATA_DIR}/${folderName}/${fname}\" failed"
     echo "${WEB_PASS2SUBCONVERTER}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls"
 done
 
@@ -794,6 +821,35 @@ function checkIP() {
 #     echo "114.114.114.114" is bad.
 # fi
 
+###############################################################################
+######################### trimstring ##########################################
+###############################################################################
+# https://jcgoran.github.io/2021/02/07/bash-string-trimming.html
+function trimstring() {
+    assert_true "[ $# -eq 1 ]" "USAGE: trimstring [STRING]."
+    s="${1}"
+    size_before=${#s}
+    size_after=0
+    while [ ${size_before} -ne ${size_after} ]; do
+        size_before=${#s}
+        s="${s#[[:space:]]}"
+        s="${s%[[:space:]]}"
+        size_after=${#s}
+    done
+    echo "${s}"
+    return 0
+}
+
+###############################################################################
+######################### trimstring ##########################################
+###############################################################################
+function tweezers_original_folder_name() {
+    assert_true "[ $# -eq 1 ]" "There must be one and only one parameter."
+    url127="${1}"
+    IFS="/" read -r -a my_array <<< "${url127}}"
+    echo "${my_array[5]}"
+    return 0
+}
 
 ###############################################################################
 ################################## File END ###################################
