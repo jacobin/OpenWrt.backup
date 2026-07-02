@@ -808,7 +808,7 @@ function checkIP() {
         return 1
     fi
 }
-
+# -----------------------------------------------------------------------------
 # # Example Usage:
 # if checkIP "8.8.8.8"; then
 #     echo "8.8.8.8" is ok.
