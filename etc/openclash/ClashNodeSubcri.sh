@@ -318,6 +318,12 @@ tee_echo "Convert data files that 'cannot be subscribed to via Openclash' to ${D
 ###############################################################################
 rm "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls" > /dev/null 2>&1
 readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.urls")
+
+if [ ${#arrSubscri[@]} -le 0 ]; then
+    tee_echo "\tNo valid download, program exits.!"
+    singleton_clean_up 1
+fi
+
 for subscri in "${arrSubscri[@]}"; do
     arrSplit=(${subscri//,/ })
     fname=${arrSplit[1]}
@@ -363,6 +369,12 @@ echo -e "\toption custom_domain_dns_server '${directDns}'\n" >> "${DIR0}/ClashNo
 clashConfigNames=()
 readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls")
 subsSize=${#arrSubscri[@]}
+
+if [ ${subsSize} -le 0 ]; then
+    tee_echo "\tThe number of PASS2SUBCONVERTERS is zero.!"
+    singleton_clean_up 1
+fi
+
 for (( j=0; j<${subsSize}; j++ )); do
     subscri=${arrSubscri[$j]}
     arrSplit=(${subscri//,/ })
