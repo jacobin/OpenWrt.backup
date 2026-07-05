@@ -7,6 +7,8 @@ import os
 import os.path
 import sys
 import getopt
+import re
+from pathvalidate import is_valid_filename #, validate_filename
 from typing import Dict, List, Any, Optional
 
 ###############################################################################
@@ -37,13 +39,17 @@ def main():
                 print( "\tpython [-h/--help] [-i/--input inputYamlPath] [-o/--outputfolder outputV2rayFolder] [-f/outputfnameprefix] [-z/--slicesize]" )
                 return 0
             elif currentArg in ("-i", "--input"):
+                assert os.path.isfile( currentVal )
                 intputYamlFPaths.append( currentVal )
             elif currentArg in ( "-o", "--output" ):
+                assert os.path.isdir( currentVal )
                 outputV2rayFolder = currentVal
             elif currentArg in ( "-f", "--outputfnameprefix" ):
+                assert is_valid_filename( currentVal )
                 outputFNamePrefix = currentVal
             elif currentArg in ( "-z", "--slicesize" ):
                 sliceSize = int(currentVal)
+                assert 0 < sliceSize
     except getopt.error as err:
         print( str( err ) )
 
@@ -58,6 +64,9 @@ def main():
 
     # /////////////////////////////////////////////////////////////////////
     proxyCount = len( all_proxies )
+    if proxyCount == 0:
+        return
+        
     arrSliceSize = []
     arrSliceSize.append( 0 )
     # range(start, stop, step) --
@@ -78,10 +87,13 @@ def main():
         proxies_obj = { "proxies": all_proxies[ arrSliceSize[ xIndex ] : arrSliceSize[ xIndex+1 ] ] }
         thisFName = outputFNamePrefix + str( xIndex+1 ).zfill(5) + '.yaml'
         thisFPath = os.path.join( outputV2rayFolder, thisFName )
+        try:
+            with open( thisFPath, 'w', encoding='utf-8' ) as file:
+                yaml.dump( proxies_obj, file, sort_keys=False )
+                file.close()
+        except Exception as e:
+            pass
         print( thisFName )
-        with open( thisFPath, 'w', encoding='utf-8' ) as file:
-            yaml.dump( proxies_obj, file, sort_keys=False )
-            file.close()
 
     assert xCount == xIndex +1
 
