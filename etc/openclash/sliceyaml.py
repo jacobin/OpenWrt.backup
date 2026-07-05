@@ -60,22 +60,30 @@ def main():
     proxyCount = len( all_proxies )
     arrSliceSize = []
     arrSliceSize.append( 0 )
-    for x in range( 1, proxyCount // sliceSize ):
-        arrSliceSize.append( x * sliceSize )
+    # range(start, stop, step) --
+    #   * start (Optional): The starting integer of the sequence. It defaults to 0.
+    #   * stop (Required): The integer where the sequence ends. The loop stops before this number, meaning the stop value is exclusive.
+    #   * step (Optional): The increment value between numbers. It defaults to 1
+    for xCount in range( 1, proxyCount // sliceSize + 1 ):
+        arrSliceSize.append( xCount * sliceSize )
 
     lastBox = proxyCount % sliceSize
     if 0 != lastBox:
-        arrSliceSize.append( lastBox )
-        x += 1
+        arrSliceSize.append( arrSliceSize[-1] + lastBox )
+        xCount += 1
 
-    for y in range( 0, x):
-        proxies_obj = { "proxies": all_proxies[ arrSliceSize[ y ] : arrSliceSize[ y+1 ] ] }
-        thisFName = outputFNamePrefix + str( y+1 ).zfill(5) + '.yaml'
+    assert (xCount + 1) == len(arrSliceSize)
+
+    for xIndex in range( 0, xCount):
+        proxies_obj = { "proxies": all_proxies[ arrSliceSize[ xIndex ] : arrSliceSize[ xIndex+1 ] ] }
+        thisFName = outputFNamePrefix + str( xIndex+1 ).zfill(5) + '.yaml'
         thisFPath = os.path.join( outputV2rayFolder, thisFName )
         print( thisFName )
-        with open( thisFPath, "w" ) as file:
+        with open( thisFPath, 'w', encoding='utf-8' ) as file:
             yaml.dump( proxies_obj, file, sort_keys=False )
             file.close()
+
+    assert xCount == xIndex +1
 
 ###############################################################################
 if __name__ == "__main__":
