@@ -71,7 +71,7 @@ tee_echo "Check system integrity"
 ###############################################################################
 ## 检查系统的完备性 ###########################################################
 ###############################################################################
-cmds=("yq" "cat" "curl" "wget" "grep" "sed" "xargs" "sort" "uniq" "tee" "mv" "rm" "cp" "awk" "base64" "ln" "flock" "date" "ls" "cut" "expr" "gzip" "eval")
+cmds=("yq" "cat" "curl" "wget" "grep" "sed" "xargs" "sort" "uniq" "tee" "mv" "rm" "cp" "awk" "base64" "ln" "flock" "date" "ls" "cut" "expr" "gzip" "eval" "python")
 for cmd in "${cmds[@]}"; do
     if ! command -v ${cmd} &>/dev/null; then tee_echo "\tThe command-line tool ${cmd} is not installed on the system."; singleton_clean_up 1; fi
 done
@@ -85,7 +85,7 @@ for dir in "${existing_dirs[@]}"; do
     fi
 done
 
-existing_files=("${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.etc_config_openclash.const")
+existing_files=("${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" "${DIR0}/sliceyaml.py")
 for fiLe in "${existing_files[@]}"; do
     if [ ! -f "${fiLe}" ]; then
         tee_echo "\tFile \"${fiLe}\" not found!"
@@ -282,29 +282,39 @@ for (( i=1; i<=5; i++ )); do
             # If the file is base64 encoded...
             if base64 --decode --ignore-garbage "${targetDisasFPath}" > "${DATA_DIR}/original/${fname}.base64decode.result" 2>/dev/null; then
                 # https://fabianlee.org/2024/06/22/yq-validate-yaml-syntax
-                if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/original/${fname}.base64decode.result" &>/dev/null; then
-                    continue
-                fi
                 targetDisasFPath="${DATA_DIR}/original/${fname}.base64decode.result"
             fi
 
-            lineNo=1
-            fileNo=1
-            readarray -t v2rayLines < <(cat "${targetDisasFPath}" | sort -u)
-            for v2rayLine in "${v2rayLines[@]}"; do
-                v2rayLine=$(trimstring "${v2rayLine}")
-                if ! [[ ${v2rayLine} == \#* || ${v2rayLine} == "ss://"* ]]; then
-                    if (( lineNo % 100 == 1 )); then
-                        newSubFName=${fname}.$(printf %05d ${fileNo}).txt
-                        echo "${WEB_DISA_DAT}/${newSubFName},${newSubFName}" >> "${DIR0}/ClashNodeSubcri.127.urls"
-                        echo "$v2rayLine" > "${DATA_DIR}/disassemble/${newSubFName}"
-                        ((fileNo++))
-                    else
-                        echo "$v2rayLine">> "${DATA_DIR}/disassemble/${newSubFName}"
-                    fi
-                    ((lineNo++))
+            # If it is a YAML file format ...
+            if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${targetDisasFPath}" &>/dev/null; then
+                # Slicing the node data of yaml
+                readarray -t arrSliceYaml < <( python "${DIR0}/sliceyaml.py" "-i${targetDisasFPath}" "-o${DATA_DIR}/disassemble" "-f${fname}" -z100 )
+                if [ -f "${WEB_DISA_DAT}/${arrSliceYaml[0]}" ]; then
+                    for aSlice in "${arrSliceYaml[@]}"; do
+                        assert_true "[ -f \"${WEB_DISA_DAT}/${aSlice}\" ]" "File \"${WEB_DISA_DAT}/${aSlice}\" that should exist does not exist"
+                        echo "${WEB_DISA_DAT}/${aSlice},${aSlice}" >> "${DIR0}/ClashNodeSubcri.127.urls"
+                    done
                 fi
-            done
+            else
+                # Slicing the node data of v2ray
+                lineNo=1
+                fileNo=1
+                readarray -t v2rayLines < <(cat "${targetDisasFPath}" | sort -u)
+                for v2rayLine in "${v2rayLines[@]}"; do
+                    v2rayLine=$(trimstring "${v2rayLine}")
+                    if ! [[ ${v2rayLine} == \#* || ${v2rayLine} == "ss://"* ]]; then
+                        if (( lineNo % 100 == 1 )); then
+                            newSubFName=${fname}.$(printf %05d ${fileNo}).txt
+                            echo "${WEB_DISA_DAT}/${newSubFName},${newSubFName}" >> "${DIR0}/ClashNodeSubcri.127.urls"
+                            echo "$v2rayLine" > "${DATA_DIR}/disassemble/${newSubFName}"
+                            ((fileNo++))
+                        else
+                            echo "$v2rayLine">> "${DATA_DIR}/disassemble/${newSubFName}"
+                        fi
+                        ((lineNo++))
+                    fi
+                done
+            fi
         fi
 
     done
