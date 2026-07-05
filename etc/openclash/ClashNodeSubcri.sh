@@ -290,9 +290,9 @@ for (( i=1; i<=5; i++ )); do
             if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${targetDisasFPath}" &>/dev/null; then
                 # Slicing the node data of yaml
                 readarray -t arrSliceYaml < <( python "${DIR0}/sliceyaml.py" "-i${targetDisasFPath}" "-o${DATA_DIR}/disassemble" "-f${fname}" -z${SLICE_SIZE} )
-                if [ -f "${WEB_DISA_DAT}/${arrSliceYaml[0]}" ]; then
+                if [ -f "${DATA_DIR}/disassemble/${arrSliceYaml[0]}" ]; then
                     for aSlice in "${arrSliceYaml[@]}"; do
-                        assert_true "[ -f \"${WEB_DISA_DAT}/${aSlice}\" ]" "File \"${WEB_DISA_DAT}/${aSlice}\" that should exist does not exist"
+                        assert_true "[ -f \"${DATA_DIR}/disassemble/${aSlice}\" ]" "File \"${DATA_DIR}/disassemble/${aSlice}\" that should exist does not exist"
                         echo "${WEB_DISA_DAT}/${aSlice},${aSlice}" >> "${DIR0}/ClashNodeSubcri.127.urls"
                     done
                 fi
