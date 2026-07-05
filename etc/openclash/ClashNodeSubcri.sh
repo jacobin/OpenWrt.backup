@@ -45,6 +45,7 @@ CONVERTER="http://127.0.0.1:${CVT_PORT}"
          WEB_DISA_DAT="http://127.0.0.1/Hxy/openclash/disassemble"
 WEB_PASS2SUBCONVERTER="http://127.0.0.1/Hxy/openclash/pass2subconverter"
 ACCEPTABLE_DAYs=7
+SLICE_SIZE=100
 
 
 tee_echo "Try to synchronize and calibrate time from WAN"
@@ -288,7 +289,7 @@ for (( i=1; i<=5; i++ )); do
             # If it is a YAML file format ...
             if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${targetDisasFPath}" &>/dev/null; then
                 # Slicing the node data of yaml
-                readarray -t arrSliceYaml < <( python "${DIR0}/sliceyaml.py" "-i${targetDisasFPath}" "-o${DATA_DIR}/disassemble" "-f${fname}" -z100 )
+                readarray -t arrSliceYaml < <( python "${DIR0}/sliceyaml.py" "-i${targetDisasFPath}" "-o${DATA_DIR}/disassemble" "-f${fname}" -z${SLICE_SIZE} )
                 if [ -f "${WEB_DISA_DAT}/${arrSliceYaml[0]}" ]; then
                     for aSlice in "${arrSliceYaml[@]}"; do
                         assert_true "[ -f \"${WEB_DISA_DAT}/${aSlice}\" ]" "File \"${WEB_DISA_DAT}/${aSlice}\" that should exist does not exist"
@@ -303,7 +304,7 @@ for (( i=1; i<=5; i++ )); do
                 for v2rayLine in "${v2rayLines[@]}"; do
                     v2rayLine=$(trimstring "${v2rayLine}")
                     if ! [[ ${v2rayLine} == \#* || ${v2rayLine} == "ss://"* ]]; then
-                        if (( lineNo % 100 == 1 )); then
+                        if (( lineNo % ${SLICE_SIZE} == 1 )); then
                             newSubFName=${fname}.$(printf %05d ${fileNo}).txt
                             echo "${WEB_DISA_DAT}/${newSubFName},${newSubFName}" >> "${DIR0}/ClashNodeSubcri.127.urls"
                             echo "$v2rayLine" > "${DATA_DIR}/disassemble/${newSubFName}"
