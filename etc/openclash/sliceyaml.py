@@ -100,7 +100,7 @@ def main():
                 sliceSize = int(currentVal)
                 assert 0 < sliceSize
     except getopt.error as err:
-        print( str( err ) )
+        print( str( err ), file=sys.stderr )
 
     # /////////////////////////////////////////////////////////////////////
     all_proxies = []
