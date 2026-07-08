@@ -1,6 +1,8 @@
 #!/bin/bash
 
-target="./mihomo-linux-amd64-compatible-v1.19.21"
+target=$( echo "$1" | sed 's/^\.*//;s/\.*$//' \
+                    | sed 's/^\/*//;s/\/*$//' )
+target="./${target}"
 
 if [ ! -f "${target}" ]; then
     echo "File \"${target}\" does not exist."
