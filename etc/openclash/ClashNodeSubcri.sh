@@ -241,6 +241,8 @@ for (( i=1; i<=5; i++ )); do
         fname=$(echo "${arrSplit[1]}" | xargs)
         disassemble=$(echo "${arrSplit[2]}" | xargs)
 
+        tee_echo2 "$(GetTitle ${fname} 60)"
+
         if ! wget --no-check-certificate --spider "${url}" 2>/dev/null; then
             echo ${url},${fname} >> "${DIR0}/ClashNodeSubcri.loop$j"
             continue
@@ -596,7 +598,12 @@ function assert_true() {
 ######################### function: tee_echo ##################################
 ###############################################################################
 function tee_echo() {
-    echo -e "$1" | tee -a "${DIR0}/ClashNodeSubcri.log"
+    echo -e $(date "+%Y-%m-%d %H:%M:%S $1") | tee -a "${DIR0}/ClashNodeSubcri.log"
+}
+
+function tee_echo2() {
+    echo -e "\n\n\n"
+    echo -e $(date "+%Y-%m-%d %H:%M:%S $1") | tee -a "${DIR0}/ClashNodeSubcri.log"
 }
 
 
@@ -884,6 +891,29 @@ function tweezers_original_folder_name() {
     IFS="/" read -r -a my_array <<< "${url127}}"
     echo "${my_array[5]}"
     return 0
+}
+
+###############################################################################
+######################### GetTitle ############################################
+###############################################################################
+# $1 -- title, $2 -- total width
+function GetTitle() {
+    title=$1
+    totalWidth=$2
+    zTitle=${#title}
+
+    # # aaaaaaaaaaaaa #
+    if [[ ${totalWidth} < $((zTitle +4)) ]]; then
+        echo "${title}"
+        return
+    fi
+
+    half=$(( (totalWidth-zTitle) / 2 - 1))
+    half2=$((totalWidth-half-1))
+    # https://stackoverflow.com/questions/5349718/how-can-i-repeat-a-character-in-bash
+    str=$(printf "%${half}s")
+    str2=$(printf "%${half2}s")
+    echo "${str// /#}" "${title}" "${str// /#}"
 }
 
 ###############################################################################

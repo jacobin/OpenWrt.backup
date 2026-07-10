@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# 清理引头或者收尾的.或者/
 target=$( echo "$1" | sed 's/^\.*//;s/\.*$//' \
                     | sed 's/^\/*//;s/\/*$//' )
 target="./${target}"
