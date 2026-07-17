@@ -95,7 +95,7 @@ for fiLe in "${existing_files[@]}"; do
 done
 
 file_hash=$(sha256sum "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" 2>/dev/null | awk '{print $1}')
-if [ "$file_hash" != "163e033e7f12bd178ecb4e8165bb9ab4a28255a83a5dfccd44c8cada0b44fd11" ]; then
+if [ "$file_hash" != "4dbbca73113571ac45865e12b91b634c535c83b4f13cde958b50cd86825033ea" ]; then
     tee_echo "\tThe SHA256 of file \"${DIR0}/ClashNodeSubcri.etc_config_openclash.const\" is incorrect, please check"
     singleton_clean_up 1
 fi
