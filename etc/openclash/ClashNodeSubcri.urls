@@ -29,7 +29,7 @@ https://raw.githubusercontent.com/freefq/free/master/v2                         
 https://raw.githubusercontent.com/freev2/free/main/v2                                             ,H029-github.freev2.txt
 https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/clash.yml                  ,H030-github.ermaozi.yml
 https://raw.githubusercontent.com/mfuu/v2ray/master/clash.yaml                                    ,H063-github.mfuu.yaml
-https://raw.githubusercontent.com/anaer/Sub/main/clash.yaml                                       ,H064-github.anaer.yaml, disassemble
+https://raw.githubusercontent.com/anaer/Sub/main/clash.yaml                                       ,H064-github.anaer.yaml, slice
 https://raw.githubusercontent.com/codingbox/Free-Node-Merge/main/node.txt                         ,H074-github.codingbox.txt
 https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/v2ray.txt                  ,H076-github.ermaozi.txt
 https://raw.githubusercontent.com/learnhard-cn/free_proxy_ss/main/free                            ,H078-github.learnhard-cn.txt
@@ -57,7 +57,7 @@ https://raw.githubusercontent.com/aiboboxx/clashfree/main/clash.yml             
 https://cdn.jsdelivr.net/gh/anaer/Sub@main/clash.yaml                                             ,H135-anaer.yaml
 https://tt.vg/freeclash                                                                           ,H136-freeclash.txt
 https://cdn.jsdelivr.net/gh/openrunner/clash-freenode@main/v2ray.txt                              ,H139-openrunner.txt
-https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge_base64.txt      ,H153-github.mahdibland.txt, disassemble
+https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge_base64.txt      ,H153-github.mahdibland.txt, slice
 https://www.gitlabip.xyz/Alvin9999/pac2/master/clash.meta2/1/config.yaml                          ,H160-ChromeGo16.yaml
 https://gitlab.com/free9999/ipupdate/-/raw/master/clash.meta2/config.yaml                         ,H161-github.free9999-ChromeGo17.yaml
 https://www.githubip.xyz/Alvin9999/pac2/master/clash.meta2/config.yaml                            ,H162-github.Alvin9999-ChromeGo18.yaml
@@ -165,4 +165,4 @@ https://raw.githubusercontent.com/anaer/Sub/main/proxies.yaml                   
 https://raw.githubusercontent.com/chengaopan/AutoMergePublicNodes/master/list.meta.yml            ,H324-chengaopan-list-meta.txt
 https://raw.githubusercontent.com/Flikify/Free-Node/main/clash.yaml                               ,H325-Flik6.txt
 https://raw.githubusercontent.com/free18/v2ray/main/v.txt                                         ,H326-free18b64.txt
-https://raw.githubusercontent.com/barry-far/V2ray-Config/main/All_Configs_Sub.txt                 ,H327-barry-far-all-cfgs-sub.txt, disassemble
+https://raw.githubusercontent.com/barry-far/V2ray-Config/main/All_Configs_Sub.txt                 ,H327-barry-far-all-cfgs-sub.txt, slice

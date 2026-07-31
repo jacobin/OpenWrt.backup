@@ -45,7 +45,7 @@ CONVERTER="http://127.0.0.1:${CVT_PORT}"
          WEB_SLIC_DAT="http://127.0.0.1/Hxy/openclash/slice"
 WEB_PASS2SUBCONVERTER="http://127.0.0.1/Hxy/openclash/pass2subconverter"
 ACCEPTABLE_DAYs=7
-SLICE_SIZE=100
+SLICE_SIZE=20
 
 
 tee_echo "Try to synchronize and calibrate time from WAN"
