@@ -283,6 +283,7 @@ for (( i=1; i<=5; i++ )); do
             targetDisasFPath="${DATA_DIR}/original/${fname}"
 
             # If the file is base64 encoded...
+            rm -f "${DATA_DIR}/original/${fname}.base64decode.result" &> /dev/null
             if base64 --decode --ignore-garbage "${targetDisasFPath}" > "${DATA_DIR}/original/${fname}.base64decode.result" 2>/dev/null; then
                 # https://fabianlee.org/2024/06/22/yq-validate-yaml-syntax
                 targetDisasFPath="${DATA_DIR}/original/${fname}.base64decode.result"
@@ -309,6 +310,7 @@ for (( i=1; i<=5; i++ )); do
                         if (( lineNo % ${SLICE_SIZE} == 1 )); then
                             newSubFName=${fname}.$(printf %05d ${fileNo}).txt
                             echo "${WEB_SLIC_DAT}/${newSubFName},${newSubFName}" >> "${DIR0}/ClashNodeSubcri.127.urls"
+                            rm -f "${DATA_DIR}/slice/${newSubFName}" &> /dev/null
                             echo "$v2rayLine" > "${DATA_DIR}/slice/${newSubFName}"
                             ((fileNo++))
                         else
@@ -344,6 +346,7 @@ for subscri in "${arrSubscri[@]}"; do
     folderName=$( tweezers_original_folder_name "${url127}" )
     operation="ln"
     assert_true "[ -f \"${DATA_DIR}/${folderName}/${fname}\" ]" "File \"${DATA_DIR}/${folderName}/${fname}\" that should exist does not exist"
+    rm -f "${DATA_DIR}/${folderName}/${fname}.base64decode.result" &> /dev/null
     if base64 --decode --ignore-garbage "${DATA_DIR}/${folderName}/${fname}" > "${DATA_DIR}/${folderName}/${fname}.base64decode.result" 2>/dev/null; then
         # https://fabianlee.org/2024/06/22/yq-validate-yaml-syntax
         if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/${folderName}/${fname}.base64decode.result" &>/dev/null; then
@@ -425,6 +428,7 @@ sed -i "s#PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH#${DIR0}\/config\/${final1}.ya
 
 ###############################################################################
 # "${DIR0}/ClashNodeSubcri.cfg"
+rm -f "${DIR0}/ClashNodeSubcri.cfg" &> /dev/null
 cat "${DIR0}/ClashNodeSubcri.etc_config_openclash.const"   >  "${DIR0}/ClashNodeSubcri.cfg"
 cat "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" >> "${DIR0}/ClashNodeSubcri.cfg"
 
