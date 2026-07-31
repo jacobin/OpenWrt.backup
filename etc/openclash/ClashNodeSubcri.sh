@@ -221,7 +221,7 @@ if [ -f "${DIR0}/ClashNodeSubcri.loop"6 ]; then
     tar_old_files "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6" "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6.2*" 5 20
 fi
 rm -f "${DIR0}/ClashNodeSubcri.loop"? > /dev/null 2>&1
-cp -f "${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.loop1"
+cp -f "${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.loop1" &> /dev/null
 rm "${DIR0}/ClashNodeSubcri.127.urls" > /dev/null 2>&1
 for (( i=1; i<=5; i++ )); do
     if ! [ -f "${DIR0}/ClashNodeSubcri.loop$i" ]; then break; fi
@@ -274,7 +274,7 @@ for (( i=1; i<=5; i++ )); do
                 continue
             fi
         else
-            mv -f "${DATA_DIR}/original/${fname}.tmp" "${DATA_DIR}/original/${fname}"
+            mv -f "${DATA_DIR}/original/${fname}.tmp" "${DATA_DIR}/original/${fname}" &> /dev/null
         fi
 
         if [[ -z "${tobe_sliced}" ]]; then
@@ -350,15 +350,15 @@ for subscri in "${arrSubscri[@]}"; do
     if base64 --decode --ignore-garbage "${DATA_DIR}/${folderName}/${fname}" > "${DATA_DIR}/${folderName}/${fname}.base64decode.result" 2>/dev/null; then
         # https://fabianlee.org/2024/06/22/yq-validate-yaml-syntax
         if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/${folderName}/${fname}.base64decode.result" &>/dev/null; then
-            ln -sf "${DATA_DIR}/${folderName}/${fname}.base64decode.result" "${DATA_DIR}/pass2subconverter/${fname}"
+            ln -sf "${DATA_DIR}/${folderName}/${fname}.base64decode.result" "${DATA_DIR}/pass2subconverter/${fname}" &> /dev/null
         else
             rm -f "${DATA_DIR}/${folderName}/${fname}.base64decode.result" > /dev/null 2>&1
-            ln -sf "${DATA_DIR}/${folderName}/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
+            ln -sf "${DATA_DIR}/${folderName}/${fname}" "${DATA_DIR}/pass2subconverter/${fname}" &> /dev/null
         fi
     else
         rm -f "${DATA_DIR}/${folderName}/${fname}.base64decode.result" > /dev/null 2>&1
         if [[ "${fname}" == *.yaml || "${fname}" == *.yml ]] || yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/${folderName}/${fname}" &>/dev/null; then
-            ln -sf "${DATA_DIR}/${folderName}/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
+            ln -sf "${DATA_DIR}/${folderName}/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"  &> /dev/null
         else
             rm -f "${DATA_DIR}/pass2subconverter/${fname}" > /dev/null 2>&1
             base64 -w0 "${DATA_DIR}/${folderName}/${fname}" > "${DATA_DIR}/pass2subconverter/${fname}"
@@ -434,8 +434,8 @@ cat "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" >> "${DIR0}/ClashNode
 
 ###############################################################################
 # "/etc/config/openclash"
-mv -f "/etc/config/openclash" "/etc/config/openclash.$(date +%Y%m%d_%H%M%S)"
-cp -f "${DIR0}/ClashNodeSubcri.cfg" "/etc/config/openclash"
+mv -f "/etc/config/openclash" "/etc/config/openclash.$(date +%Y%m%d_%H%M%S)" &> /dev/null
+cp -f "${DIR0}/ClashNodeSubcri.cfg" "/etc/config/openclash" &> /dev/null
 
 
 tee_echo "Package redundant config Openclash files. Only 5 external files are left."
@@ -494,8 +494,8 @@ function singleton_clean_up() {
     tee_echo "\tEnd: $(date +%Y%m%d_%H%M%S), time escaped:${formatted_string}"
     flock -u 3
     exec 4>&-
-    rm -f ${F_LOCK}
-    rm -f ${F_PID}
+    rm -f ${F_LOCK} &> /dev/null
+    rm -f ${F_PID} &> /dev/null
     exit "$1"
 }
 
@@ -636,11 +636,11 @@ function tar_old_files() {
     # It must be ensured that "tarFPath" is not in the pattern matching of "targetFPathMatchingPattern"
 
     if [ -f "${tarFPath}.tar.gz" ]; then
-        gzip -d "${tarFPath}.tar.gz"
+        gzip -d "${tarFPath}.tar.gz" &> /dev/null
         assert_true "[ ! -f \"${tarFPath}.tar.gz\" ]" "Failed to unzip file \"${tarFPath}.tar.gz\"."
         tar x -v -f "${tarFPath}.tar" -C "/" >/dev/null 2>&1
         assert_true "[ -f \"${tarFPath}.tar\" ]" "tar's behavior towards file \"${tarFPath}.tar\" does not meet expectations."
-        rm -f "${tarFPath}.tar"
+        rm -f "${tarFPath}.tar" &> /dev/null
         assert_true "[ ! -f \"${tarFPath}.tar\" ]" "Delete file \"${tarFPath}.tar\" failed."
     fi
 
@@ -648,7 +648,7 @@ function tar_old_files() {
     ls -t -r -1 ${targetFPathMatchingPattern} > ${ListFPathTemp} 2>/dev/null
     ls -t -r -1 ${targetFPathMatchingPattern}.2???????_?????? >> ${ListFPathTemp} 2>/dev/null
     readarray -t arrOpenclashConfigBakup < <(cat "${ListFPathTemp}")
-    rm -f "${ListFPathTemp}"
+    rm -f "${ListFPathTemp}" &> /dev/null
     bakSize=${#arrOpenclashConfigBakup[@]}
     if (( bakSize == 0 )); then return; fi
 
@@ -697,7 +697,7 @@ function tar_old_files() {
 
     eval "$tar_command_string"
     eval "$rm_command_string"
-    gzip "${tarFPath}.tar"
+    gzip "${tarFPath}.tar"  &> /dev/null
     assert_true "[[ -f \"${tarFPath}.tar.gz\" && ! -f \"${tarFPath}.tar\" ]]" "Compressed file \"${tarFPath}.tar\" failed."
 }
 
