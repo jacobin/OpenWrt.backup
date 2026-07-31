@@ -42,7 +42,7 @@ CVT_PORT=25522
 CONVERTER="http://127.0.0.1:${CVT_PORT}"
                          DATA_DIR="/www/Hxy/openclash"
          WEB_ORIG_DAT="http://127.0.0.1/Hxy/openclash/original"
-         WEB_DISA_DAT="http://127.0.0.1/Hxy/openclash/disassemble"
+         WEB_SLIC_DAT="http://127.0.0.1/Hxy/openclash/slice"
 WEB_PASS2SUBCONVERTER="http://127.0.0.1/Hxy/openclash/pass2subconverter"
 ACCEPTABLE_DAYs=7
 SLICE_SIZE=100
@@ -77,7 +77,7 @@ for cmd in "${cmds[@]}"; do
     if ! command -v ${cmd} &>/dev/null; then tee_echo "\tThe command-line tool ${cmd} is not installed on the system."; singleton_clean_up 1; fi
 done
 
-existing_dirs=("${DIR0}/loop6.bak" "${DATA_DIR}" "${DATA_DIR}/original" "${DATA_DIR}/disassemble" "${DATA_DIR}/pass2subconverter")
+existing_dirs=("${DIR0}/loop6.bak" "${DATA_DIR}" "${DATA_DIR}/original" "${DATA_DIR}/slice" "${DATA_DIR}/pass2subconverter")
 for dir in "${existing_dirs[@]}"; do mkdir -p "${dir}" > /dev/null 2>&1; done
 for dir in "${existing_dirs[@]}"; do
     if [ ! -d "${dir}" ]; then
@@ -239,7 +239,7 @@ for (( i=1; i<=5; i++ )); do
         # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
         url=$(echo "${arrSplit[0]}" | xargs)
         fname=$(echo "${arrSplit[1]}" | xargs)
-        disassemble=$(echo "${arrSplit[2]}" | xargs)
+        tobe_sliced=$(echo "${arrSplit[2]}" | xargs)
 
         tee_echo2 "$(GetTitle ${fname} 60)"
 
@@ -277,7 +277,7 @@ for (( i=1; i<=5; i++ )); do
             mv -f "${DATA_DIR}/original/${fname}.tmp" "${DATA_DIR}/original/${fname}"
         fi
 
-        if [[ -z "${disassemble}" ]]; then
+        if [[ -z "${tobe_sliced}" ]]; then
             echo "${WEB_ORIG_DAT}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.urls"
         else
             targetDisasFPath="${DATA_DIR}/original/${fname}"
@@ -291,11 +291,11 @@ for (( i=1; i<=5; i++ )); do
             # If it is a YAML file format ...
             if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${targetDisasFPath}" &>/dev/null; then
                 # Slicing the node data of yaml
-                readarray -t arrSliceYaml < <( python "${DIR0}/sliceyaml.py" "-i${targetDisasFPath}" "-o${DATA_DIR}/disassemble" "-f${fname}" -z${SLICE_SIZE} )
-                if [ -f "${DATA_DIR}/disassemble/${arrSliceYaml[0]}" ]; then
+                readarray -t arrSliceYaml < <( python "${DIR0}/sliceyaml.py" "-i${targetDisasFPath}" "-o${DATA_DIR}/slice" "-f${fname}" -z${SLICE_SIZE} )
+                if [ -f "${DATA_DIR}/slice/${arrSliceYaml[0]}" ]; then
                     for aSlice in "${arrSliceYaml[@]}"; do
-                        assert_true "[ -f \"${DATA_DIR}/disassemble/${aSlice}\" ]" "File \"${DATA_DIR}/disassemble/${aSlice}\" that should exist does not exist"
-                        echo "${WEB_DISA_DAT}/${aSlice},${aSlice}" >> "${DIR0}/ClashNodeSubcri.127.urls"
+                        assert_true "[ -f \"${DATA_DIR}/slice/${aSlice}\" ]" "File \"${DATA_DIR}/slice/${aSlice}\" that should exist does not exist"
+                        echo "${WEB_SLIC_DAT}/${aSlice},${aSlice}" >> "${DIR0}/ClashNodeSubcri.127.urls"
                     done
                 fi
             else
@@ -308,11 +308,11 @@ for (( i=1; i<=5; i++ )); do
                     if ! [[ ${v2rayLine} == \#* || ${v2rayLine} == "ss://"* ]]; then
                         if (( lineNo % ${SLICE_SIZE} == 1 )); then
                             newSubFName=${fname}.$(printf %05d ${fileNo}).txt
-                            echo "${WEB_DISA_DAT}/${newSubFName},${newSubFName}" >> "${DIR0}/ClashNodeSubcri.127.urls"
-                            echo "$v2rayLine" > "${DATA_DIR}/disassemble/${newSubFName}"
+                            echo "${WEB_SLIC_DAT}/${newSubFName},${newSubFName}" >> "${DIR0}/ClashNodeSubcri.127.urls"
+                            echo "$v2rayLine" > "${DATA_DIR}/slice/${newSubFName}"
                             ((fileNo++))
                         else
-                            echo "$v2rayLine">> "${DATA_DIR}/disassemble/${newSubFName}"
+                            echo "$v2rayLine">> "${DATA_DIR}/slice/${newSubFName}"
                         fi
                         ((lineNo++))
                     fi
@@ -329,7 +329,7 @@ tee_echo "Convert data files that 'cannot be subscribed to via Openclash' to ${D
 ###############################################################################
 ## 把哪些『不能“通过Openclash进行订阅”』的数据文件进行base64的编码转换到${DATA_DIR}/pass2subconverter
 ###############################################################################
-rm "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls" > /dev/null 2>&1
+rm -f "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls" > /dev/null 2>&1
 readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.urls")
 
 if [ ${#arrSubscri[@]} -le 0 ]; then
@@ -349,14 +349,15 @@ for subscri in "${arrSubscri[@]}"; do
         if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/${folderName}/${fname}.base64decode.result" &>/dev/null; then
             ln -sf "${DATA_DIR}/${folderName}/${fname}.base64decode.result" "${DATA_DIR}/pass2subconverter/${fname}"
         else
-            rm "${DATA_DIR}/${folderName}/${fname}.base64decode.result" > /dev/null 2>&1
+            rm -f "${DATA_DIR}/${folderName}/${fname}.base64decode.result" > /dev/null 2>&1
             ln -sf "${DATA_DIR}/${folderName}/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
         fi
     else
-        rm "${DATA_DIR}/${folderName}/${fname}.base64decode.result" > /dev/null 2>&1
+        rm -f "${DATA_DIR}/${folderName}/${fname}.base64decode.result" > /dev/null 2>&1
         if [[ "${fname}" == *.yaml || "${fname}" == *.yml ]] || yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/${folderName}/${fname}" &>/dev/null; then
             ln -sf "${DATA_DIR}/${folderName}/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"
         else
+            rm -f "${DATA_DIR}/pass2subconverter/${fname}" > /dev/null 2>&1
             base64 -w0 "${DATA_DIR}/${folderName}/${fname}" > "${DATA_DIR}/pass2subconverter/${fname}"
             operation="base64"
         fi
@@ -375,7 +376,7 @@ if [ ! -f "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls" ]; then
     singleton_clean_up 1
 fi
 
-rm "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" > /dev/null 2>&1
+rm -f "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" > /dev/null 2>&1
 echo -e "\toption config_path 'PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH'\n" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
 echo -e "\toption custom_domain_dns_server '${directDns}'\n" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
 
@@ -582,7 +583,7 @@ function assert_true() {
     local message="${2:-Assertion failed!}"
 
     if ! eval "$condition"; then
-        tee_echo "\tERROR: ${message}\n\tEnd: $(date +%Y%m%d_%H%M%S)"
+        tee_echo "\tERROR: ${message}\n"
         singleton_clean_up 1
     fi
 }
@@ -635,7 +636,7 @@ function tar_old_files() {
         assert_true "[ ! -f \"${tarFPath}.tar.gz\" ]" "Failed to unzip file \"${tarFPath}.tar.gz\"."
         tar x -v -f "${tarFPath}.tar" -C "/" >/dev/null 2>&1
         assert_true "[ -f \"${tarFPath}.tar\" ]" "tar's behavior towards file \"${tarFPath}.tar\" does not meet expectations."
-        rm "${tarFPath}.tar" -f
+        rm -f "${tarFPath}.tar"
         assert_true "[ ! -f \"${tarFPath}.tar\" ]" "Delete file \"${tarFPath}.tar\" failed."
     fi
 
@@ -643,7 +644,7 @@ function tar_old_files() {
     ls -t -r -1 ${targetFPathMatchingPattern} > ${ListFPathTemp} 2>/dev/null
     ls -t -r -1 ${targetFPathMatchingPattern}.2???????_?????? >> ${ListFPathTemp} 2>/dev/null
     readarray -t arrOpenclashConfigBakup < <(cat "${ListFPathTemp}")
-    rm "${ListFPathTemp}" -f
+    rm -f "${ListFPathTemp}"
     bakSize=${#arrOpenclashConfigBakup[@]}
     if (( bakSize == 0 )); then return; fi
 
@@ -888,7 +889,9 @@ function trimstring() {
 function tweezers_original_folder_name() {
     assert_true "[ $# -eq 1 ]" "There must be one and only one parameter."
     url127="${1}"
+    old_ifs="$IFS"
     IFS="/" read -r -a my_array <<< "${url127}}"
+    IFS="$old_ifs"
     echo "${my_array[5]}"
     return 0
 }
