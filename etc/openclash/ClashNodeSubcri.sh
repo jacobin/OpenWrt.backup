@@ -224,6 +224,7 @@ rm -f "${DIR0}/ClashNodeSubcri.loop"? > /dev/null 2>&1
 cp -f "${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.loop1" &> /dev/null
 rm "${DIR0}/ClashNodeSubcri.127.urls" > /dev/null 2>&1
 for (( i=1; i<=5; i++ )); do
+    tee_echo "Loop${i}"
     if ! [ -f "${DIR0}/ClashNodeSubcri.loop$i" ]; then break; fi
 
     # https://unix.stackexchange.com/questions/485221/read-lines-into-array-one-element-per-line-using-bash
@@ -386,6 +387,7 @@ echo -e "\toption custom_domain_dns_server '${directDns}'\n" >> "${DIR0}/ClashNo
 clashConfigNames=()
 readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls")
 subsSize=${#arrSubscri[@]}
+tee_echo "\tsubsSize:${subsSize}"
 
 if [ ${subsSize} -le 0 ]; then
     tee_echo "\tThe number of PASS2SUBCONVERTERS is zero.!"
