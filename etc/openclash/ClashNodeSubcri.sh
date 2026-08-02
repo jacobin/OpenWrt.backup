@@ -46,6 +46,7 @@ CONVERTER="http://127.0.0.1:${CVT_PORT}"
 WEB_PASS2SUBCONVERTER="http://127.0.0.1/Hxy/openclash/pass2subconverter"
 ACCEPTABLE_DAYs=7
 SLICE_SIZE=20
+SUBCONVERTER_SLICE_SIZE=5
 
 
 tee_echo "Try to synchronize and calibrate time from WAN"
@@ -541,13 +542,13 @@ function combine_subscri() {
 
     arr=("$@")
     asize=${#arr[@]}
-    declare -i groupCount=$(( (asize+4)/5 ))
+    declare -i groupCount=$(( (asize+SUBCONVERTER_SLICE_SIZE-1)/SUBCONVERTER_SLICE_SIZE ))
 
     arrGroup=()
     for (( i = 0; i < ${groupCount}; i++ )); do
-        begin=$((i*5))
-        if (( 5 < asize-begin )); then
-            thissize=5
+        begin=$((i*SUBCONVERTER_SLICE_SIZE))
+        if (( SUBCONVERTER_SLICE_SIZE < asize-begin )); then
+            thissize=SUBCONVERTER_SLICE_SIZE
         else
             thissize=$((asize-begin))
         fi
