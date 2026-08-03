@@ -521,13 +521,13 @@ sub_info_get()
 config_load "openclash"
 config_foreach sub_info_get "config_subscribe" "$1"
 
+uci -q delete openclash.config.config_update_path
+uci commit openclash
+
 ###### Harly.He@gmail.com added the following lines 27/11/2025 11:23 AM #####{{
 /etc/init.d/openclash restart
 sleep 3
 #############################################################################}}
-
-uci -q delete openclash.config.config_update_path
-uci commit openclash
 
 dec_job_counter_and_restart "$restart"
 del_lock
