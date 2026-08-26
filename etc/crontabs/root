@@ -1,4 +1,3 @@
-0 0 * * * /etc/init.d/acme start
 3 3 12 12 * /usr/bin/nginx-util 'check_ssl'
 00 3 * * * /etc/openclash/updateChinaDomainNameList4Openclash.sh
 30 4 * * * /etc/openclash/ClashNodeSubcri.sh
@@ -6,6 +5,8 @@
 #*/1 * * * * /etc/subconverter/watchdog.subconverter.sh
 #*/1 * * * * /etc/subconverter.MetaCubeX/watchdog.subconverter.sh
 */1 * * * * /etc/subconverter.asdlokj1qpi233/watchdog.subconverter.sh
+0 0 * * * /etc/init.d/acme start
+56 3 * * * "/root/.acme.sh"/acme.sh --cron --home "/root/.acme.sh" > /dev/null
 0 1 * * 1 /usr/share/openclash/openclash_rule.sh
 0 1 * * 2 /usr/share/openclash/openclash_ipdb.sh
 0 1 * * 4 /usr/share/openclash/openclash_geosite.sh
