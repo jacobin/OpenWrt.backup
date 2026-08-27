@@ -219,7 +219,7 @@ tee_echo "Download the subscribed raw data to local ${DATA_DIR}/original after a
 # https://stackoverflow.com/questions/62021429/why-does-command-line-rm-not-accept-quotation-marks-for-directories-with-spaces
 if [ -f "${DIR0}/ClashNodeSubcri.loop"6 ]; then
     mv -f "${DIR0}/ClashNodeSubcri.loop"6 "${DIR0}/loop6.bak/ClashNodeSubcri.loop6.$(date +%Y%m%d_%H%M%S)" &> /dev/null
-    tar_old_files "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6" "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6.2*" 5 20
+    tar_old_files "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6" "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6" 2 1000
 fi
 rm -f "${DIR0}/ClashNodeSubcri.loop"? > /dev/null 2>&1
 cp -f "${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.loop1" &> /dev/null
@@ -445,10 +445,10 @@ tee_echo "Package redundant config Openclash files. Only 5 external files are le
 ###############################################################################
 ## 打包多余的config openclash文件。外头只留5个 ###############################
 ###############################################################################
-tar_old_files "/etc/config/openclash.backup" "/etc/config/openclash.2*" 5 20
-tar_old_files "/etc/openclash/yamls" "/etc/openclash/*.yaml" 2 20
-tar_old_files "/etc/openclash/wget.log" "/etc/openclash/wget-log*" 1 20
-tar_old_files "/etc/openclash/config/config_yamls" "/etc/openclash/config/*.yaml" 1 20
+tar_old_files "/etc/config/openclash.backup"       "/etc/config/openclash."        2 1000
+tar_old_files "/etc/openclash/yamls"               "/etc/openclash/*.yaml"         2 1000
+tar_old_files "/etc/openclash/wget.log"            "/etc/openclash/wget-log.???"   1 1000
+tar_old_files "/etc/openclash/config/config_yamls" "/etc/openclash/config/*.yaml." 0 1000
 
 
 tee_echo "Restart Openclash."
@@ -620,10 +620,10 @@ function tee_echo2() {
 ###############################################################################
 function tar_old_files() {
     # https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
-    tarFPath=$(echo "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                      tarFPath=$(echo "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     targetFPathMatchingPattern=$(echo "$2" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    nOutside=$(echo "$3" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    nReserve=$(echo "$4" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                      nOutside=$(echo "$3" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                      nReserve=$(echo "$4" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
     # {0/filetime0}  {coordA/filetimeA}          coordB/filetimeB}
     #   ^                   ^                          ^
@@ -648,18 +648,22 @@ function tar_old_files() {
     fi
 
     ListFPathTemp=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
-    ls -t -r -1 ${targetFPathMatchingPattern} > ${ListFPathTemp} 2>/dev/null
-    ls -t -r -1 ${targetFPathMatchingPattern}.2???????_?????? >> ${ListFPathTemp} 2>/dev/null
+    timemarkPattern=".2???????_??????"
+    if [[ "${targetFPathMatchingPattern: -1}" == "." ]]; then timemarkPattern="2???????_??????"; fi
+    ls -t -r -1 ${targetFPathMatchingPattern}                    > ${ListFPathTemp} 2>/dev/null
+    ls -t -r -1 ${targetFPathMatchingPattern}${timemarkPattern} >> ${ListFPathTemp} 2>/dev/null
     readarray -t arrOpenclashConfigBakup < <(cat "${ListFPathTemp}")
+    # https://stackoverflow.com/questions/13648410/how-can-i-get-unique-values-from-an-array-in-bash
+    IFS=" " read -r -a arrOpenclashConfigBakup <<< "$(tr ' ' '\n' <<< "${arrOpenclashConfigBakup[@]}" | sort -u | tr '\n' ' ')"
     rm -f "${ListFPathTemp}" &> /dev/null
     bakSize=${#arrOpenclashConfigBakup[@]}
     if (( bakSize == 0 )); then return; fi
 
-    coordB=$((bakSize-nOutside))
-    if (( coordB <= 0  )); then return; fi
-    coordA=$((bakSize-nReserve))
+    coordB=$(( bakSize - nOutside ))
+    if (( coordB < 0  )); then return; fi
+    coordA=$(( bakSize - nReserve ))
     if (( coordA < 0  )); then let coordA=0; fi
-    assert_true "(( $coordA < $coordB ))" ""
+    assert_true "(( $coordA <= $coordB ))" "Error in input parameters for tar call"
 
     NowDatetime="$(date +'%Y%m%d_%H%M%S')"
     for (( j=0; j<bakSize; j++ )); do
