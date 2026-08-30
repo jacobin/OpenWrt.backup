@@ -778,13 +778,6 @@ function is_valid_datetime() { # 20260123_102345
         return 1
     fi
 
-    local   sYear=${sDate:0:4}
-    local  sMonth=${sDate:4:2}
-    local    sDay=${sDate:6:2}
-    local   sHour=${sDate:9:2}
-    local sMinute=${sDate:11:2}
-    local sSecond=${sDate:13:2}
-
     if [ ${#YYYYMMDD} -ne 8 ];then
         return 1
     fi
@@ -792,6 +785,13 @@ function is_valid_datetime() { # 20260123_102345
     if [ ${#hhmmss} -ne 6 ];then
         return 1
     fi
+
+    local   sYear=${sDate:0:4}
+    local  sMonth=${sDate:4:2}
+    local    sDay=${sDate:6:2}
+    local   sHour=${sDate:9:2}
+    local sMinute=${sDate:11:2}
+    local sSecond=${sDate:13:2}
 
     # Numbers like "08" and "09" are treated as octal by bash.
     local let   nYear=$((10#$sYear))
