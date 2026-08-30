@@ -259,7 +259,7 @@ for (( i=1; i<=5; i++ )); do
         thisFileSize=$(get_file_size "${DATA_DIR}/original/${fname}.tmp")
         if ! [[ 0 < ${thisFileSize} ]]; then
             tee_echo "\tThe size of URL \"${url}\" is zero"
-            echo "$(date +%Y%m%d_%H%M%S) ${url}" >> "${DIR0}/ClashNodeSubcri.0size"
+            echo "$(date +%Y%m%d_%H%M%S) ${url},${fname}" >> "${DIR0}/ClashNodeSubcri.0size"
             continue
         fi
 
@@ -272,7 +272,7 @@ for (( i=1; i<=5; i++ )); do
             [[ $((nowDatetime - oldFiletime)) -gt $((${ACCEPTABLE_DAYs}*24*60*60)) ]] && bTooOldFile=true || bTooOldFile=false
             if [[ "${bTooOldFile}" == "true" ]]; then
                 tee_echo "\tFile \"${url}\" is too old and has NOT been updated for more than ${ACCEPTABLE_DAYs} days"
-                echo "$(date +%Y%m%d_%H%M%S) ${url}" >> "${DIR0}/ClashNodeSubcri.oldsubs"
+                echo "$(date +%Y%m%d_%H%M%S) ${url},${fname}" >> "${DIR0}/ClashNodeSubcri.oldsubs"
                 continue
             fi
         else
@@ -730,7 +730,7 @@ function MonthDays() {
     month=$(expr $2 + 0)
     Days=( 29 31 28 31 30 31 30 31 31 30 31 30 31 )
 
-    if (( 2==$month )) && LeapYear $year; then
+    if (( 2==month )) && LeapYear $year; then
         month=0;
     fi
 
@@ -756,34 +756,34 @@ function isdigit() {
 ###############################################################################
 # https://blog.csdn.net/weixin_45956148/article/details/107862145
 function is_valid_datetime() { # 20260123_102345
-    Date=$1
+    local sDate=$1
 
-    if [ ${#Date} -ne 15 ];then
+    if [ ${#sDate} -ne 15 ];then
         return 1
     fi
 
-    YYYYMMDD=$(echo $Date |cut -c 1-8)
-    CONNECTED_CHAR=$(echo $Date |cut -c 9-9)
-    hhmmss=$(echo $Date |cut -c 10-15)
+    local       YYYYMMDD=${sDate:0:8}
+    local CONNECTED_CHAR=${sDate:8:1}
+    local         hhmmss=${sDate:9:6}
 
     if [ ! $CONNECTED_CHAR=="_" ];then
         return 1
     fi
 
-    if ! isdigit $YYYYMMDD; then
+    if ! isdigit ${YYYYMMDD}; then
         return 1
     fi
 
-    if ! isdigit $hhmmss; then
+    if ! isdigit ${hhmmss}; then
         return 1
     fi
 
-      Year=$(echo $Date |cut -c 1-4)
-     Month=$(echo $Date |cut -c 5-6)
-       Day=$(echo $Date |cut -c 7-8)
-      hour=$(echo $Date |cut -c 10-11)
-    minute=$(echo $Date |cut -c 12-13)
-    second=$(echo $Date |cut -c 14-15)
+    local   sYear=${sDate:0:4}
+    local  sMonth=${sDate:4:2}
+    local    sDay=${sDate:6:2}
+    local   sHour=${sDate:9:2}
+    local sMinute=${sDate:11:2}
+    local sSecond=${sDate:13:2}
 
     if [ ${#YYYYMMDD} -ne 8 ];then
         return 1
@@ -793,32 +793,32 @@ function is_valid_datetime() { # 20260123_102345
         return 1
     fi
 
-      Year=$(expr $Year   + 0)
-     Month=$(expr $Month  + 0)
-       Day=$(expr $Day    + 0)
-      hour=$(expr $hour   + 0)
-    minute=$(expr $minute + 0)
-    second=$(expr $second + 0)
+    # Numbers like "08" and "09" are treated as octal by bash.
+    local let   nYear=$((10#$sYear))
+    local let  nMonth=$((10#$sMonth))
+    local let    nDay=$((10#$sDay))
+    local let   nHour=$((10#$sHour))
+    local let nMinute=$((10#$sMinute))
+    local let nSecond=$((10#$sSecond))
 
-
-    if ! { [ $Month -gt 0 -a $Month -le 12 ]; }; then
+    if ! { [ ${nMonth} -gt 0 -a ${nMonth} -le 12 ]; }; then
         return 1
     fi
 
-    Days=$(MonthDays $Year $Month)
-    if (( Day <= 0 )) || (( Days < Day )); then
+    local let nLastDayOfMonth=$(MonthDays ${nYear} ${nMonth})
+    if (( ${nDay} <= 0 )) || (( ${nLastDayOfMonth} < ${nDay} )); then
         return 1
     fi
 
-    if (( hour < 0 )) || (( 23 < hour )); then
+    if (( ${nHour} < 0 )) || (( 23 < ${nHour} )); then
         return 1
     fi
 
-    if (( minute < 0 )) || (( 59 < minute )); then
+    if (( ${nMinute} < 0 )) || (( 59 < ${nMinute} )); then
         return 1
     fi
 
-    if (( second < 0 )) || (( 59 < second )); then
+    if (( ${nSecond} < 0 )) || (( 59 < ${nSecond} )); then
         return 1
     fi
 
