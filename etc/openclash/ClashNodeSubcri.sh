@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 ###############################################################################
 ## 程序流程图 #################################################################
 ###############################################################################
@@ -13,13 +12,11 @@
                 --> /etc/config/openclash
 EOF
 
-
 ###############################################################################
 ## 置函数于脚本文件的末尾 #####################################################
 ###############################################################################
 # https://unix.stackexchange.com/questions/724122/is-there-a-way-to-put-helper-functions-at-the-end-of-a-script-file#:~:text=Another%20way%20to%20do%20this,entire%20bash%20script%20in%20functions?
 source <(sed '1,/^# HELPER FUNCTIONS #$/d' "$0")
-
 
 ###############################################################################
 ## 程序运行单例 ###############################################################
@@ -30,7 +27,6 @@ F_LOCK=/var/tmp/$(basename "$0").lock
 F_PID=/var/tmp/$(basename "$0").pid
 exec 3> ${F_LOCK}
 if ! is_not_running; then exit 1; fi
-
 
 ###############################################################################
 ## 全局变量 ###################################################################
@@ -48,7 +44,6 @@ ACCEPTABLE_DAYs=7
 SLICE_SIZE=20
 SUBCONVERTER_SLICE_SIZE=5
 
-
 tee_echo "Try to synchronize and calibrate time from WAN"
 ###############################################################################
 ## 从WAN上同步校准时间 ########################################################
@@ -60,14 +55,12 @@ ntpd -dnq             \
     -p 2.pool.ntp.org \
     -p 3.pool.ntp.org   &>/dev/null
 
-
 tee_echo "Main program starts running"
 ###############################################################################
 ## 主程序开始运行 #############################################################
 ###############################################################################
 TIMEBEGIN=$(date +%s%3N)
 tee_echo "Begin: $(date +%Y%m%d_%H%M%S)"
-
 
 tee_echo "Check system integrity"
 ###############################################################################
@@ -125,7 +118,6 @@ if [ "$r" != "0" ]; then
     singleton_clean_up 1
 fi
 
-
 tee_echo "Start running the feedback subsystem"
 ###############################################################################
 ## 开始运行节点链接检测反馈子系统 #############################################
@@ -136,7 +128,6 @@ if [ ! -f "${DIR0}/ClashNodeSubcri.urls.constrict" ]; then
     tee_echo "The generated file \"${DIR0}/ClashNodeSubcri.urls.constrict\" does not exist."
     singleton_clean_up 1
 fi
-
 
 tee_echo "Check for duplicate 'configuration names'"
 ###############################################################################
@@ -182,7 +173,6 @@ if (( ${#uniqClashConfigNames[@]} < ${#clashConfigNames[@]} )); then
 fi
 unset clashConfigNames
 
-
 tee_echo "Check for available domain name servers"
 ###############################################################################
 ## 检查有否可用的域名服务器 ###################################################
@@ -199,7 +189,6 @@ if [ -z "${directDns}" ]; then
     tee_echo "\tNo available DNS."; singleton_clean_up 1;
 fi
 
-
 tee_echo "If the intranet is down, cancel the subscription."
 ###############################################################################
 ## 如果连内网都已宕机，那么就取消此次的订阅 ###################################
@@ -212,7 +201,6 @@ if (( speedSize <= 0 )); then
 fi
 unset arrSpeedTestResult; unset speedSize
 
-
 #    tee_echo "If the external network is still available, cancel the subscription."
 #    ###############################################################################
 #    ## 如果外网尚且可用，那么就取消此次的订阅 #####################################
@@ -224,7 +212,6 @@ unset arrSpeedTestResult; unset speedSize
 #        singleton_clean_up 1
 #    fi
 #    unset arrSpeedTestResult; unset speedSize
-
 
 tee_echo "Download the subscribed raw data to local ${DATA_DIR}/original after a maximum of 5 attempts."
 ###############################################################################
@@ -342,7 +329,6 @@ for (( i=1; i<=5; i++ )); do
     rm -f "${DATA_DIR}/original/"*".tmp" > /dev/null 2>&1
 done
 
-
 tee_echo "Convert data files that 'cannot be subscribed to via Openclash' to ${DATA_DIR}/pass2subconverter using base64 encoding."
 ###############################################################################
 ## 把哪些『不能“通过Openclash进行订阅”』的数据文件进行base64的编码转换到${DATA_DIR}/pass2subconverter
@@ -384,7 +370,6 @@ for subscri in "${arrSubscri[@]}"; do
     assert_true "[[ $? -eq 0 ]]" "Operation \"${operation}\" on file \"${DATA_DIR}/${folderName}/${fname}\" failed"
     echo "${WEB_PASS2SUBCONVERTER}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls"
 done
-
 
 tee_echo "Generate '${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable'."
 ###############################################################################
@@ -454,7 +439,6 @@ cat "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" >> "${DIR0}/ClashNode
 mv -f "/etc/config/openclash" "/etc/config/openclash.$(date +%Y%m%d_%H%M%S)" &> /dev/null
 cp -f "${DIR0}/ClashNodeSubcri.cfg" "/etc/config/openclash" &> /dev/null
 
-
 tee_echo "Package redundant config Openclash files. Only 5 external files are left."
 ###############################################################################
 ## 打包多余的config openclash文件。外头只留5个 ###############################
@@ -464,7 +448,6 @@ tar_old_files "/etc/openclash/yamls"               "/etc/openclash/*.yaml"      
 tar_old_files "/etc/openclash/wget.log"            "/etc/openclash/wget-log.???"   1 1000
 tar_old_files "/etc/openclash/config/config_yamls" "/etc/openclash/config/*.yaml." 0 1000
 
-
 tee_echo "Restart Openclash."
 ###############################################################################
 ## 重启 openclash #############################################################
@@ -472,13 +455,11 @@ tee_echo "Restart Openclash."
 # "/etc/init.d/openclash" restart
 /usr/share/openclash/openclash.sh > /dev/null 2>&1
 
-
 tee_echo "Main program finishes running."
 ###############################################################################
 ## 主程序运行结束，程序运行单例清场 ###########################################
 ###############################################################################
 singleton_clean_up 0
-
 
 exit 0
 # HELPER FUNCTIONS #
@@ -516,7 +497,6 @@ function singleton_clean_up() {
     exit "$1"
 }
 
-
 ###############################################################################
 ######################### function: urlencode #################################
 ###############################################################################
@@ -535,7 +515,6 @@ function urlencode() {
     LC_COLLATE=$old_lc_collate
 }
 
-
 ###############################################################################
 ######################### function: get_file_size #############################
 ###############################################################################
@@ -544,7 +523,6 @@ function get_file_size() {
     local size=$(wc -c < $filepath)
     echo "$size"
 }
-
 
 ###############################################################################
 ######################### function: combine_subscri ###########################
@@ -596,7 +574,6 @@ function combine_subscri() {
     fi
 }
 
-
 ###############################################################################
 ######################### function: assert_true ###############################
 ###############################################################################
@@ -616,7 +593,6 @@ function assert_true() {
 #ANOTHER_VALUE=5
 #assert_true "[ $ANOTHER_VALUE -gt 10 ]" "Another value is not greater than 10" # This will fail
 
-
 ###############################################################################
 ######################### function: tee_echo ##################################
 ###############################################################################
@@ -628,7 +604,6 @@ function tee_echo2() {
     echo -e "\n\n\n"
     echo -e $(date "+%Y-%m-%d %H:%M:%S $1") | tee -a "${DIR0}/ClashNodeSubcri.log"
 }
-
 
 ###############################################################################
 ######################### function: tar_old_files #############################
@@ -724,7 +699,6 @@ function tar_old_files() {
     assert_true "[[ -f \"${tarFPath}.tar.gz\" && ! -f \"${tarFPath}.tar\" ]]" "Compressed file \"${tarFPath}.tar\" failed."
 }
 
-
 ###############################################################################
 ######################### function: LeapYear ##################################
 ###############################################################################
@@ -736,7 +710,6 @@ function LeapYear() {
     fi
     return 1 # false
 }
-
 
 ###############################################################################
 ######################### function: MonthDays #################################
@@ -753,7 +726,6 @@ function MonthDays() {
     echo ${Days[$month]}
 }
 
-
 ###############################################################################
 ######################### function: isdigit ###################################
 ###############################################################################
@@ -765,7 +737,6 @@ function isdigit() {
     fi
     return 0
 }
-
 
 ###############################################################################
 ######################### function: is_valid_datetime #########################
@@ -948,7 +919,6 @@ function GetTitle() {
     echo "${str// /#}" "${title}" "${str// /#}"
 }
 
-
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -976,7 +946,6 @@ function GetTitle() {
 #      |                                                                                            |
 #      |                                                                                            |
 #      ----------------------------------------------------------------------------------------------
-
 
 ###############################################################################
 ########################### fnTableExtractTheLastNNdays #######################
@@ -1060,7 +1029,6 @@ function fnTableExtractTheLastNNdays() {
     arrNNresult=("${arrUrlName0[@]}")
 }
 
-
 ###############################################################################
 ############################ fnFile2Table #####################################
 ###############################################################################
@@ -1122,7 +1090,6 @@ function fnAddDatetimeMarkAndAppend2Eof() {
     rm -f "${fpathTmp}"
 }
 
-
 ###############################################################################
 ################################ fnLinkDiscard ################################
 ###############################################################################
@@ -1135,7 +1102,6 @@ function fnLinkDiscard() {
     # ( Link404Over7_, LinkInactiveOver7_, Link0sizeOver7_ ) ==> linkDiscard_
     linkDiscard_=($(printf "%s\n" "${Link404Over7_[@]}" "${LinkInactiveOver7_[@]}" "${Link0sizeOver7_[@]}" | sort -u))
 }
-
 
 ###############################################################################
 ######################## fnClashNodeSubcriUrlsSubtractDiscarded ###############
@@ -1192,7 +1158,6 @@ function fnIsCompliantFolders() {
     fi
     return 1
 }
-
 
 ###############################################################################
 ########################## fnFeedbackSubsystem ################################
@@ -1290,7 +1255,6 @@ function trans2datetimestring() {
     echo ${sDatetime}
 }
 
-
 ###############################################################################
 ################# function: ArrayIntersect ####################################
 ###############################################################################
@@ -1310,6 +1274,35 @@ function ArrayIntersect() {
         fi
     done
 }
+
+###############################################################################
+################# function: ArrayIntersect4contain_spaces #####################
+###############################################################################
+# https://www.google.com/search?q=bash+array+interset+with+space&pws=0&gl=us&gws_rd=cr
+function ArrayIntersect4contain_spaces() {
+    local -n array1=$1
+    local -n array2=$2
+    local -n result=$3
+
+    declare -A map
+
+    for item in "${array1[@]}"; do
+        map["$item"]=1
+    done
+
+    result=()
+
+    for item in "${array2[@]}"; do
+        if [[ -n "${map["$item"]}" ]]; then
+            result+=("$item")
+        fi
+    done
+}
+# # Define arrays with spaces in the elements
+# list1=("apple pie" "banana split" "cherry tart" "date")
+# list2=("banana split" "fig" "cherry tart" "elderberry")
+# ArrayIntersect4contain_spaces list1 list2 list3
+# printf '%s\n' "${list3[@]}"
 
 ###############################################################################
 ################################## File END ###################################
