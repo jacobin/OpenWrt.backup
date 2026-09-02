@@ -8,7 +8,7 @@ import os.path
 import sys
 import getopt
 import re
-from pathvalidate import is_valid_filename #, validate_filename
+from pathvalidate import is_valid_filename, is_valid_filepath #, validate_filename
 from typing import Dict, List, Any, Optional
 
 # root@OpenWrt:~# pip list
@@ -88,13 +88,15 @@ def main():
                 print( "\tpython [-h/--help] [-i/--input inputYamlPath] [-o/--outputfolder outputV2rayFolder] [-f/outputfnameprefix] [-z/--slicesize]" )
                 return 0
             elif currentArg in ("-i", "--input"):
+                assert is_valid_filepath( currentVal, platform="linux" )
                 assert os.path.isfile( currentVal )
                 intputYamlFPaths.append( currentVal )
             elif currentArg in ( "-o", "--output" ):
                 assert os.path.isdir( currentVal )
                 outputV2rayFolder = currentVal
             elif currentArg in ( "-f", "--outputfnameprefix" ):
-                assert is_valid_filename( currentVal )
+                # https://www.google.com/search?q=python+is_valid_filepath+%22%2F%22+Flase&pws=0&gl=us&gws_rd=cr
+                assert is_valid_filepath( currentVal, platform="linux" )
                 outputFNamePrefix = currentVal
             elif currentArg in ( "-z", "--slicesize" ):
                 sliceSize = int(currentVal)

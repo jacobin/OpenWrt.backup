@@ -87,7 +87,7 @@ for dir in "${existing_dirs[@]}"; do
     fi
 done
 
-existing_files=("${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" "${DIR0}/ClashNodeSubcri.sliceyaml.py")
+existing_files=("${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" "${DIR0}/ClashNodeSubcri.sliceyaml.py" "${DIR0}/ClashNodeSubcri.SortCsvByFiled.py")
 for fiLe in "${existing_files[@]}"; do
     if [ ! -f "${fiLe}" ]; then
         tee_echo "\tFile \"${fiLe}\" not found!"
@@ -124,12 +124,24 @@ if [ "$r" != "0" ]; then
 fi
 
 
+tee_echo "Start running the feedback subsystem"
+###############################################################################
+## 开始运行节点链接检测反馈子系统 #############################################
+###############################################################################
+fnFeedbackSubsystem "${DIR0}/ClashNodeSubcri.urls.constrict"
+python "${DIR0}/ClashNodeSubcri.SortCsvByFiled.py" "-i${DIR0}/ClashNodeSubcri.urls.constrict" "-o${DIR0}/ClashNodeSubcri.urls.constrict" -x1
+if [ ! -f "${DIR0}/ClashNodeSubcri.urls.constrict" ]; then
+    tee_echo "The generated file \"${DIR0}/ClashNodeSubcri.urls.constrict\" does not exist."
+    singleton_clean_up 1
+fi
+
+
 tee_echo "Check for duplicate 'configuration names'"
 ###############################################################################
 ## 检查是否有重复的『配置名』##################################################
 ###############################################################################
 clashConfigNames=()
-readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
+readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.urls.constrict" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
 subsSize=${#arrSubscri[@]}
 if (( subsSize <= 0 )); then
     tee_echo "\tSubscription configuration item count is 0"
@@ -222,7 +234,7 @@ if [ -f "${DIR0}/ClashNodeSubcri.loop"6 ]; then
     tar_old_files "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6" "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6" 2 1000
 fi
 rm -f "${DIR0}/ClashNodeSubcri.loop"? > /dev/null 2>&1
-cp -f "${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.loop1" &> /dev/null
+cp -f "${DIR0}/ClashNodeSubcri.urls.constrict" "${DIR0}/ClashNodeSubcri.loop1" &> /dev/null
 rm "${DIR0}/ClashNodeSubcri.127.urls" > /dev/null 2>&1
 for (( i=1; i<=5; i++ )); do
     tee_echo "Loop${i}"
@@ -928,6 +940,368 @@ function GetTitle() {
     str=$(printf "%${half}s")
     str2=$(printf "%${half2}s")
     echo "${str// /#}" "${title}" "${str// /#}"
+}
+
+
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+#  |-------|      |------------------------|
+#  | Link0 | ---> | Link0`/LinkWorthTrying |
+#  |-------|  |   |------------------------|
+#      ^      |
+#      |      |   |------------------------|      |--------------------|
+#      |      |-> |   LinkNotWorthTrying   | ---> | LinkReExamination7 | ----------------------------
+#      |      |   |------------------------|      |--------------------|                            |
+#      |      |                                                                                     |
+#      |      |   |------------------------|      |--------------------|                            |
+#      |      |-> |        Link0size       | ---> |   Link0sizeOver7   | ----                       |
+#      |      |   |------------------------|      |--------------------|    |                       |
+#      |      |                                                             |                       |
+#      |      |   |------------------------|      |--------------------|    |    |-------------|    |
+#      |      |-> |      LinkInactive      | ---> | LinkInactiveOver7  | ---|--> | LinkDiscard | ---|
+#      |      |   |------------------------|      |--------------------|    |    |-------------|    |
+#      |      |                                                             |                       |
+#      |      |   |------------------------|      |--------------------|    |                       |
+#      |      --> |        Link404         | ---> |    Link404Over7    | ----                       |
+#      |          |------------------------|      |--------------------|                            |
+#      |                                                                                            |
+#      |                                                                                            |
+#      ----------------------------------------------------------------------------------------------
+
+
+###############################################################################
+########################### fnTableExtractTheLastNNdays #######################
+###############################################################################
+function fnTableExtractTheLastNNdays() {
+    local sTableFPath=$1
+    local -n arrNNresult=$2
+    local NN=$3
+
+    assert_true "[ -f ${sTableFPath} ]" "The specified table file must exist."
+    local let nFilesize=$(get_file_size "$sTableFPath")
+    assert_true "(( 20 < ${nFilesize} ))" "The file size is too small; it appears you have tampered with the data."
+
+    local j k
+
+    # arrTableRec_sorted_unique
+    declare -a local arrTableRec
+    declare -a local arrTableRec_sorted_unique
+    readarray -t arrTableRec < ${sTableFPath}
+    assert_true "[ ${#arrTableRec[@]} -gt 0 ]" "The file exists, but it contains zero records; this is not normal."
+    readarray -t arrTableRec_sorted_unique < <(printf "%s\n" "${arrTableRec[@]}" | sort -u)
+    local let nRecords=${#arrTableRec_sorted_unique[@]}
+    assert_true "[ ${nRecords} -gt 0 ]" "The number of records after sorting and deduplication is 0, which is not normal."
+
+    # nNNdaysago
+    local let nNow=$( date '+%s' )
+    local let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
+    local let nNNdaysago=$(( nNow - (( ${NN} - 1 )*24*60*60) - (nNow-nTodayYYYYmmdd) ))
+
+    # arrNNdatetime, arrNNUrlName
+    declare -a local arrNNdatetime
+    declare -a local arrNNUrlName
+    for (( k=0, j=$((--nRecords)); 0<=j; j-- )); do
+        local let nThisLen=${#arrTableRec_sorted_unique[j]}
+        assert_true "(( 20 < nThisLen ))" "This record \"${arrTableRec_sorted_unique[j]}\" is too short; it doesn't seem like a legitimate record."
+        local sDatetime=${arrTableRec_sorted_unique[j]: 0: 15 }
+        local sUrlName=${arrTableRec_sorted_unique[j]: 16 }
+        assert_true "is_valid_datetime \"${sDatetime}\"" "The first 15 characters of the \"${arrTableRec_sorted_unique[j]}\" are not a valid timestamp."
+        local sStdDatetime=$(trans2datetimestring "${sDatetime}")
+        local let nDatetime=$(date -d "${sStdDatetime}" +%s)
+        if (( nDatetime < nNNdaysago )); then break; fi
+        arrNNdatetime[k]=${nDatetime}
+        arrNNUrlName[k]=${sUrlName}
+        ((k++))
+    done
+
+    local let nRecNNsize=${#arrNNUrlName[@]}
+    if (( nRecNNsize < ${NN} )); then
+        return 1
+    fi
+
+    # arrBucketNN
+    declare -a local arrBucketNN
+    for (( j=0; j<nRecNNsize; j++ )); do
+        local let nBucketIdx=$(( ( arrNNdatetime[j] - nNNdaysago ) / (24*60*60) ))
+        if (( 0 <= nBucketIdx )); then
+            arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
+            arrBucketNN[ nBucketIdx ]+="|"
+        fi
+    done
+
+    local let nBucketNNsize=${#arrBucketNN[@]}
+    if (( nBucketNNsize < ${NN} )); then
+        return 1
+    fi
+
+    assert_true "(( ${NN} == nBucketNNsize ))" "The number of buckets $nBucketNNsize should be equal to ${NN}."
+
+    # There are only ${NN} buckets, and each bucket contains one or more urls, with each url separated by a '|'.
+    # arrUrlName0
+    declare -a local arrUrlName0
+    arrUrlName0=(${arrBucketNN[0]//|/ })
+    for (( k=1; k<nBucketNNsize; k++ )); do
+        declare -a local arrUrlNameK
+        arrUrlNameK=( ${arrBucketNN[k]//|/ })
+        declare -a local arrUrlNameIntersetResult
+        ArrayIntersect arrUrlName0 arrUrlNameK arrUrlNameIntersetResult
+        arrUrlName0=("${arrUrlNameIntersetResult[@]}")
+    done
+
+    arrNNresult=("${arrUrlName0[@]}")
+}
+
+
+###############################################################################
+############################ fnFile2Table #####################################
+###############################################################################
+# 把诸如如下格式的文件:
+#     ClashNodeSubcri.loop6.20260827_130247:
+#         https://raw.githubusercontent.com/ssrsub/ssr/master/ss-sub,H009-github.ssrsub.txt
+#         https://cdn.jsdelivr.net/gh/Alvin9999/pac2@latest/clash/config.yaml,H011-ChromeGo02.yaml
+# 转换为形如格式:
+#     20260830_043432 https://www.gitlabip.xyz/Alvin9999/pac2/master/quick/3/config.yaml,H176-ChromeGo32.yaml
+#     20260830_043433 https://gitlab.com/free9999/ipupdate/-/raw/master/quick/3/config.yaml,H177-github.free9999-ChromeGo33.yaml
+#     20260830_043435 https://www.githubip.xyz/Alvin9999/pac2/master/quick/4/config.yaml,H178-github.Alvin9999-ChromeGo34.yaml
+function fnFile2Table() {
+    local sTarFPath=$1
+    local sTableResultFPath=$2
+    [ -f "${sTableResultFPath}" ] || touch "${sTableResultFPath}"
+    assert_true "[ -f \"${sTableResultFPath}\" ]" "There cannot be a file at that location \"${sTableResultFPath}\"."
+
+    if [ -f "${sTarFPath}.tar.gz" ]; then
+        gzip -d "${sTarFPath}.tar.gz" &> /dev/null
+        assert_true "[ ! -f \"${sTarFPath}.tar.gz\" ]" "Failed to unzip file \"${sTarFPath}.tar.gz\"."
+        tar x -v -f "${sTarFPath}.tar" -C "/" >/dev/null 2>&1
+        assert_true "[ -f \"${sTarFPath}.tar\" ]" "tar's behavior towards file \"${sTarFPath}.tar\" does not meet expectations."
+        rm -f "${sTarFPath}.tar" &> /dev/null
+        assert_true "[ ! -f \"${sTarFPath}.tar\" ]" "Delete file \"${sTarFPath}.tar\" failed."
+    fi
+
+    # arrFilepaths
+    readarray -t arrFilepaths < <( ls -t -r -1 ${sTarFPath}.2???????_?????? )
+    assert_true "[[ ${#arrFilepaths[@]} -gt 0 ]]" "There are no compliant files in folder \"${sTarFPath}\""
+    local let nFPathCounts=${#arrFilepaths[@]}
+    for (( j=0; j<nFPathCounts; j++ )); do
+        local sFPath=${arrFilepaths[j]}
+        local let nFPathLen=${#sFPath}
+        assert_true "(( 15 < nFPathLen ))" "The list of filenames for naturalization is incorrect."
+        local sLast15chars=${sFPath: -15}
+        assert_true "is_valid_datetime \"${sLast15chars}\"" "The last 15 characters \"${sLast15chars}\" of the filename must be a date expression."
+        declare -a local arrUrlNames
+        readarray -t arrUrlNames < ${sFPath}
+        for aUrlName in "${arrUrlNames[@]}"; do
+            echo "${sLast15chars} ${aUrlName}" >> "${sTableResultFPath}"
+        done
+    done
+}
+
+###############################################################################
+########################## fnAddDatetimeMarkAndAppend2Eof #####################
+###############################################################################
+function fnAddDatetimeMarkAndAppend2Eof() {
+    local -n arrUrlNameSlice=$1
+    local fpath=$2
+
+    local fpathTmp=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
+    printf '%s\n' "${arrUrlNameSlice[@]}" > "${fpathTmp}"
+    local sNow=$(date +%Y%m%d_%H%M%S)
+    # https://stackoverflow.com/questions/2099471/add-a-prefix-string-to-beginning-of-each-line
+    sed -i -e "s/^/${sNow} /" "${fpathTmp}"
+    cat "${fpathTmp}" >> "${fpath}"
+    rm -f "${fpathTmp}"
+}
+
+
+###############################################################################
+################################ fnLinkDiscard ################################
+###############################################################################
+function fnLinkDiscard() {
+    local -n Link404Over7_=$1
+    local -n LinkInactiveOver7_=$2
+    local -n Link0sizeOver7_=$3
+    local -n linkDiscard_=$4
+
+    # ( Link404Over7_, LinkInactiveOver7_, Link0sizeOver7_ ) ==> linkDiscard_
+    linkDiscard_=($(printf "%s\n" "${Link404Over7_[@]}" "${LinkInactiveOver7_[@]}" "${Link0sizeOver7_[@]}" | sort -u))
+}
+
+
+###############################################################################
+######################## fnClashNodeSubcriUrlsSubtractDiscarded ###############
+###############################################################################
+function fnClashNodeSubcriUrlsSubtractDiscarded() {
+    local -n arrSubscri_=$1            # in
+    local -n AllDiscarded=$2           # in
+    local -n arrLinkWorthTrying_=$3    # out
+    local -n arrLinkNotWorthTrying_=$4 # out
+    arrLinkWorthTrying_=()
+    arrLinkNotWorthTrying_=()
+
+    local j k
+
+    # arrDiscardCfgName
+    declare -a local arrDiscardCfgName
+    local discardSize=${#AllDiscarded[@]}
+    for (( j=0; j<${discardSize}; j++ )); do
+        discard=${AllDiscarded[j]}
+        arrSplit=(${discard//,/ })
+        arrDiscardCfgName[j]=${arrSplit[1]}
+    done
+
+    for (( j=0, k=0, L=0; j<${subsSize}; j++ )); do
+        subscri="${arrSubscri_[j]}"
+        arrSplit=(${subscri//,/ })
+
+        split0=${arrSplit[0]}
+        split1=${arrSplit[1]}
+        split2=${arrSplit[2]}
+        split0=$(echo "${split0}" | xargs)
+        split1=$(echo "${split1}" | xargs)
+        split2=$(echo "${split2}" | xargs)
+
+        subscriLine=${subscri// /}
+        # https://stackoverflow.com/questions/3685970/check-if-a-bash-array-contains-a-value?page=1&tab=scoredesc#tab-top
+        if ! [[ " ${arrDiscardCfgName[*]} " =~ " ${split1} " ]]; then
+            arrLinkWorthTrying_[L]=${subscriLine}; ((L++))
+        else
+            arrLinkNotWorthTrying_[k]=${subscriLine}; ((k++))
+        fi
+    done
+}
+
+###############################################################################
+########################### arrLinkWorthTrying ################################
+###############################################################################
+function fnIsCompliantFolders() {
+    local fpathFolder
+    arrLoop6Files=(${fpathFolder}.????????_??????)
+    arrLoop6Files+=(${fpathFolder}.tar.gz)
+    if [[ ${#arrLoop6Files[@]} -gt 0 ]]; then
+        return 0
+    fi
+    return 1
+}
+
+
+###############################################################################
+########################## fnFeedbackSubsystem ################################
+###############################################################################
+function fnFeedbackSubsystem() {
+    local fpathClashNodeSubcriNew=$1
+    # 1. Link404Over7, LinkInactiveOver7, Link0sizeOver7 --- {{
+    # 1.1 loop6.bak/Link404Over7
+    if fnIsCompliantFolders "${DIR0}/loop6.bak/ClashNodeSubcri.loop6"; then
+        fpathTmp=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
+        fnFile2Table \
+            "${DIR0}/loop6.bak/ClashNodeSubcri.loop6" \
+            "${fpathTmp}"
+        fnTableExtractTheLastNNdays \
+            "${fpathTmp}" \
+            Link404Over7 \
+            7
+        rm -f "${fpathTmp}"
+    fi
+
+    # 1.2 oldsubs/LinkInactiveOver7
+    if [ -f "${DIR0}/ClashNodeSubcri.oldsubs" ]; then
+        fnTableExtractTheLastNNdays \
+            "${DIR0}/ClashNodeSubcri.oldsubs" \
+            LinkInactiveOver7 \
+            7
+    fi
+
+    # 1.3 0size/Link0sizeOver7
+    if [ -f "${DIR0}/ClashNodeSubcri.0size" ]; then
+        fnTableExtractTheLastNNdays \
+            "${DIR0}/ClashNodeSubcri.0size" \
+            Link0sizeOver7 \
+            7
+    fi
+    # }}
+
+    # 2. linkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
+    fnLinkDiscard \
+        Link404Over7 \
+        LinkInactiveOver7 \
+        Link0sizeOver7 \
+        linkDiscard
+
+    # 3. LinkReExamination7
+    if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
+        fnTableExtractTheLastNNdays \
+            "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" \
+            LinkReExamination7 \
+            7
+     fi
+
+    # 4.LinkWorthTrying, LinkNotWorthTrying
+    # 4.1 arrSubscri
+    declare -a local arrSubscri
+    readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
+    subsSize=${#arrSubscri[@]}
+    if (( subsSize <= 0 )); then
+        echo "Subscription configuration item count is 0"
+        exit 0
+    fi
+
+    # 4.2 LinkWorthTrying, LinkNotWorthTrying
+    declare -a local LinkWorthTrying
+    declare -a local LinkNotWorthTrying
+    fnClashNodeSubcriUrlsSubtractDiscarded \
+        arrSubscri \
+        linkDiscard \
+        LinkWorthTrying \
+        LinkNotWorthTrying
+
+    # 4.3 arrReExamination
+    ArrayIntersect arrSubscri LinkReExamination7 arrReExamination
+
+    # 4.4 LinkWorthTrying
+    LinkWorthTrying=($(printf "%s\n" "${LinkWorthTrying[@]}" "${arrReExamination[@]}" | sort -u))
+
+    fnAddDatetimeMarkAndAppend2Eof LinkReExamination7 "${DIR0}/ClashNodeSubcri.urls.db.LinkReExamination7"
+    fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7     "${DIR0}/ClashNodeSubcri.urls.db.Link0sizeOver7"
+    fnAddDatetimeMarkAndAppend2Eof LinkInactiveOver7  "${DIR0}/ClashNodeSubcri.urls.db.LinkInactiveOver7"
+    fnAddDatetimeMarkAndAppend2Eof Link404Over7       "${DIR0}/ClashNodeSubcri.urls.db.Link404Over7"
+    fnAddDatetimeMarkAndAppend2Eof LinkDiscard        "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard"
+    fnAddDatetimeMarkAndAppend2Eof LinkWorthTrying    "${DIR0}/ClashNodeSubcri.urls.db.LinkWorthTrying"
+    fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTrying "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying"
+
+    printf '%s\n' "${LinkWorthTrying[@]}" > "${fpathClashNodeSubcriNew}"
+}
+
+###############################################################################
+################## function: trans2datetimestring #############################
+###############################################################################
+function trans2datetimestring() {
+    local s="$1"
+    local sDatetime="${s:0:4}-${s:4:2}-${s:6:2} ${s:9:2}:${s:11:2}:${s:13:2}"
+    echo ${sDatetime}
+}
+
+
+###############################################################################
+################# function: ArrayIntersect ####################################
+###############################################################################
+# https://www.google.com/search?q=bash+function+trans+2+array+as+param
+# https://stackoverflow.com/questions/7870230/array-intersection-in-bash
+# https://stackoverflow.com/questions/10582763/how-to-return-an-array-in-bash-without-using-globals
+function ArrayIntersect() {
+    local -n array1=$1
+    local -n array2=$2
+    local -n result=$3                    # use nameref for indirection
+    result=()
+
+    l2=" ${array2[*]} "                   # add framing blanks
+    for item in ${array1[@]}; do
+        if [[ $l2 =~ " $item " ]] ; then  # use $item as regexp
+            result+=($item)
+        fi
+    done
 }
 
 ###############################################################################
