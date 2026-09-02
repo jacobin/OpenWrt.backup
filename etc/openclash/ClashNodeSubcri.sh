@@ -500,11 +500,11 @@ function is_not_running () {
 ######################### function: singleton_clean_up ########################
 ###############################################################################
 function singleton_clean_up() {
-    timeEnd=$(date +%s%3N)
-    total_seconds=$((timeEnd-TIMEBEGIN))
-    seconds=$((total_seconds % 60))
-    minutes=$(((total_seconds / 60) % 60))
-    hours=$((total_seconds / 3600))
+    local timeEnd=$(date +%s%3N)
+    local total_seconds=$((timeEnd-TIMEBEGIN))
+    local seconds=$((total_seconds % 60))
+    local minutes=$(((total_seconds / 60) % 60))
+    local hours=$((total_seconds / 3600))
     printf -v formatted_string "%02d:%02d:%02d" $hours $minutes $seconds
     tee_echo "\tEnd: $(date +%Y%m%d_%H%M%S), time escaped:${formatted_string}"
     flock -u 3
@@ -552,26 +552,27 @@ function combine_subscri() {
     local depth="$1"
     shift
 
-    arr=("$@")
-    asize=${#arr[@]}
-    declare -i groupCount=$(( (asize+SUBCONVERTER_SLICE_SIZE-1)/SUBCONVERTER_SLICE_SIZE ))
+    local arr=("$@")
+    local asize=${#arr[@]}
+    declare -i local groupCount=$(( (asize+SUBCONVERTER_SLICE_SIZE-1)/SUBCONVERTER_SLICE_SIZE ))
 
-    arrGroup=()
+    local arrGroup=()
     for (( i = 0; i < ${groupCount}; i++ )); do
-        begin=$((i*SUBCONVERTER_SLICE_SIZE))
+        local begin=$((i*SUBCONVERTER_SLICE_SIZE))
+        local let thissize=0
         if (( SUBCONVERTER_SLICE_SIZE < asize-begin )); then
             thissize=SUBCONVERTER_SLICE_SIZE
         else
             thissize=$((asize-begin))
         fi
-        end=$((begin+thissize))
+        local end=$((begin+thissize))
 
-        thisCombine="${EXISTENTIAL_CONFIGs}/${arr[${begin}]}.yaml"
+        local thisCombine="${EXISTENTIAL_CONFIGs}/${arr[${begin}]}.yaml"
         for (( j = $((++begin)); j < ${end}; j++ )); do
             thisCombine="${thisCombine}|${EXISTENTIAL_CONFIGs}/${arr[${j}]}.yaml"
         done
-        url_uhttpd=$(urlencode "${thisCombine}")
-        resultOptName="${depth}$((i+1))"
+        local url_uhttpd=$(urlencode "${thisCombine}")
+        local resultOptName="${depth}$((i+1))"
         arrGroup[${i}]="${resultOptName}"
 
         echo -e "config config_subscribe"          >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
@@ -632,10 +633,10 @@ function tee_echo2() {
 ###############################################################################
 function tar_old_files() {
     # https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
-                      tarFPath=$(echo "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    targetFPathMatchingPattern=$(echo "$2" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-                      nOutside=$(echo "$3" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-                      nReserve=$(echo "$4" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    local                   tarFPath=$(echo "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    local targetFPathMatchingPattern=$(echo "$2" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    local                   nOutside=$(echo "$3" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    local                   nReserve=$(echo "$4" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
     # {0/filetime0}  {coordA/filetimeA}          coordB/filetimeB}
     #   ^                   ^                          ^
@@ -644,8 +645,8 @@ function tar_old_files() {
     #                       |<-------------- nReserve ---------------------->|
     assert_true "(( ${nReserve} > ${nOutside} ))" "The number of files to be retained is less than the number of files to be left outside the package; this is incorrect."
 
-    folder1="$(dirname "${tarFPath}")"
-    folder2="$(dirname "${targetFPathMatchingPattern}")"
+    local folder1="$(dirname "${tarFPath}")"
+    local folder2="$(dirname "${targetFPathMatchingPattern}")"
     assert_true "[[ ${folder1} == ${folder2} ]]" "\"${folder1}\" and \"${folder2}\" must have the same parent folder"
 
     # It must be ensured that "tarFPath" is not in the pattern matching of "targetFPathMatchingPattern"
@@ -659,33 +660,34 @@ function tar_old_files() {
         assert_true "[ ! -f \"${tarFPath}.tar\" ]" "Delete file \"${tarFPath}.tar\" failed."
     fi
 
-    ListFPathTemp=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
-    timemarkPattern=".2???????_??????"
+    local ListFPathTemp=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
+    local timemarkPattern=".2???????_??????"
     if [[ "${targetFPathMatchingPattern: -1}" == "." ]]; then timemarkPattern="2???????_??????"; fi
     ls -t -r -1 ${targetFPathMatchingPattern}                    > ${ListFPathTemp} 2>/dev/null
     ls -t -r -1 ${targetFPathMatchingPattern}${timemarkPattern} >> ${ListFPathTemp} 2>/dev/null
+    declare -a local arrOpenclashConfigBakup
     readarray -t arrOpenclashConfigBakup < <(cat "${ListFPathTemp}")
     # https://stackoverflow.com/questions/13648410/how-can-i-get-unique-values-from-an-array-in-bash
     IFS=" " read -r -a arrOpenclashConfigBakup <<< "$(tr ' ' '\n' <<< "${arrOpenclashConfigBakup[@]}" | sort -u | tr '\n' ' ')"
     rm -f "${ListFPathTemp}" &> /dev/null
-    bakSize=${#arrOpenclashConfigBakup[@]}
+    local let bakSize=${#arrOpenclashConfigBakup[@]}
     if (( bakSize == 0 )); then return; fi
 
-    coordB=$(( bakSize - nOutside ))
+    local let coordB=$(( bakSize - nOutside ))
     if (( coordB < 0  )); then return; fi
-    coordA=$(( bakSize - nReserve ))
+    local let coordA=$(( bakSize - nReserve ))
     if (( coordA < 0  )); then let coordA=0; fi
     assert_true "(( $coordA <= $coordB ))" "Error in input parameters for tar call"
 
-    NowDatetime="$(date +'%Y%m%d_%H%M%S')"
+    local NowDatetime="$(date +'%Y%m%d_%H%M%S')"
     for (( j=0; j<bakSize; j++ )); do
-        fpath=${arrOpenclashConfigBakup[$j]}
-        fpathLen=${#fpath}
+        local fpath=${arrOpenclashConfigBakup[$j]}
+        local fpathLen=${#fpath}
 
         # bRename
-        bRename=false
+        local bRename=false
         if (( 15 < fpathLen )); then
-            last15chars=${fpath: -15}
+            local last15chars=${fpath: -15}
             if ! is_valid_datetime "${last15chars}"; then
                 bRename=true
             fi
@@ -694,14 +696,14 @@ function tar_old_files() {
         fi
 
         if [[ "${bRename}" == "true" ]]; then
-            newFpath="${fpath}.${NowDatetime}"
+            local newFpath="${fpath}.${NowDatetime}"
             mv -f "${fpath}" "${newFpath}" &> /dev/null
             arrOpenclashConfigBakup[$j]="${newFpath}"
         fi
     done
 
-    tar_command_string="tar c -v -f \"${tarFPath}.tar\""
-    rm_command_string="rm -f"
+    local tar_command_string="tar c -v -f \"${tarFPath}.tar\""
+    local rm_command_string="rm -f"
     for (( j=0; j<coordA; j++ )); do
         rm_command_string="${rm_command_string} \"${arrOpenclashConfigBakup[$j]}\""
     done
@@ -726,7 +728,7 @@ function tar_old_files() {
 ###############################################################################
 # https://blog.csdn.net/Stars____/article/details/106972527
 function LeapYear() {
-    year=$1
+    local year=$1
     if ( (( year%4==0 )) && (( year%100!=0 )) ) || (( year%400==0 )); then
         return 0 # true
     fi
@@ -738,9 +740,9 @@ function LeapYear() {
 ######################### function: MonthDays #################################
 ###############################################################################
 function MonthDays() {
-    year=$(expr $1 + 0) # 02 ==> 2
-    month=$(expr $2 + 0)
-    Days=( 29 31 28 31 30 31 30 31 31 30 31 30 31 )
+    local year=$(expr $1 + 0) # 02 ==> 2
+    local month=$(expr $2 + 0)
+    local Days=( 29 31 28 31 30 31 30 31 31 30 31 30 31 )
 
     if (( 2==month )) && LeapYear $year; then
         month=0;
@@ -755,7 +757,7 @@ function MonthDays() {
 ###############################################################################
 # https://stackoverflow.com/questions/806906/how-do-i-test-if-a-variable-is-a-number-in-bash
 function isdigit() {
-    str=$1
+    local str=$1
     if [[ ! $str =~ ^[0-9]+$ ]]; then
         return 1
     fi
@@ -854,7 +856,8 @@ function is_valid_datetime() { # 20260123_102345
 ###############################################################################
 # https://stackoverflow.com/questions/6118948/bash-loop-ping-successful
 function checkIP() {
-    ip=$1
+    local ip=$1
+    local let rc=-1
     ((count = 3))                           # Maximum number to try.
     while [[ $count -ne 0 ]] ; do
         ping -c 1 $ip  &>/dev/null          # Try once.
@@ -893,9 +896,9 @@ function checkIP() {
 # https://jcgoran.github.io/2021/02/07/bash-string-trimming.html
 function trimstring() {
     assert_true "[ $# -eq 1 ]" "USAGE: trimstring [STRING]."
-    s="${1}"
-    size_before=${#s}
-    size_after=0
+    local s="${1}"
+    local size_before=${#s}
+    local size_after=0
     while [ ${size_before} -ne ${size_after} ]; do
         size_before=${#s}
         s="${s#[[:space:]]}"
@@ -911,8 +914,9 @@ function trimstring() {
 ###############################################################################
 function tweezers_original_folder_name() {
     assert_true "[ $# -eq 1 ]" "There must be one and only one parameter."
-    url127="${1}"
-    old_ifs="$IFS"
+    local url127="${1}"
+    local old_ifs="$IFS"
+    declare -a local my_array
     IFS="/" read -r -a my_array <<< "${url127}}"
     IFS="$old_ifs"
     echo "${my_array[5]}"
@@ -924,9 +928,9 @@ function tweezers_original_folder_name() {
 ###############################################################################
 # $1 -- title, $2 -- total width
 function GetTitle() {
-    title=$1
-    totalWidth=$2
-    zTitle=${#title}
+    local title=$1
+    local totalWidth=$2
+    local zTitle=${#title}
 
     # # aaaaaaaaaaaaa #
     if [[ ${totalWidth} < $((zTitle +4)) ]]; then
@@ -934,11 +938,11 @@ function GetTitle() {
         return
     fi
 
-    half=$(( (totalWidth-zTitle) / 2 - 1))
-    half2=$((totalWidth-half-1))
+    local half=$(( (totalWidth-zTitle) / 2 - 1))
+    local half2=$((totalWidth-half-1))
     # https://stackoverflow.com/questions/5349718/how-can-i-repeat-a-character-in-bash
-    str=$(printf "%${half}s")
-    str2=$(printf "%${half2}s")
+    local str=$(printf "%${half}s")
+    local str2=$(printf "%${half2}s")
     echo "${str// /#}" "${title}" "${str// /#}"
 }
 
@@ -1082,6 +1086,7 @@ function fnFile2Table() {
     fi
 
     # arrFilepaths
+    declare -a local arrFilepaths
     readarray -t arrFilepaths < <( ls -t -r -1 ${sTarFPath}.2???????_?????? )
     assert_true "[[ ${#arrFilepaths[@]} -gt 0 ]]" "There are no compliant files in folder \"${sTarFPath}\""
     local let nFPathCounts=${#arrFilepaths[@]}
@@ -1148,22 +1153,22 @@ function fnClashNodeSubcriUrlsSubtractDiscarded() {
     local discardSize=${#AllDiscarded[@]}
     for (( j=0; j<${discardSize}; j++ )); do
         discard=${AllDiscarded[j]}
-        arrSplit=(${discard//,/ })
+        local arrSplit=(${discard//,/ })
         arrDiscardCfgName[j]=${arrSplit[1]}
     done
 
     for (( j=0, k=0, L=0; j<${subsSize}; j++ )); do
-        subscri="${arrSubscri_[j]}"
-        arrSplit=(${subscri//,/ })
+        local subscri="${arrSubscri_[j]}"
+        local arrSplit=(${subscri//,/ })
 
-        split0=${arrSplit[0]}
-        split1=${arrSplit[1]}
-        split2=${arrSplit[2]}
+        local split0=${arrSplit[0]}
+        local split1=${arrSplit[1]}
+        local split2=${arrSplit[2]}
         split0=$(echo "${split0}" | xargs)
         split1=$(echo "${split1}" | xargs)
         split2=$(echo "${split2}" | xargs)
 
-        subscriLine=${subscri// /}
+        local subscriLine=${subscri// /}
         # https://stackoverflow.com/questions/3685970/check-if-a-bash-array-contains-a-value?page=1&tab=scoredesc#tab-top
         if ! [[ " ${arrDiscardCfgName[*]} " =~ " ${split1} " ]]; then
             arrLinkWorthTrying_[L]=${subscriLine}; ((L++))
@@ -1178,7 +1183,7 @@ function fnClashNodeSubcriUrlsSubtractDiscarded() {
 ###############################################################################
 function fnIsCompliantFolders() {
     local fpathFolder
-    arrLoop6Files=(${fpathFolder}.????????_??????)
+    local arrLoop6Files=(${fpathFolder}.????????_??????)
     arrLoop6Files+=(${fpathFolder}.tar.gz)
     if [[ ${#arrLoop6Files[@]} -gt 0 ]]; then
         return 0
@@ -1195,7 +1200,7 @@ function fnFeedbackSubsystem() {
     # 1. Link404Over7, LinkInactiveOver7, Link0sizeOver7 --- {{
     # 1.1 loop6.bak/Link404Over7
     if fnIsCompliantFolders "${DIR0}/loop6.bak/ClashNodeSubcri.loop6"; then
-        fpathTmp=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
+        local fpathTmp=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
         fnFile2Table \
             "${DIR0}/loop6.bak/ClashNodeSubcri.loop6" \
             "${fpathTmp}"
@@ -1296,7 +1301,7 @@ function ArrayIntersect() {
     local -n result=$3                    # use nameref for indirection
     result=()
 
-    l2=" ${array2[*]} "                   # add framing blanks
+    local l2=" ${array2[*]} "             # add framing blanks
     for item in ${array1[@]}; do
         if [[ $l2 =~ " $item " ]] ; then  # use $item as regexp
             result+=($item)
