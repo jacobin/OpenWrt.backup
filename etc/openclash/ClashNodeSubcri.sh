@@ -1207,7 +1207,7 @@ function fnFeedbackSubsystem() {
         fnTableExtractTheLastNNdays \
             "${fpathTmp}" \
             Link404Over7 \
-            7
+            ${ACCEPTABLE_DAYs}
         rm -f "${fpathTmp}"
     fi
 
@@ -1216,7 +1216,7 @@ function fnFeedbackSubsystem() {
         fnTableExtractTheLastNNdays \
             "${DIR0}/ClashNodeSubcri.oldsubs" \
             LinkInactiveOver7 \
-            7
+            ${ACCEPTABLE_DAYs}
     fi
 
     # 1.3 0size/Link0sizeOver7
@@ -1224,7 +1224,7 @@ function fnFeedbackSubsystem() {
         fnTableExtractTheLastNNdays \
             "${DIR0}/ClashNodeSubcri.0size" \
             Link0sizeOver7 \
-            7
+            ${ACCEPTABLE_DAYs}
     fi
     # }}
 
@@ -1240,7 +1240,7 @@ function fnFeedbackSubsystem() {
         fnTableExtractTheLastNNdays \
             "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" \
             LinkReExamination7 \
-            7
+            ${ACCEPTABLE_DAYs}
      fi
 
     # 4.LinkWorthTrying, LinkNotWorthTrying
