@@ -1081,13 +1081,9 @@ function fnAddDatetimeMarkAndAppend2Eof() {
     local -n arrUrlNameSlice=$1
     local fpath=$2
 
-    local fpathTmp=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
-    printf '%s\n' "${arrUrlNameSlice[@]}" > "${fpathTmp}"
-    local sNow=$(date +%Y%m%d_%H%M%S)
-    # https://stackoverflow.com/questions/2099471/add-a-prefix-string-to-beginning-of-each-line
-    sed -i -e "s/^/${sNow} /" "${fpathTmp}"
-    cat "${fpathTmp}" >> "${fpath}"
-    rm -f "${fpathTmp}"
+    for (( j=0; j<${#arrUrlNameSlice[@]}; j++ )); do
+        echo $(date +%Y%m%d_%H%M%S) ${arrUrlNameSlice[j]} >> "${fpath}"
+    done
 }
 
 ###############################################################################
