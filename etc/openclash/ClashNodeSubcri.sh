@@ -1173,6 +1173,7 @@ function fnFeedbackSubsystem() {
             ${ACCEPTABLE_DAYs}
         rm -f "${fpathTmp}"
     fi
+    fnAddDatetimeMarkAndAppend2Eof Link404Over7 "${DIR0}/ClashNodeSubcri.urls.db.Link404Over7"
 
     # 1.2 oldsubs/LinkInactiveOver7
     if [ -f "${DIR0}/ClashNodeSubcri.oldsubs" ]; then
@@ -1181,6 +1182,7 @@ function fnFeedbackSubsystem() {
             LinkInactiveOver7 \
             ${ACCEPTABLE_DAYs}
     fi
+    fnAddDatetimeMarkAndAppend2Eof LinkInactiveOver7 "${DIR0}/ClashNodeSubcri.urls.db.LinkInactiveOver7"
 
     # 1.3 0size/Link0sizeOver7
     if [ -f "${DIR0}/ClashNodeSubcri.0size" ]; then
@@ -1190,6 +1192,7 @@ function fnFeedbackSubsystem() {
             ${ACCEPTABLE_DAYs}
     fi
     # }}
+    fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7 "${DIR0}/ClashNodeSubcri.urls.db.Link0sizeOver7"
 
     # 2. LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
     fnLinkDiscard \
@@ -1197,6 +1200,7 @@ function fnFeedbackSubsystem() {
         LinkInactiveOver7 \
         Link0sizeOver7 \
         LinkDiscard
+    fnAddDatetimeMarkAndAppend2Eof LinkDiscard "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard"
 
     # 3. LinkReExamination7
     if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
@@ -1204,7 +1208,8 @@ function fnFeedbackSubsystem() {
             "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" \
             LinkReExamination7 \
             ${ACCEPTABLE_DAYs}
-     fi
+    fi
+    fnAddDatetimeMarkAndAppend2Eof LinkReExamination7 "${DIR0}/ClashNodeSubcri.urls.db.LinkReExamination7"
 
     # 4.LinkWorthTrying, LinkNotWorthTrying
     # 4.1 arrSubscri
@@ -1231,12 +1236,7 @@ function fnFeedbackSubsystem() {
     # 4.4 LinkWorthTrying
     LinkWorthTrying=($(printf "%s\n" "${LinkWorthTrying[@]}" "${arrReExamination[@]}" | sort -u))
 
-    fnAddDatetimeMarkAndAppend2Eof LinkReExamination7 "${DIR0}/ClashNodeSubcri.urls.db.LinkReExamination7"
-    fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7     "${DIR0}/ClashNodeSubcri.urls.db.Link0sizeOver7"
-    fnAddDatetimeMarkAndAppend2Eof LinkInactiveOver7  "${DIR0}/ClashNodeSubcri.urls.db.LinkInactiveOver7"
-    fnAddDatetimeMarkAndAppend2Eof Link404Over7       "${DIR0}/ClashNodeSubcri.urls.db.Link404Over7"
-    fnAddDatetimeMarkAndAppend2Eof LinkDiscard        "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard"
-    fnAddDatetimeMarkAndAppend2Eof LinkWorthTrying    "${DIR0}/ClashNodeSubcri.urls.db.LinkWorthTrying"
+    fnAddDatetimeMarkAndAppend2Eof LinkWorthTrying "${DIR0}/ClashNodeSubcri.urls.db.LinkWorthTrying"
     fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTrying "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying"
 
     printf '%s\n' "${LinkWorthTrying[@]}" > "${fpathClashNodeSubcriNew}"
