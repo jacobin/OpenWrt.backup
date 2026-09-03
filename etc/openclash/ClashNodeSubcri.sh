@@ -1093,10 +1093,10 @@ function fnLinkDiscard() {
     local -n Link404Over7_=$1
     local -n LinkInactiveOver7_=$2
     local -n Link0sizeOver7_=$3
-    local -n linkDiscard_=$4
+    local -n LinkDiscard_=$4
 
-    # ( Link404Over7_, LinkInactiveOver7_, Link0sizeOver7_ ) ==> linkDiscard_
-    linkDiscard_=($(printf "%s\n" "${Link404Over7_[@]}" "${LinkInactiveOver7_[@]}" "${Link0sizeOver7_[@]}" | sort -u))
+    # ( Link404Over7_, LinkInactiveOver7_, Link0sizeOver7_ ) ==> LinkDiscard_
+    LinkDiscard_=($(printf "%s\n" "${Link404Over7_[@]}" "${LinkInactiveOver7_[@]}" "${Link0sizeOver7_[@]}" | sort -u))
 }
 
 ###############################################################################
@@ -1191,12 +1191,12 @@ function fnFeedbackSubsystem() {
     fi
     # }}
 
-    # 2. linkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
+    # 2. LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
     fnLinkDiscard \
         Link404Over7 \
         LinkInactiveOver7 \
         Link0sizeOver7 \
-        linkDiscard
+        LinkDiscard
 
     # 3. LinkReExamination7
     if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
@@ -1221,7 +1221,7 @@ function fnFeedbackSubsystem() {
     declare -a local LinkNotWorthTrying
     fnClashNodeSubcriUrlsSubtractDiscarded \
         arrSubscri \
-        linkDiscard \
+        LinkDiscard \
         LinkWorthTrying \
         LinkNotWorthTrying
 
