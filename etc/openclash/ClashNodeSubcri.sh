@@ -483,11 +483,11 @@ function is_not_running () {
 ######################### function: singleton_clean_up ########################
 ###############################################################################
 function singleton_clean_up() {
-    local timeEnd=$(date +%s%3N)
-    local total_seconds=$((timeEnd-TIMEBEGIN))
-    local seconds=$((total_seconds % 60))
-    local minutes=$(((total_seconds / 60) % 60))
-    local hours=$((total_seconds / 3600))
+    local let timeEnd=$(date +%s%3N)
+    local let total_seconds=$((timeEnd-TIMEBEGIN))
+    local let seconds=$((total_seconds % 60))
+    local let minutes=$(((total_seconds / 60) % 60))
+    local let hours=$((total_seconds / 3600))
     printf -v formatted_string "%02d:%02d:%02d" $hours $minutes $seconds
     tee_echo "\tEnd: $(date +%Y%m%d_%H%M%S), time escaped:${formatted_string}"
     flock -u 3
@@ -529,13 +529,14 @@ function get_file_size() {
 ###############################################################################
 # https://askubuntu.com/questions/674333/how-to-pass-an-array-as-function-argument
 function combine_subscri() {
-    local depth="$1"
+    local let depth="$1"
     shift
 
     local arr=("$@")
     local asize=${#arr[@]}
     declare -i local groupCount=$(( (asize+SUBCONVERTER_SLICE_SIZE-1)/SUBCONVERTER_SLICE_SIZE ))
 
+    local let i=-1
     local arrGroup=()
     for (( i = 0; i < ${groupCount}; i++ )); do
         local begin=$((i*SUBCONVERTER_SLICE_SIZE))
@@ -840,7 +841,7 @@ function checkIP() {
         else
             sleep 1                         # Minimise network storm.
         fi
-        ((count = count - 1))               # So we don't go forever.
+        ((count--))                         # So we don't go forever.
     done
 
     if [[ $rc -eq 0 ]] ; then               # Make final determination.
@@ -870,8 +871,8 @@ function checkIP() {
 function trimstring() {
     assert_true "[ $# -eq 1 ]" "USAGE: trimstring [STRING]."
     local s="${1}"
-    local size_before=${#s}
-    local size_after=0
+    local let size_before=${#s}
+    local let size_after=0
     while [ ${size_before} -ne ${size_after} ]; do
         size_before=${#s}
         s="${s#[[:space:]]}"
@@ -902,8 +903,8 @@ function tweezers_original_folder_name() {
 # $1 -- title, $2 -- total width
 function GetTitle() {
     local title=$1
-    local totalWidth=$2
-    local zTitle=${#title}
+    local let totalWidth=$2
+    local let zTitle=${#title}
 
     # # aaaaaaaaaaaaa #
     if [[ ${totalWidth} < $((zTitle +4)) ]]; then
@@ -911,8 +912,8 @@ function GetTitle() {
         return
     fi
 
-    local half=$(( (totalWidth-zTitle) / 2 - 1))
-    local half2=$((totalWidth-half-1))
+    local let half=$(( (totalWidth-zTitle) / 2 - 1))
+    local let half2=$((totalWidth-half-1))
     # https://stackoverflow.com/questions/5349718/how-can-i-repeat-a-character-in-bash
     local str=$(printf "%${half}s")
     local str2=$(printf "%${half2}s")
@@ -953,7 +954,7 @@ function GetTitle() {
 function fnTableExtractTheLastNNdays() {
     local sTableFPath=$1
     local -n arrNNresult=$2
-    local NN=$3
+    local let NN=$3
 
     assert_true "[ -f ${sTableFPath} ]" "The specified table file must exist."
     local let nFilesize=$(get_file_size "$sTableFPath")
@@ -1056,6 +1057,7 @@ function fnFile2Table() {
     fi
 
     # arrFilepaths
+    local let j=-1
     declare -a local arrFilepaths
     readarray -t arrFilepaths < <( ls -t -r -1 ${sTarFPath}.2???????_?????? )
     assert_true "[[ ${#arrFilepaths[@]} -gt 0 ]]" "There are no compliant files in folder \"${sTarFPath}\""
@@ -1081,6 +1083,7 @@ function fnAddDatetimeMarkAndAppend2Eof() {
     local -n arrUrlNameSlice=$1
     local fpath=$2
 
+    local let j=-1
     for (( j=0; j<${#arrUrlNameSlice[@]}; j++ )); do
         echo $(date +%Y%m%d_%H%M%S) ${arrUrlNameSlice[j]} >> "${fpath}"
     done
@@ -1116,11 +1119,12 @@ function fnClashNodeSubcriUrlsSubtractDiscarded() {
     declare -a local arrDiscardCfgName
     local discardSize=${#AllDiscarded[@]}
     for (( j=0; j<${discardSize}; j++ )); do
-        discard=${AllDiscarded[j]}
+        local discard=${AllDiscarded[j]}
         local arrSplit=(${discard//,/ })
         arrDiscardCfgName[j]=${arrSplit[1]}
     done
 
+    local let subsSize=${#arrSubscri_[@]}
     for (( j=0, k=0, L=0; j<${subsSize}; j++ )); do
         local subscri="${arrSubscri_[j]}"
         local arrSplit=(${subscri//,/ })
@@ -1161,6 +1165,7 @@ function fnIsCompliantFolders() {
 function fnFeedbackSubsystem() {
     local fpathClashNodeSubcriNew=$1
     # 1. Link404Over7, LinkInactiveOver7, Link0sizeOver7 --- {{
+    declare -a local Link404Over7 LinkInactiveOver7 Link0sizeOver7
     # 1.1 loop6.bak/Link404Over7
     if fnIsCompliantFolders "${DIR0}/loop6.bak/ClashNodeSubcri.loop6"; then
         local fpathTmp=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
@@ -1195,6 +1200,7 @@ function fnFeedbackSubsystem() {
     fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7 "${DIR0}/ClashNodeSubcri.urls.db.Link0sizeOver7"
 
     # 2. LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
+    declare -a local LinkDiscard
     fnLinkDiscard \
         Link404Over7 \
         LinkInactiveOver7 \
@@ -1203,6 +1209,7 @@ function fnFeedbackSubsystem() {
     fnAddDatetimeMarkAndAppend2Eof LinkDiscard "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard"
 
     # 3. LinkReExamination7
+    declare -a local LinkReExamination7
     if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
         fnTableExtractTheLastNNdays \
             "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" \
@@ -1212,10 +1219,11 @@ function fnFeedbackSubsystem() {
     fnAddDatetimeMarkAndAppend2Eof LinkReExamination7 "${DIR0}/ClashNodeSubcri.urls.db.LinkReExamination7"
 
     # 4.LinkWorthTrying, LinkNotWorthTrying
+    declare -a local LinkWorthTrying LinkNotWorthTrying
     # 4.1 arrSubscri
     declare -a local arrSubscri
     readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
-    subsSize=${#arrSubscri[@]}
+    local subsSize=${#arrSubscri[@]}
     if (( subsSize <= 0 )); then
         echo "Subscription configuration item count is 0"
         exit 0
@@ -1231,6 +1239,7 @@ function fnFeedbackSubsystem() {
         LinkNotWorthTrying
 
     # 4.3 arrReExamination
+    declare -a local arrReExamination
     ArrayIntersect arrSubscri LinkReExamination7 arrReExamination
 
     # 4.4 LinkWorthTrying
