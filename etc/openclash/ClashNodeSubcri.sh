@@ -949,9 +949,9 @@ function GetTitle() {
 #      ----------------------------------------------------------------------------------------------
 
 ###############################################################################
-########################### fnTableExtractTheLastNNdays #######################
+########################### fnTableExtractPresent4Last7consecutiveDays #######################
 ###############################################################################
-function fnTableExtractTheLastNNdays() {
+function fnTableExtractPresent4Last7consecutiveDays() {
     local sTableFPath=$1
     local -n arrNNresult=$2
     local let NN=$3
@@ -1175,7 +1175,7 @@ function fnFeedbackSubsystem() {
         fnFile2Table \
             "${DIR0}/loop6.bak/ClashNodeSubcri.loop6" \
             "${fpathTmp}"
-        fnTableExtractTheLastNNdays \
+        fnTableExtractPresent4Last7consecutiveDays \
             "${fpathTmp}" \
             Link404Over7 \
             ${ACCEPTABLE_DAYs}
@@ -1187,7 +1187,7 @@ function fnFeedbackSubsystem() {
 
     # 1.2 oldsubs/LinkInactiveOver7
     if [ -f "${DIR0}/ClashNodeSubcri.oldsubs" ]; then
-        fnTableExtractTheLastNNdays \
+        fnTableExtractPresent4Last7consecutiveDays \
             "${DIR0}/ClashNodeSubcri.oldsubs" \
             LinkInactiveOver7 \
             ${ACCEPTABLE_DAYs}
@@ -1198,7 +1198,7 @@ function fnFeedbackSubsystem() {
 
     # 1.3 0size/Link0sizeOver7
     if [ -f "${DIR0}/ClashNodeSubcri.0size" ]; then
-        fnTableExtractTheLastNNdays \
+        fnTableExtractPresent4Last7consecutiveDays \
             "${DIR0}/ClashNodeSubcri.0size" \
             Link0sizeOver7 \
             ${ACCEPTABLE_DAYs}
@@ -1221,7 +1221,7 @@ function fnFeedbackSubsystem() {
     # 3. LinkReExamination7
     declare -a local LinkReExamination7
     if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
-        fnTableExtractTheLastNNdays \
+        fnTableExtractPresent4Last7consecutiveDays \
             "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" \
             LinkReExamination7 \
             ${ACCEPTABLE_DAYs}
