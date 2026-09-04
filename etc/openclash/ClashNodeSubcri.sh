@@ -949,7 +949,7 @@ function GetTitle() {
 #      ----------------------------------------------------------------------------------------------
 
 ###############################################################################
-########################### fnTableExtractPresent4Last7consecutiveDays #######################
+################## fnTableExtractPresent4Last7consecutiveDays #################
 ###############################################################################
 function fnTableExtractPresent4Last7consecutiveDays() {
     local sTableFPath=$1
@@ -1029,6 +1029,64 @@ function fnTableExtractPresent4Last7consecutiveDays() {
     done
 
     arrNNresult=("${arrUrlName0[@]}")
+    return 0
+}
+
+###############################################################################
+################## fnTableExtractPresentAtLeast1InLast7Days ###################
+###############################################################################
+function fnTableExtractPresentAtLeast1InLast7Days() {
+    local sTableFPath=$1
+    local -n arrNNresult=$2
+    local let NN=$3
+    assert_true "! (( ${#arrNNresult[@]} ))" "This is an output parameter; its initial value must be empty."
+
+    assert_true "[ -f ${sTableFPath} ]" "The specified table file must exist."
+    local let nFilesize=$(get_file_size "$sTableFPath")
+    assert_true "(( 20 < ${nFilesize} ))" "The file size is too small; it appears you have tampered with the data."
+
+    local j k
+
+    # arrTableRec_sorted_unique
+    declare -a local arrTableRec
+    declare -a local arrTableRec_sorted_unique
+    readarray -t arrTableRec < ${sTableFPath}
+    assert_true "[ ${#arrTableRec[@]} -gt 0 ]" "The file exists, but it contains zero records; this is not normal."
+    readarray -t arrTableRec_sorted_unique < <(printf "%s\n" "${arrTableRec[@]}" | sort -u)
+    local let nRecords=${#arrTableRec_sorted_unique[@]}
+    assert_true "[ ${nRecords} -gt 0 ]" "The number of records after sorting and deduplication is 0, which is not normal."
+
+    # nNNdaysago
+    local let nNow=$( date '+%s' )
+    local let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
+    local let nNNdaysago=$(( nNow - (( ${NN} - 1 )*24*60*60) - (nNow-nTodayYYYYmmdd) ))
+
+    # arrNNdatetime, arrNNUrlName
+    declare -a local arrNNdatetime
+    declare -a local arrNNUrlName
+    for (( k=0, j=$((--nRecords)); 0<=j; j-- )); do
+        local let nThisLen=${#arrTableRec_sorted_unique[j]}
+        assert_true "(( 20 < nThisLen ))" "This record \"${arrTableRec_sorted_unique[j]}\" is too short; it doesn't seem like a legitimate record."
+        local sDatetime=${arrTableRec_sorted_unique[j]: 0: 15 }
+        local sUrlName=${arrTableRec_sorted_unique[j]: 16 }
+        assert_true "is_valid_datetime \"${sDatetime}\"" "The first 15 characters of the \"${arrTableRec_sorted_unique[j]}\" are not a valid timestamp."
+        local sStdDatetime=$(trans2datetimestring "${sDatetime}")
+        local let nDatetime=$(date -d "${sStdDatetime}" +%s)
+        if (( nDatetime < nNNdaysago )); then break; fi
+        arrNNdatetime[k]=${nDatetime}
+        arrNNUrlName[k]=${sUrlName}
+        ((k++))
+    done
+
+    ###########################################################
+    local let nRecNNsize=${#arrNNUrlName[@]}
+    if (( nRecNNsize == 0 )); then
+        return 1
+    fi
+
+    arrNNUrlNameUnique=($(printf "%s\n" "${arrNNUrlName[@]}" | sort -u))
+
+    arrNNresult=("${arrNNUrlNameUnique[@]}")
     return 0
 }
 
@@ -1167,6 +1225,7 @@ function fnIsCompliantFolders() {
 function fnFeedbackSubsystem() {
     local fpathClashNodeSubcriNew=$1
 
+    #//////////////////////////////////////////////////////////////////////////
     # 1. Link404Over7, LinkInactiveOver7, Link0sizeOver7
     declare -a local Link404Over7 LinkInactiveOver7 Link0sizeOver7
     # 1.1 loop6.bak/Link404Over7
@@ -1207,6 +1266,7 @@ function fnFeedbackSubsystem() {
   # if [[ 0 < ${#Link0sizeOver7[@]} ]]; then printf '%s\n' ${Link0sizeOver7[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7 "${DIR0}/ClashNodeSubcri.urls.db.Link0sizeOver7"
 
+    #//////////////////////////////////////////////////////////////////////////
     # 2. LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
     declare -a local LinkDiscard
     fnLinkDiscard \
@@ -1218,6 +1278,7 @@ function fnFeedbackSubsystem() {
   # if [[ 0 < ${#LinkDiscard[@]} ]]; then printf '%s\n' ${LinkDiscard[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof LinkDiscard "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard"
 
+    #//////////////////////////////////////////////////////////////////////////
     # 3. LinkReExamination7
     declare -a local LinkReExamination7
     if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
@@ -1230,26 +1291,47 @@ function fnFeedbackSubsystem() {
   # if [[ 0 < ${#LinkReExamination7[@]} ]]; then printf '%s\n' ${LinkReExamination7[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof LinkReExamination7 "${DIR0}/ClashNodeSubcri.urls.db.LinkReExamination7"
 
-    # 4.LinkWorthTrying, LinkNotWorthTrying
+    #//////////////////////////////////////////////////////////////////////////
+    # 4. LinkAtLeast1
+    if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
+        fnTableExtractPresentAtLeast1InLast7Days \
+            "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" \
+            LinkAtLeast1 \
+            ${ACCEPTABLE_DAYs}
+    fi
+  # echo LinkAtLeast1
+  # if [[ 0 < ${#LinkAtLeast1[@]} ]]; then printf '%s\n' ${LinkAtLeast1[@]}; fi
+    fnAddDatetimeMarkAndAppend2Eof LinkAtLeast1 "${DIR0}/ClashNodeSubcri.urls.db.LinkAtLeast1"
+
+    #//////////////////////////////////////////////////////////////////////////
+    # 5. LinkDiscard2
+    # Subtract LinkAtLeast1 from LinkDiscard (LinkDiscard-LinkAtLeast1)
+    LinkDiscard2=($(printf "%s\n" "${LinkDiscard[@]}" | grep -vxf <(printf "%s\n" "${LinkAtLeast1[@]}")))
+  # echo LinkDiscard2
+  # if [[ 0 < ${#LinkDiscard2[@]} ]]; then printf '%s\n' ${LinkDiscard2[@]}; fi
+    fnAddDatetimeMarkAndAppend2Eof LinkDiscard2 "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard2"
+
+    #//////////////////////////////////////////////////////////////////////////
+    # 6. LinkWorthTrying, LinkNotWorthTrying
     declare -a local LinkWorthTrying LinkNotWorthTrying
-    # 4.1 arrSubscri
+    # 6.1 arrSubscri
     declare -a local arrSubscri
     readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
     local subsSize=${#arrSubscri[@]}
     assert_true "(( 0 < subsSize ))" "Subscription configuration item count is 0"
 
-    # 4.2 LinkWorthTrying, LinkNotWorthTrying
+    # 6.2 LinkWorthTrying, LinkNotWorthTrying
     fnClashNodeSubcriUrlsSubtractDiscarded \
         arrSubscri \
-        LinkDiscard \
+        LinkDiscard2 \
         LinkWorthTrying \
         LinkNotWorthTrying
 
-    # 4.3 arrReExamination
+    # 6.3 arrReExamination
     declare -a local arrReExamination
     ArrayIntersect arrSubscri LinkReExamination7 arrReExamination
 
-    # 4.4 LinkWorthTrying
+    # 6.4 LinkWorthTrying
     LinkWorthTrying=($(printf "%s\n" "${LinkWorthTrying[@]}" "${arrReExamination[@]}" | sort -u))
 
   # echo LinkWorthTrying
