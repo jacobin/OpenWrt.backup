@@ -1166,7 +1166,8 @@ function fnIsCompliantFolders() {
 ###############################################################################
 function fnFeedbackSubsystem() {
     local fpathClashNodeSubcriNew=$1
-    # 1. Link404Over7, LinkInactiveOver7, Link0sizeOver7 --- {{
+
+    # 1. Link404Over7, LinkInactiveOver7, Link0sizeOver7
     declare -a local Link404Over7 LinkInactiveOver7 Link0sizeOver7
     # 1.1 loop6.bak/Link404Over7
     if fnIsCompliantFolders "${DIR0}/loop6.bak/ClashNodeSubcri.loop6"; then
@@ -1180,6 +1181,8 @@ function fnFeedbackSubsystem() {
             ${ACCEPTABLE_DAYs}
         rm -f "${fpathTmp}"
     fi
+  # echo Link404Over7
+  # if [[ 0 < ${#Link404Over7[@]} ]]; then printf '%s\n' ${Link404Over7[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof Link404Over7 "${DIR0}/ClashNodeSubcri.urls.db.Link404Over7"
 
     # 1.2 oldsubs/LinkInactiveOver7
@@ -1189,6 +1192,8 @@ function fnFeedbackSubsystem() {
             LinkInactiveOver7 \
             ${ACCEPTABLE_DAYs}
     fi
+  # echo LinkInactiveOver7
+  # if [[ 0 < ${#LinkInactiveOver7[@]} ]]; then printf '%s\n' ${LinkInactiveOver7[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof LinkInactiveOver7 "${DIR0}/ClashNodeSubcri.urls.db.LinkInactiveOver7"
 
     # 1.3 0size/Link0sizeOver7
@@ -1198,7 +1203,8 @@ function fnFeedbackSubsystem() {
             Link0sizeOver7 \
             ${ACCEPTABLE_DAYs}
     fi
-    # }}
+  # echo Link0sizeOver7
+  # if [[ 0 < ${#Link0sizeOver7[@]} ]]; then printf '%s\n' ${Link0sizeOver7[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7 "${DIR0}/ClashNodeSubcri.urls.db.Link0sizeOver7"
 
     # 2. LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
@@ -1208,6 +1214,8 @@ function fnFeedbackSubsystem() {
         LinkInactiveOver7 \
         Link0sizeOver7 \
         LinkDiscard
+  # echo LinkDiscard
+  # if [[ 0 < ${#LinkDiscard[@]} ]]; then printf '%s\n' ${LinkDiscard[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof LinkDiscard "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard"
 
     # 3. LinkReExamination7
@@ -1218,6 +1226,8 @@ function fnFeedbackSubsystem() {
             LinkReExamination7 \
             ${ACCEPTABLE_DAYs}
     fi
+  # echo LinkReExamination7
+  # if [[ 0 < ${#LinkReExamination7[@]} ]]; then printf '%s\n' ${LinkReExamination7[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof LinkReExamination7 "${DIR0}/ClashNodeSubcri.urls.db.LinkReExamination7"
 
     # 4.LinkWorthTrying, LinkNotWorthTrying
@@ -1242,7 +1252,11 @@ function fnFeedbackSubsystem() {
     # 4.4 LinkWorthTrying
     LinkWorthTrying=($(printf "%s\n" "${LinkWorthTrying[@]}" "${arrReExamination[@]}" | sort -u))
 
+  # echo LinkWorthTrying
+  # if [[ 0 < ${#LinkWorthTrying[@]} ]]; then printf '%s\n' ${LinkWorthTrying[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof LinkWorthTrying "${DIR0}/ClashNodeSubcri.urls.db.LinkWorthTrying"
+  # echo LinkNotWorthTrying
+  # if [[ 0 < ${#LinkNotWorthTrying[@]} ]]; then printf '%s\n' ${LinkNotWorthTrying[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTrying "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying"
 
     printf '%s\n' "${LinkWorthTrying[@]}" > "${fpathClashNodeSubcriNew}"
