@@ -955,6 +955,7 @@ function fnTableExtractTheLastNNdays() {
     local sTableFPath=$1
     local -n arrNNresult=$2
     local let NN=$3
+    assert_true "! (( ${#arrNNresult[@]} ))" "This is an output parameter; its initial value must be empty."
 
     assert_true "[ -f ${sTableFPath} ]" "The specified table file must exist."
     local let nFilesize=$(get_file_size "$sTableFPath")
@@ -1028,6 +1029,7 @@ function fnTableExtractTheLastNNdays() {
     done
 
     arrNNresult=("${arrUrlName0[@]}")
+    return 0
 }
 
 ###############################################################################
@@ -1224,14 +1226,9 @@ function fnFeedbackSubsystem() {
     declare -a local arrSubscri
     readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
     local subsSize=${#arrSubscri[@]}
-    if (( subsSize <= 0 )); then
-        echo "Subscription configuration item count is 0"
-        exit 0
-    fi
+    assert_true "(( 0 < subsSize ))" "Subscription configuration item count is 0"
 
     # 4.2 LinkWorthTrying, LinkNotWorthTrying
-    declare -a local LinkWorthTrying
-    declare -a local LinkNotWorthTrying
     fnClashNodeSubcriUrlsSubtractDiscarded \
         arrSubscri \
         LinkDiscard \
@@ -1256,6 +1253,7 @@ function fnFeedbackSubsystem() {
 ###############################################################################
 function trans2datetimestring() {
     local s="$1"
+    assert_true "((15 <= ${#s}))" "trans2datetimestring() cannot accept strings shorter than 15."
     local sDatetime="${s:0:4}-${s:4:2}-${s:6:2} ${s:9:2}:${s:11:2}:${s:13:2}"
     echo ${sDatetime}
 }
