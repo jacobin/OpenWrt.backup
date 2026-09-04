@@ -925,28 +925,29 @@ function GetTitle() {
 ###############################################################################
 ###############################################################################
 ###############################################################################
-#  |-------|      |------------------------|
-#  | Link0 | ---> | Link0`/LinkWorthTrying |
-#  |-------|  |   |------------------------|
-#      ^      |
-#      |      |   |------------------------|      |--------------------|
-#      |      |-> |   LinkNotWorthTrying   | ---> | LinkReExamination7 | ----------------------------
-#      |      |   |------------------------|      |--------------------|                            |
-#      |      |                                                                                     |
-#      |      |   |------------------------|      |--------------------|                            |
-#      |      |-> |        Link0size       | ---> |   Link0sizeOver7   | ----                       |
-#      |      |   |------------------------|      |--------------------|    |                       |
-#      |      |                                                             |                       |
-#      |      |   |------------------------|      |--------------------|    |    |-------------|    |
-#      |      |-> |      LinkInactive      | ---> | LinkInactiveOver7  | ---|--> | LinkDiscard | ---|
-#      |      |   |------------------------|      |--------------------|    |    |-------------|    |
-#      |      |                                                             |                       |
-#      |      |   |------------------------|      |--------------------|    |                       |
-#      |      --> |        Link404         | ---> |    Link404Over7    | ----                       |
-#      |          |------------------------|      |--------------------|                            |
-#      |                                                                                            |
-#      |                                                                                            |
-#      ----------------------------------------------------------------------------------------------
+#
+#    /--------------/        /------------------/                                        |--------------------|
+#   / SubscriUrls  / -----> / LinkWorthTrying  /                                     |-> | LinkReExamination7 | ------------------------------------------------------
+#  /--------------/    ^   /------------------/                                      |   |--------------------|                                                      |
+#      ^               |                                                             |                                                                               |
+#      |               |     /---------------------/     |------------------------|  |                                  |-------------|                              |
+#      |               |--> / LinkNotWorthTrying  /----> |   LinkNotWorthTrying   | ----------------------------------> | LinkAtLeast1|-----                         |
+#      |               |   /---------------------/       |------------------------|                                     |-------------|    |                         |
+#      |               |                                                                                                                   |                         |
+#      |               |                                 |------------------------|      |--------------------|                            |      |-------------|    |
+#      |               |-------------------------------> |        Link0size       | ---> |   Link0sizeOver7   | ----                       | ---> | LinkDiscard2|--->|
+#      |               |                                 |------------------------|      |--------------------|    |                       |      |-------------|    |
+#      |               |                                                                                           |                       |                         |
+#      |               |                                 |------------------------|      |--------------------|    |    |-------------|    |                         |
+#      |               |-------------------------------> |      LinkInactive      | ---> | LinkInactiveOver7  | ---|--> | LinkDiscard | ----                         |
+#      |               |                                 |------------------------|      |--------------------|    |    |-------------|                              |
+#      |               |                                                                                           |                                                 |
+#      |               |                                 |------------------------|      |--------------------|    |                                                 |
+#      |               |-------------------------------> |        Link404         | ---> |    Link404Over7    | ----                                                 |
+#      |               |                                 |------------------------|      |--------------------|                                                      |
+#      |                                                                                                                                                             |
+#      |                                                                                                                                                             |
+#      ---------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ###############################################################################
 ################## fnTableExtractPresent4Last7consecutiveDays #################
@@ -1225,7 +1226,7 @@ function fnIsCompliantFolders() {
 function fnFeedbackSubsystem() {
     local fpathClashNodeSubcriNew=$1
 
-    #//////////////////////////////////////////////////////////////////////////
+    #//////////////////////////////////////////////////////////////////////
     # 1. Link404Over7, LinkInactiveOver7, Link0sizeOver7
     declare -a local Link404Over7 LinkInactiveOver7 Link0sizeOver7
     # 1.1 loop6.bak/Link404Over7
@@ -1266,7 +1267,7 @@ function fnFeedbackSubsystem() {
   # if [[ 0 < ${#Link0sizeOver7[@]} ]]; then printf '%s\n' ${Link0sizeOver7[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7 "${DIR0}/ClashNodeSubcri.urls.db.Link0sizeOver7"
 
-    #//////////////////////////////////////////////////////////////////////////
+    #//////////////////////////////////////////////////////////////////////
     # 2. LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
     declare -a local LinkDiscard
     fnLinkDiscard \
@@ -1278,7 +1279,7 @@ function fnFeedbackSubsystem() {
   # if [[ 0 < ${#LinkDiscard[@]} ]]; then printf '%s\n' ${LinkDiscard[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof LinkDiscard "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard"
 
-    #//////////////////////////////////////////////////////////////////////////
+    #//////////////////////////////////////////////////////////////////////
     # 3. LinkReExamination7
     declare -a local LinkReExamination7
     if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
@@ -1291,7 +1292,7 @@ function fnFeedbackSubsystem() {
   # if [[ 0 < ${#LinkReExamination7[@]} ]]; then printf '%s\n' ${LinkReExamination7[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof LinkReExamination7 "${DIR0}/ClashNodeSubcri.urls.db.LinkReExamination7"
 
-    #//////////////////////////////////////////////////////////////////////////
+    #//////////////////////////////////////////////////////////////////////
     # 4. LinkAtLeast1
     if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
         fnTableExtractPresentAtLeast1InLast7Days \
@@ -1303,7 +1304,7 @@ function fnFeedbackSubsystem() {
   # if [[ 0 < ${#LinkAtLeast1[@]} ]]; then printf '%s\n' ${LinkAtLeast1[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof LinkAtLeast1 "${DIR0}/ClashNodeSubcri.urls.db.LinkAtLeast1"
 
-    #//////////////////////////////////////////////////////////////////////////
+    #//////////////////////////////////////////////////////////////////////
     # 5. LinkDiscard2
     # Subtract LinkAtLeast1 from LinkDiscard (LinkDiscard-LinkAtLeast1)
     LinkDiscard2=($(printf "%s\n" "${LinkDiscard[@]}" | grep -vxf <(printf "%s\n" "${LinkAtLeast1[@]}")))
@@ -1311,7 +1312,7 @@ function fnFeedbackSubsystem() {
   # if [[ 0 < ${#LinkDiscard2[@]} ]]; then printf '%s\n' ${LinkDiscard2[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof LinkDiscard2 "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard2"
 
-    #//////////////////////////////////////////////////////////////////////////
+    #//////////////////////////////////////////////////////////////////////
     # 6. LinkWorthTrying, LinkNotWorthTrying
     declare -a local LinkWorthTrying LinkNotWorthTrying
     # 6.1 arrSubscri
