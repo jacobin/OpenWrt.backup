@@ -34,7 +34,7 @@ if ! is_not_running; then exit 1; fi
 EXISTENTIAL_CONFIGs="http://127.0.0.1:8080"
 # https://www.google.com/search?q=bash+get+absolute+dirname
 DIR0=$(dirname "$(readlink -f "$0")")
-CVT_PORT=25522
+let CVT_PORT=25522
 CONVERTER="http://127.0.0.1:${CVT_PORT}"
                          DATA_DIR="/www/Hxy/openclash"
          WEB_ORIG_DAT="http://127.0.0.1/Hxy/openclash/original"
