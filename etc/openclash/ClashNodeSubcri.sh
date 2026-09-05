@@ -44,7 +44,7 @@ let ACCEPTABLE_DAYs=7
 let SLICE_SIZE=20
 let SUBCONVERTER_SLICE_SIZE=5
 
-declare -i i j
+declare -i let i=-1 j=-2
 
 tee_echo "Try to synchronize and calibrate time from WAN"
 ###############################################################################
@@ -528,6 +528,7 @@ function urlencode() {
     local old_lc_collate=$LC_COLLATE
     LC_COLLATE=C
     local length="${#1}"
+    declare -i local let i=-1
     for (( i = 0; i < length; i++ )); do
         local c="${1:i:1}"
         case $c in
@@ -560,7 +561,7 @@ function combine_subscri() {
     local asize=${#arr[@]}
     declare -i local groupCount=$(( (asize+SUBCONVERTER_SLICE_SIZE-1)/SUBCONVERTER_SLICE_SIZE ))
 
-    local let i=-1
+    declare -i local let i=-1
     local arrGroup=()
     for (( i = 0; i < ${groupCount}; i++ )); do
         local begin=$((i*SUBCONVERTER_SLICE_SIZE))
@@ -573,6 +574,7 @@ function combine_subscri() {
         local end=$((begin+thissize))
 
         local thisCombine="${EXISTENTIAL_CONFIGs}/${arr[${begin}]}.yaml"
+        declare -i local let j=-1
         for (( j = $((++begin)); j < ${end}; j++ )); do
             thisCombine="${thisCombine}|${EXISTENTIAL_CONFIGs}/${arr[${j}]}.yaml"
         done
@@ -682,6 +684,7 @@ function tar_old_files() {
     assert_true "(( $coordA <= $coordB ))" "Error in input parameters for tar call"
 
     local NowDatetime="$(date +'%Y%m%d_%H%M%S')"
+    declare -i local let j=-1
     for (( j=0; j<bakSize; j++ )); do
         local fpath=${arrOpenclashConfigBakup[$j]}
         local fpathLen=${#fpath}
@@ -978,7 +981,7 @@ function fnTableExtractPresent4Last7consecutiveDays() {
     local let nFilesize=$(get_file_size "$sTableFPath")
     assert_true "(( 20 < ${nFilesize} ))" "The file size is too small; it appears you have tampered with the data."
 
-    local j k
+    declare -i local let j=-1 k=-1
 
     # arrTableRec_sorted_unique
     declare -a local arrTableRec
@@ -1076,7 +1079,7 @@ function fnFile2Table() {
     fi
 
     # arrFilepaths
-    local let j=-1
+    declare -i local let j=-1
     declare -a local arrFilepaths
     readarray -t arrFilepaths < <( ls -t -r -1 ${sTarFPath}.2???????_?????? )
     assert_true "[[ ${#arrFilepaths[@]} -gt 0 ]]" "There are no compliant files in folder \"${sTarFPath}\""
@@ -1102,7 +1105,7 @@ function fnAddDatetimeMarkAndAppend2Eof() {
     local -n arrUrlNameSlice=$1
     local fpath=$2
 
-    local let j=-1
+    declare -i local let j=-1
     for (( j=0; j<${#arrUrlNameSlice[@]}; j++ )); do
         echo $(date +%Y%m%d_%H%M%S) ${arrUrlNameSlice[j]} >> "${fpath}"
     done
@@ -1132,7 +1135,7 @@ function fnClashNodeSubcriUrlsSubtractDiscarded() {
     arrLinkWorthTrying_=()
     arrLinkNotWorthTrying_=()
 
-    local j k
+    declare -i local let j=-1 k=-1
 
     # arrDiscardCfgName
     declare -a local arrDiscardCfgName
