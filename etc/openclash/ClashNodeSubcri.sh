@@ -908,7 +908,7 @@ function trimstring() {
 }
 
 ###############################################################################
-################### function: tweezers_original_folder_name ###################
+############### function: tweezers_original_folder_name #######################
 ###############################################################################
 function tweezers_original_folder_name() {
     assert_true "[ $# -eq 1 ]" "There must be one and only one parameter."
@@ -922,7 +922,7 @@ function tweezers_original_folder_name() {
 }
 
 ###############################################################################
-############################## function: GetTitle #############################
+######################### function: GetTitle ##################################
 ###############################################################################
 # $1 -- title, $2 -- total width
 function GetTitle() {
@@ -1050,64 +1050,6 @@ function fnTableExtractPresent4Last7consecutiveDays() {
 }
 
 ###############################################################################
-############## function: fnTableExtractPresentAtLeast1InLast7Days #############
-###############################################################################
-function fnTableExtractPresentAtLeast1InLast7Days() {
-    local sTableFPath=$1
-    local -n arrNNresult=$2
-    local let NN=$3
-    assert_true "! (( ${#arrNNresult[@]} ))" "This is an output parameter; its initial value must be empty."
-
-    assert_true "[ -f ${sTableFPath} ]" "The specified table file must exist."
-    local let nFilesize=$(get_file_size "$sTableFPath")
-    assert_true "(( 20 < ${nFilesize} ))" "The file size is too small; it appears you have tampered with the data."
-
-    local j k
-
-    # arrTableRec_sorted_unique
-    declare -a local arrTableRec
-    declare -a local arrTableRec_sorted_unique
-    readarray -t arrTableRec < ${sTableFPath}
-    assert_true "[ ${#arrTableRec[@]} -gt 0 ]" "The file exists, but it contains zero records; this is not normal."
-    readarray -t arrTableRec_sorted_unique < <(printf "%s\n" "${arrTableRec[@]}" | sort -u)
-    local let nRecords=${#arrTableRec_sorted_unique[@]}
-    assert_true "[ ${nRecords} -gt 0 ]" "The number of records after sorting and deduplication is 0, which is not normal."
-
-    # nNNdaysago
-    local let nNow=$( date '+%s' )
-    local let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-    local let nNNdaysago=$(( nNow - (( ${NN} - 1 )*24*60*60) - (nNow-nTodayYYYYmmdd) ))
-
-    # arrNNdatetime, arrNNUrlName
-    declare -a local arrNNdatetime
-    declare -a local arrNNUrlName
-    for (( k=0, j=$((--nRecords)); 0<=j; j-- )); do
-        local let nThisLen=${#arrTableRec_sorted_unique[j]}
-        assert_true "(( 20 < nThisLen ))" "This record \"${arrTableRec_sorted_unique[j]}\" is too short; it doesn't seem like a legitimate record."
-        local sDatetime=${arrTableRec_sorted_unique[j]: 0: 15 }
-        local sUrlName=${arrTableRec_sorted_unique[j]: 16 }
-        assert_true "is_valid_datetime \"${sDatetime}\"" "The first 15 characters of the \"${arrTableRec_sorted_unique[j]}\" are not a valid timestamp."
-        local sStdDatetime=$(trans2datetimestring "${sDatetime}")
-        local let nDatetime=$(date -d "${sStdDatetime}" +%s)
-        if (( nDatetime < nNNdaysago )); then break; fi
-        arrNNdatetime[k]=${nDatetime}
-        arrNNUrlName[k]=${sUrlName}
-        ((k++))
-    done
-
-    ###########################################################
-    local let nRecNNsize=${#arrNNUrlName[@]}
-    if (( nRecNNsize == 0 )); then
-        return 1
-    fi
-
-    arrNNUrlNameUnique=($(printf "%s\n" "${arrNNUrlName[@]}" | sort -u))
-
-    arrNNresult=("${arrNNUrlNameUnique[@]}")
-    return 0
-}
-
-###############################################################################
 ########################## function: fnFile2Table #############################
 ###############################################################################
 # 把诸如如下格式的文件:
@@ -1167,7 +1109,7 @@ function fnAddDatetimeMarkAndAppend2Eof() {
 }
 
 ###############################################################################
-##################### function: function: fnLinkDiscard #######################
+########################## function: fnLinkDiscard ############################
 ###############################################################################
 function fnLinkDiscard() {
     local -n Link404Over7_=$1
@@ -1224,7 +1166,7 @@ function fnClashNodeSubcriUrlsSubtractDiscarded() {
 }
 
 ###############################################################################
-####################### function: arrLinkWorthTrying ##########################
+###################### function: fnIsCompliantFolders #########################
 ###############################################################################
 function fnIsCompliantFolders() {
     local fpathFolder
@@ -1369,5 +1311,5 @@ function ArrayIntersect4contain_spaces() {
 # printf '%s\n' "${list3[@]}"
 
 ###############################################################################
-################################## File END ###################################
+##################################### END #####################################
 ###############################################################################
