@@ -889,7 +889,7 @@ function checkIP() {
 # fi
 
 ###############################################################################
-######################### trimstring ##########################################
+########################### function: trimstring ##############################
 ###############################################################################
 # https://jcgoran.github.io/2021/02/07/bash-string-trimming.html
 function trimstring() {
@@ -908,7 +908,7 @@ function trimstring() {
 }
 
 ###############################################################################
-############### tweezers_original_folder_name #################################
+################### function: tweezers_original_folder_name ###################
 ###############################################################################
 function tweezers_original_folder_name() {
     assert_true "[ $# -eq 1 ]" "There must be one and only one parameter."
@@ -922,7 +922,7 @@ function tweezers_original_folder_name() {
 }
 
 ###############################################################################
-######################### GetTitle ############################################
+############################## function: GetTitle #############################
 ###############################################################################
 # $1 -- title, $2 -- total width
 function GetTitle() {
@@ -966,7 +966,7 @@ function GetTitle() {
 #                           ->--------------------------------------------------------------------------------------------------------------
 
 ###############################################################################
-################## fnTableExtractPresent4Last7consecutiveDays #################
+############ function: fnTableExtractPresent4Last7consecutiveDays #############
 ###############################################################################
 function fnTableExtractPresent4Last7consecutiveDays() {
     local sTableFPath=$1
@@ -1050,7 +1050,7 @@ function fnTableExtractPresent4Last7consecutiveDays() {
 }
 
 ###############################################################################
-################## fnTableExtractPresentAtLeast1InLast7Days ###################
+############## function: fnTableExtractPresentAtLeast1InLast7Days #############
 ###############################################################################
 function fnTableExtractPresentAtLeast1InLast7Days() {
     local sTableFPath=$1
@@ -1108,7 +1108,7 @@ function fnTableExtractPresentAtLeast1InLast7Days() {
 }
 
 ###############################################################################
-############################ fnFile2Table #####################################
+########################## function: fnFile2Table #############################
 ###############################################################################
 # 把诸如如下格式的文件:
 #     ClashNodeSubcri.loop6.20260827_130247:
@@ -1154,7 +1154,7 @@ function fnFile2Table() {
 }
 
 ###############################################################################
-########################## fnAddDatetimeMarkAndAppend2Eof #####################
+################# function: fnAddDatetimeMarkAndAppend2Eof ####################
 ###############################################################################
 function fnAddDatetimeMarkAndAppend2Eof() {
     local -n arrUrlNameSlice=$1
@@ -1167,7 +1167,7 @@ function fnAddDatetimeMarkAndAppend2Eof() {
 }
 
 ###############################################################################
-################################ fnLinkDiscard ################################
+##################### function: function: fnLinkDiscard #######################
 ###############################################################################
 function fnLinkDiscard() {
     local -n Link404Over7_=$1
@@ -1180,7 +1180,7 @@ function fnLinkDiscard() {
 }
 
 ###############################################################################
-######################## fnClashNodeSubcriUrlsSubtractDiscarded ###############
+############### function: fnClashNodeSubcriUrlsSubtractDiscarded ##############
 ###############################################################################
 function fnClashNodeSubcriUrlsSubtractDiscarded() {
     local -n arrSubscri_=$1            # in
@@ -1224,7 +1224,7 @@ function fnClashNodeSubcriUrlsSubtractDiscarded() {
 }
 
 ###############################################################################
-########################### arrLinkWorthTrying ################################
+####################### function: arrLinkWorthTrying ##########################
 ###############################################################################
 function fnIsCompliantFolders() {
     local fpathFolder
@@ -1237,7 +1237,7 @@ function fnIsCompliantFolders() {
 }
 
 ###############################################################################
-########################## fnFeedbackSubsystem ################################
+####################### function: fnFeedbackSubsystem #########################
 ###############################################################################
 function fnFeedbackSubsystem() {
     local fpathClashNodeSubcriNew=$1
