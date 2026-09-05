@@ -40,9 +40,11 @@ CONVERTER="http://127.0.0.1:${CVT_PORT}"
          WEB_ORIG_DAT="http://127.0.0.1/Hxy/openclash/original"
          WEB_SLIC_DAT="http://127.0.0.1/Hxy/openclash/slice"
 WEB_PASS2SUBCONVERTER="http://127.0.0.1/Hxy/openclash/pass2subconverter"
-ACCEPTABLE_DAYs=7
-SLICE_SIZE=20
-SUBCONVERTER_SLICE_SIZE=5
+let ACCEPTABLE_DAYs=7
+let SLICE_SIZE=20
+let SUBCONVERTER_SLICE_SIZE=5
+
+declare -i i j
 
 tee_echo "Try to synchronize and calibrate time from WAN"
 ###############################################################################
@@ -59,21 +61,21 @@ tee_echo "Main program starts running"
 ###############################################################################
 ## 主程序开始运行 #############################################################
 ###############################################################################
-TIMEBEGIN=$(date +%s%3N)
+let TIMEBEGIN=$(date +%s%3N)
 tee_echo "Begin: $(date +%Y%m%d_%H%M%S)"
 
 tee_echo "Check system integrity"
 ###############################################################################
 ## 检查系统的完备性 ###########################################################
 ###############################################################################
-cmds=("yq" "cat" "curl" "wget" "grep" "sed" "xargs" "sort" "uniq" "tee" "mv" "rm" "cp" "awk" "base64" "ln" "flock" "date" "ls" "cut" "expr" "gzip" "eval" "python")
+declare -a cmds=("yq" "cat" "curl" "wget" "grep" "sed" "xargs" "sort" "uniq" "tee" "mv" "rm" "cp" "awk" "base64" "ln" "flock" "date" "ls" "cut" "expr" "gzip" "eval" "python")
 for cmd in "${cmds[@]}"; do
     if ! command -v ${cmd} &>/dev/null; then tee_echo "\tThe command-line tool ${cmd} is not installed on the system."; singleton_clean_up 1; fi
 done
 
 python -c "import PyYAML" &> /dev/null || ( pip install PyYAML &> /dev/null || ( tee_echo "Python installation of PyYAML failed"; singleton_clean_up 1 ) )
 
-existing_dirs=("${DIR0}/loop6.bak" "${DATA_DIR}" "${DATA_DIR}/original" "${DATA_DIR}/slice" "${DATA_DIR}/pass2subconverter")
+declare -a existing_dirs=("${DIR0}/loop6.bak" "${DATA_DIR}" "${DATA_DIR}/original" "${DATA_DIR}/slice" "${DATA_DIR}/pass2subconverter")
 for dir in "${existing_dirs[@]}"; do mkdir -p "${dir}" > /dev/null 2>&1; done
 for dir in "${existing_dirs[@]}"; do
     if [ ! -d "${dir}" ]; then
@@ -82,7 +84,7 @@ for dir in "${existing_dirs[@]}"; do
     fi
 done
 
-existing_files=("${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" "${DIR0}/ClashNodeSubcri.sliceyaml.py" "${DIR0}/ClashNodeSubcri.SortCsvByFiled.py")
+declare -a existing_files=("${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" "${DIR0}/ClashNodeSubcri.sliceyaml.py" "${DIR0}/ClashNodeSubcri.SortCsvByFiled.py")
 for fiLe in "${existing_files[@]}"; do
     if [ ! -f "${fiLe}" ]; then
         tee_echo "\tFile \"${fiLe}\" not found!"
@@ -105,7 +107,7 @@ if [ "$r" != "0" ]; then
     singleton_clean_up 1
 fi
 
-STATUS_CODE=$(curl --output /dev/null --silent --head --write-out "%{http_code}" "$EXISTENTIAL_CONFIGs")
+let STATUS_CODE=$(curl --output /dev/null --silent --head --write-out "%{http_code}" "$EXISTENTIAL_CONFIGs")
 if (( STATUS_CODE != 200 )); then
     tee_echo "\tWeb service \"$EXISTENTIAL_CONFIGs\" is not started"
     singleton_clean_up 1
@@ -147,16 +149,17 @@ tee_echo "Check for duplicate 'configuration names'"
 ###############################################################################
 ## 检查是否有重复的『配置名』##################################################
 ###############################################################################
-clashConfigNames=()
+declare -a clashConfigNames=()
+declare -a arrSubscri=()
 readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.urls.constrict" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
-subsSize=${#arrSubscri[@]}
+let subsSize=${#arrSubscri[@]}
 if (( subsSize <= 0 )); then
     tee_echo "\tSubscription configuration item count is 0"
     singleton_clean_up 1
 fi
 for (( j=0; j<${subsSize}; j++ )); do
     subscri=${arrSubscri[$j]}
-    arrSplit=(${subscri//,/ })
+    declare -a arrSplit=(${subscri//,/ })
 
     split0=${arrSplit[0]}
     split1=${arrSplit[1]}
@@ -178,7 +181,7 @@ for (( j=0; j<${subsSize}; j++ )); do
     clashConfigNames[$j]=$(echo "${configFName}" | xargs)
 done
 
-declare -A uniqClashConfigNames
+declare -A uniqClashConfigNames=()
 for ip in "${clashConfigNames[@]}"; do uniqClashConfigNames[$ip]=0; done
 if (( ${#uniqClashConfigNames[@]} < ${#clashConfigNames[@]} )); then
     tee_echo "\tItems with counts (duplicates have count > 1):"
@@ -191,8 +194,8 @@ tee_echo "Check for available domain name servers"
 ###############################################################################
 ## 检查有否可用的域名服务器 ###################################################
 ###############################################################################
-directDns=
-dnsServers=("211.136.192.6" "211.139.136.68" "114.114.114.114" "114.114.115.115" "223.5.5.5" "223.6.6.6" "119.29.29.29" "1.2.4.8" "210.2.4.8" "114.114.114.119" "114.114.115.119" "211.138.180.2" "211.138.180.3" "211.136.192.6" "211.136.20.203")
+directDns=''
+declare -a dnsServers=("211.136.192.6" "211.139.136.68" "114.114.114.114" "114.114.115.115" "223.5.5.5" "223.6.6.6" "119.29.29.29" "1.2.4.8" "210.2.4.8" "114.114.114.119" "114.114.115.119" "211.138.180.2" "211.138.180.3" "211.136.192.6" "211.136.20.203")
 for dns in "${dnsServers[@]}"; do
     if checkIP ${dns}; then
         directDns=${dns}
@@ -207,8 +210,9 @@ tee_echo "If the intranet is down, cancel the subscription."
 ###############################################################################
 ## 如果连内网都已宕机，那么就取消此次的订阅 ###################################
 ###############################################################################
+declare -a arrSpeedTestResult=()
 readarray -t arrSpeedTestResult < <( wget --no-check-certificate -p -O/dev/null "http://www.baidu.com" --dns-timeout=10 --connect-timeout=10 --read-timeout=10 --tries=3 --waitretry=4 2>&1 | grep -o "[0-9.]\\+ [KM]*B/s" )
-speedSize=${#arrSpeedTestResult[@]}
+let speedSize=${#arrSpeedTestResult[@]}
 if (( speedSize <= 0 )); then
     tee_echo "\tThe Baidu is NOT available. Exit this time."
     singleton_clean_up 1
@@ -245,13 +249,15 @@ for (( i=1; i<=5; i++ )); do
 
     # https://unix.stackexchange.com/questions/485221/read-lines-into-array-one-element-per-line-using-bash
     # https://www.google.com/search?q=bash+read+line+except+comment&pws=0&gl=us&gws_rd=cr
+    declare -a arrSubscri=()
     readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.loop$i" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d' )
-    subsSize=${#arrSubscri[@]}
+    let subsSize=${#arrSubscri[@]}
     if (( subsSize <= 0 )); then break; fi
 
     let j=$i+1
     for subscri in "${arrSubscri[@]}"; do
         # https://stackoverflow.com/questions/918886/how-do-i-split-a-string-on-a-delimiter-in-bash
+        declare -a arrSplit=()
         arrSplit=(${subscri//,/ })
         # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
         url=$(echo "${arrSplit[0]}" | xargs)
@@ -271,7 +277,7 @@ for (( i=1; i<=5; i++ )); do
             continue
         fi
 
-        thisFileSize=$(get_file_size "${DATA_DIR}/original/${fname}.tmp")
+        let thisFileSize=$(get_file_size "${DATA_DIR}/original/${fname}.tmp")
         if ! [[ 0 < ${thisFileSize} ]]; then
             tee_echo "\tThe size of URL \"${url}\" is zero"
             echo "$(date +%Y%m%d_%H%M%S) ${url},${fname}" >> "${DIR0}/ClashNodeSubcri.0size"
@@ -282,8 +288,8 @@ for (( i=1; i<=5; i++ )); do
         newHash=$(sha256sum "${DATA_DIR}/original/${fname}.tmp" 2>/dev/null | awk '{print $1}')
         if [[ "$newHash" == "$oldHash" ]]; then
             # https://stackoverflow.com/questions/16391208/print-a-files-last-modified-date-in-bash
-            oldFiletime=$(date -r "${DATA_DIR}/original/${fname}" +%s%3N)
-            nowDatetime=$(date +%s%3N)
+            let oldFiletime=$(date -r "${DATA_DIR}/original/${fname}" +%s%3N)
+            let nowDatetime=$(date +%s%3N)
             [[ $((nowDatetime - oldFiletime)) -gt $((${ACCEPTABLE_DAYs}*24*60*60)) ]] && bTooOldFile=true || bTooOldFile=false
             if [[ "${bTooOldFile}" == "true" ]]; then
                 tee_echo "\tFile \"${url}\" is too old and has NOT been updated for more than ${ACCEPTABLE_DAYs} days"
@@ -309,6 +315,7 @@ for (( i=1; i<=5; i++ )); do
             # If it is a YAML file format ...
             if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${targetDisasFPath}" &>/dev/null; then
                 # Slicing the node data of yaml
+                declare -a arrSliceYaml=()
                 readarray -t arrSliceYaml < <( python "${DIR0}/ClashNodeSubcri.sliceyaml.py" "-i${targetDisasFPath}" "-o${DATA_DIR}/slice" "-f${fname}" -z${SLICE_SIZE} )
                 if [ -f "${DATA_DIR}/slice/${arrSliceYaml[0]}" ]; then
                     for aSlice in "${arrSliceYaml[@]}"; do
@@ -318,8 +325,9 @@ for (( i=1; i<=5; i++ )); do
                 fi
             else
                 # Slicing the node data of v2ray
-                lineNo=1
-                fileNo=1
+                let lineNo=1
+                let fileNo=1
+                declare -a v2rayLines=()
                 readarray -t v2rayLines < <(cat "${targetDisasFPath}" | sort -u)
                 for v2rayLine in "${v2rayLines[@]}"; do
                     v2rayLine=$(trimstring "${v2rayLine}")
@@ -348,6 +356,7 @@ tee_echo "Convert data files that 'cannot be subscribed to via Openclash' to ${D
 ## 把哪些『不能“通过Openclash进行订阅”』的数据文件进行base64的编码转换到${DATA_DIR}/pass2subconverter
 ###############################################################################
 rm -f "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls" > /dev/null 2>&1
+declare -a arrSubscri=()
 readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.urls")
 
 if [ ${#arrSubscri[@]} -le 0 ]; then
@@ -356,7 +365,7 @@ if [ ${#arrSubscri[@]} -le 0 ]; then
 fi
 
 for subscri in "${arrSubscri[@]}"; do
-    arrSplit=(${subscri//,/ })
+    declare -a arrSplit=(${subscri//,/ })
     fname=${arrSplit[1]}
     url127=${arrSplit[0]}
     folderName=$( tweezers_original_folder_name "${url127}" )
@@ -398,9 +407,10 @@ rm -f "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" > /dev/null 2>&1
 echo -e "\toption config_path 'PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH'\n" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
 echo -e "\toption custom_domain_dns_server '${directDns}'\n" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
 
-clashConfigNames=()
+declare -a clashConfigNames=()
+declare -a arrSubscri=()
 readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls")
-subsSize=${#arrSubscri[@]}
+let subsSize=${#arrSubscri[@]}
 tee_echo "\tsubsSize:${subsSize}"
 
 if [ ${subsSize} -le 0 ]; then
@@ -432,7 +442,7 @@ for (( j=0; j<${subsSize}; j++ )); do
 done
 
 ###############################################################################
-optNameSize=${#clashConfigNames[@]}
+let optNameSize=${#clashConfigNames[@]}
 assert_true "[ $optNameSize -gt 0 ]" "The count of configuration items must be greater than 0."
 final1=${clashConfigNames[0]}
 if (( 1 < ${#clashConfigNames[@]} )); then
