@@ -122,11 +122,25 @@ tee_echo "Start running the feedback subsystem"
 ###############################################################################
 ## 开始运行节点链接检测反馈子系统 #############################################
 ###############################################################################
-fnFeedbackSubsystem "${DIR0}/ClashNodeSubcri.urls.constrict"
-python "${DIR0}/ClashNodeSubcri.SortCsvByFiled.py" "-i${DIR0}/ClashNodeSubcri.urls.constrict" "-o${DIR0}/ClashNodeSubcri.urls.constrict" -x1
-if [ ! -f "${DIR0}/ClashNodeSubcri.urls.constrict" ]; then
-    tee_echo "The generated file \"${DIR0}/ClashNodeSubcri.urls.constrict\" does not exist."
-    singleton_clean_up 1
+# nNNdaysago
+let nNow=$( date '+%s' )
+let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
+let nNNdaysago=$(( nNow - (( ${ACCEPTABLE_DAYs} - 1 )*24*60*60) - (nNow-nTodayYYYYmmdd) ))
+
+# nLastFeedbackDatetime
+let nLastFeedbackDatetime=0
+if [ -f "${DIR0}/ClashNodeSubcri.urls.constrict" ]; then
+	let nLastFeedbackDatetime=$( date -d "$(date -r '/etc/openclash/ClashNodeSubcri.urls.constrict' '+%Y-%m-%d %H:%M:%S')" +%s )
+fi
+
+# nSubUrlsFileDatetime
+let nSubUrlsFileDatetime=$( date -d "$(date -r '/etc/openclash/ClashNodeSubcri.urls' '+%Y-%m-%d %H:%M:%S')" +%s )
+
+# ${DIR0}/ClashNodeSubcri.constrict
+if [ ! -f "${DIR0}/ClashNodeSubcri.constrict" ] || (( nLastFeedbackDatetime < nNNdaysago )) || (( (nNow - nSubUrlsFileDatetime) < 60 )); then
+    fnFeedbackSubsystem "${DIR0}/ClashNodeSubcri.urls.constrict"
+    python "${DIR0}/ClashNodeSubcri.SortCsvByFiled.py" "-i${DIR0}/ClashNodeSubcri.urls.constrict" "-o${DIR0}/ClashNodeSubcri.urls.constrict" -x1
+    assert_true "[ -f \"${DIR0}/ClashNodeSubcri.urls.constrict\" ]" "The generated file \"${DIR0}/ClashNodeSubcri.urls.constrict\" does not exist."
 fi
 
 tee_echo "Check for duplicate 'configuration names'"
@@ -1241,8 +1255,6 @@ function fnFeedbackSubsystem() {
             ${ACCEPTABLE_DAYs}
         rm -f "${fpathTmp}"
     fi
-  # echo Link404Over7
-  # if [[ 0 < ${#Link404Over7[@]} ]]; then printf '%s\n' ${Link404Over7[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof Link404Over7 "${DIR0}/ClashNodeSubcri.urls.db.Link404Over7"
 
     # 1.2 oldsubs/LinkInactiveOver7
@@ -1252,8 +1264,6 @@ function fnFeedbackSubsystem() {
             LinkInactiveOver7 \
             ${ACCEPTABLE_DAYs}
     fi
-  # echo LinkInactiveOver7
-  # if [[ 0 < ${#LinkInactiveOver7[@]} ]]; then printf '%s\n' ${LinkInactiveOver7[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof LinkInactiveOver7 "${DIR0}/ClashNodeSubcri.urls.db.LinkInactiveOver7"
 
     # 1.3 0size/Link0sizeOver7
@@ -1263,8 +1273,6 @@ function fnFeedbackSubsystem() {
             Link0sizeOver7 \
             ${ACCEPTABLE_DAYs}
     fi
-  # echo Link0sizeOver7
-  # if [[ 0 < ${#Link0sizeOver7[@]} ]]; then printf '%s\n' ${Link0sizeOver7[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7 "${DIR0}/ClashNodeSubcri.urls.db.Link0sizeOver7"
 
     #//////////////////////////////////////////////////////////////////////
@@ -1275,71 +1283,25 @@ function fnFeedbackSubsystem() {
         LinkInactiveOver7 \
         Link0sizeOver7 \
         LinkDiscard
-  # echo LinkDiscard
-  # if [[ 0 < ${#LinkDiscard[@]} ]]; then printf '%s\n' ${LinkDiscard[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof LinkDiscard "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard"
 
     #//////////////////////////////////////////////////////////////////////
-    # 3. LinkReExamination7
-    declare -a local LinkReExamination7
-    if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
-        fnTableExtractPresent4Last7consecutiveDays \
-            "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" \
-            LinkReExamination7 \
-            ${ACCEPTABLE_DAYs}
-    fi
-  # echo LinkReExamination7
-  # if [[ 0 < ${#LinkReExamination7[@]} ]]; then printf '%s\n' ${LinkReExamination7[@]}; fi
-    fnAddDatetimeMarkAndAppend2Eof LinkReExamination7 "${DIR0}/ClashNodeSubcri.urls.db.LinkReExamination7"
-
-    #//////////////////////////////////////////////////////////////////////
-    # 4. LinkAtLeast1
-    if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
-        fnTableExtractPresentAtLeast1InLast7Days \
-            "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" \
-            LinkAtLeast1 \
-            ${ACCEPTABLE_DAYs}
-    fi
-  # echo LinkAtLeast1
-  # if [[ 0 < ${#LinkAtLeast1[@]} ]]; then printf '%s\n' ${LinkAtLeast1[@]}; fi
-    fnAddDatetimeMarkAndAppend2Eof LinkAtLeast1 "${DIR0}/ClashNodeSubcri.urls.db.LinkAtLeast1"
-
-    #//////////////////////////////////////////////////////////////////////
-    # 5. LinkDiscard2
-    # Subtract LinkAtLeast1 from LinkDiscard (LinkDiscard-LinkAtLeast1)
-    LinkDiscard2=($(printf "%s\n" "${LinkDiscard[@]}" | grep -vxf <(printf "%s\n" "${LinkAtLeast1[@]}")))
-  # echo LinkDiscard2
-  # if [[ 0 < ${#LinkDiscard2[@]} ]]; then printf '%s\n' ${LinkDiscard2[@]}; fi
-    fnAddDatetimeMarkAndAppend2Eof LinkDiscard2 "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard2"
-
-    #//////////////////////////////////////////////////////////////////////
-    # 6. LinkWorthTrying, LinkNotWorthTrying
+    # 3. LinkWorthTrying, LinkNotWorthTrying
     declare -a local LinkWorthTrying LinkNotWorthTrying
-    # 6.1 arrSubscri
+    # 3.1 arrSubscri
     declare -a local arrSubscri
     readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
     local subsSize=${#arrSubscri[@]}
     assert_true "(( 0 < subsSize ))" "Subscription configuration item count is 0"
 
-    # 6.2 LinkWorthTrying, LinkNotWorthTrying
+    # 3.2 LinkWorthTrying, LinkNotWorthTrying
     fnClashNodeSubcriUrlsSubtractDiscarded \
         arrSubscri \
-        LinkDiscard2 \
+        LinkDiscard \
         LinkWorthTrying \
         LinkNotWorthTrying
 
-    # 6.3 arrReExamination
-    declare -a local arrReExamination
-    ArrayIntersect arrSubscri LinkReExamination7 arrReExamination
-
-    # 6.4 LinkWorthTrying
-    LinkWorthTrying=($(printf "%s\n" "${LinkWorthTrying[@]}" "${arrReExamination[@]}" | sort -u))
-
-  # echo LinkWorthTrying
-  # if [[ 0 < ${#LinkWorthTrying[@]} ]]; then printf '%s\n' ${LinkWorthTrying[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof LinkWorthTrying "${DIR0}/ClashNodeSubcri.urls.db.LinkWorthTrying"
-  # echo LinkNotWorthTrying
-  # if [[ 0 < ${#LinkNotWorthTrying[@]} ]]; then printf '%s\n' ${LinkNotWorthTrying[@]}; fi
     fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTrying "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying"
 
     printf '%s\n' "${LinkWorthTrying[@]}" > "${fpathClashNodeSubcriNew}"
