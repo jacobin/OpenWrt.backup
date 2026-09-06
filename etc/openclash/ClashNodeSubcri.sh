@@ -72,7 +72,10 @@ declare -a cmds=("yq" "cat" "curl" "wget" "grep" "sed" "xargs" "sort" "uniq"
                     "tee" "mv" "rm" "cp" "awk" "base64" "ln" "flock" "date"
                     "ls" "cut" "expr" "gzip" "eval" "python")
 for cmd in "${cmds[@]}"; do
-    if ! command -v ${cmd} &>/dev/null; then tee_echo "\tThe command-line tool ${cmd} is not installed on the system."; singleton_clean_up 1; fi
+    if ! command -v ${cmd} &>/dev/null; then
+        tee_echo "\tThe CLT ${cmd} is not installed on the system."
+        singleton_clean_up 1
+    fi
 done
 
 python -c "import PyYAML" &> /dev/null || ( pip install PyYAML &> /dev/null || ( tee_echo "Python installation of PyYAML failed"; singleton_clean_up 1 ) )
