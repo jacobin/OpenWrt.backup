@@ -68,14 +68,20 @@ tee_echo "Check system integrity"
 ###############################################################################
 ## 检查系统的完备性 ###########################################################
 ###############################################################################
-declare -a cmds=("yq" "cat" "curl" "wget" "grep" "sed" "xargs" "sort" "uniq" "tee" "mv" "rm" "cp" "awk" "base64" "ln" "flock" "date" "ls" "cut" "expr" "gzip" "eval" "python")
+declare -a cmds=("yq" "cat" "curl" "wget" "grep" "sed" "xargs" "sort" "uniq"
+                    "tee" "mv" "rm" "cp" "awk" "base64" "ln" "flock" "date"
+                    "ls" "cut" "expr" "gzip" "eval" "python")
 for cmd in "${cmds[@]}"; do
     if ! command -v ${cmd} &>/dev/null; then tee_echo "\tThe command-line tool ${cmd} is not installed on the system."; singleton_clean_up 1; fi
 done
 
 python -c "import PyYAML" &> /dev/null || ( pip install PyYAML &> /dev/null || ( tee_echo "Python installation of PyYAML failed"; singleton_clean_up 1 ) )
 
-declare -a existing_dirs=("${DIR0}/loop6.bak" "${DATA_DIR}" "${DATA_DIR}/original" "${DATA_DIR}/slice" "${DATA_DIR}/pass2subconverter")
+declare -a existing_dirs=("${DIR0}/loop6.bak"
+                            "${DATA_DIR}"
+                            "${DATA_DIR}/original"
+                            "${DATA_DIR}/slice"
+                            "${DATA_DIR}/pass2subconverter")
 for dir in "${existing_dirs[@]}"; do mkdir -p "${dir}" > /dev/null 2>&1; done
 for dir in "${existing_dirs[@]}"; do
     if [ ! -d "${dir}" ]; then
@@ -84,7 +90,10 @@ for dir in "${existing_dirs[@]}"; do
     fi
 done
 
-declare -a existing_files=("${DIR0}/ClashNodeSubcri.urls" "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" "${DIR0}/ClashNodeSubcri.sliceyaml.py" "${DIR0}/ClashNodeSubcri.SortCsvByFiled.py")
+declare -a existing_files=("${DIR0}/ClashNodeSubcri.urls"
+                            "${DIR0}/ClashNodeSubcri.etc_config_openclash.const"
+                            "${DIR0}/ClashNodeSubcri.sliceyaml.py"
+                            "${DIR0}/ClashNodeSubcri.SortCsvByFiled.py")
 for fiLe in "${existing_files[@]}"; do
     if [ ! -f "${fiLe}" ]; then
         tee_echo "\tFile \"${fiLe}\" not found!"
@@ -195,7 +204,21 @@ tee_echo "Check for available domain name servers"
 ## 检查有否可用的域名服务器 ###################################################
 ###############################################################################
 directDns=''
-declare -a dnsServers=("211.136.192.6" "211.139.136.68" "114.114.114.114" "114.114.115.115" "223.5.5.5" "223.6.6.6" "119.29.29.29" "1.2.4.8" "210.2.4.8" "114.114.114.119" "114.114.115.119" "211.138.180.2" "211.138.180.3" "211.136.192.6" "211.136.20.203")
+declare -a dnsServers=("211.136.192.6"
+                        "211.139.136.68"
+                        "114.114.114.114"
+                        "114.114.115.115"
+                        "223.5.5.5"
+                        "223.6.6.6"
+                        "119.29.29.29"
+                        "1.2.4.8"
+                        "210.2.4.8"
+                        "114.114.114.119"
+                        "114.114.115.119"
+                        "211.138.180.2"
+                        "211.138.180.3"
+                        "211.136.192.6"
+                        "211.136.20.203")
 for dns in "${dnsServers[@]}"; do
     if checkIP ${dns}; then
         directDns=${dns}
