@@ -45,8 +45,6 @@ def main():
     global IPV6ADDR
     global GEO_DB_PATH
 
-    MyPrintInfo( "Start downloading, analyzing, and extracting subscription information." )
-
     #{{{ Parameter preparation via getopt {{{{{{{{{
     bRedownload = False
     sDnsServer = '8.8.8.8'
@@ -65,7 +63,7 @@ def main():
 
     for opt, arg in opts:
         if opt in ("-h", "--help"):
-            print({sUsage})
+            print(sUsage)
             sys.exit()
         elif opt in ("-r", "--redownload"):
             bRedownload = True
@@ -82,6 +80,8 @@ def main():
         else:
             MyPrintErr( f'{__func__}(): There are non-compliant argument.\n{sUsage}')
     #}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+
+    MyPrintInfo( "Start downloading, analyzing, and extracting subscription information." )
 
     if not os.path.exists( sTemporaryFolder ):
         try:
@@ -292,18 +292,19 @@ def main():
         for url in f:
             # host
             url = url.strip()
-            ipv6Arr = re.findall(IPV6ADDR, url)
-            if not ipv6Arr:
-                host = extract_host_from_url(url)
-                if not host:
-                    f3.write(url + '\n')
-                    host = "WhatTheFuckingHost"
-            else:
-                assert 1 == len(ipv6Arr)
-                host = ipv6Arr[0]
+            if url:
+                ipv6Arr = re.findall(IPV6ADDR, url)
+                if not ipv6Arr:
+                    host = extract_host_from_url(url)
+                    if not host:
+                        f3.write(url + '\n')
+                        host = "WhatTheFuckingHost"
+                else:
+                    assert 1 == len(ipv6Arr)
+                    host = ipv6Arr[0]
 
-            totalstring=f"{host},{url}"
-            f2.write(totalstring + '\n')
+                totalstring=f"{host},{url}"
+                f2.write(totalstring + '\n')
 
     f = open_file_to_read_if_recent('present_dns.json', nDnsMaxSurvivalMinutes)
     if f:
@@ -656,8 +657,12 @@ def remove_unsupported_protocols( input_filename, output_filename, protocals ):
 
 ###############################################################################
 def extract_host_from_url( url ):
+    assert url
     __func__ = inspect.currentframe().f_code.co_name
     protocal_prefix, _, protocal_data = url.partition("://")
+    if not ( protocal_prefix and protocal_data ):
+        return None
+
     if protocal_prefix == 'vmess': # Note: not all vmess links contain base64 encrypted content.
         json_string=None
 
@@ -905,6 +910,7 @@ def split_nodes( aLine, fanqiang_protocals ):
 
 ###############################################################################
 def extract_filename_from_url( url ):
+    assert url
     parsed_url = urlparse(url)
     decoded_path = unquote(parsed_url.path)
     return Path(decoded_path).name
@@ -913,6 +919,7 @@ def extract_filename_from_url( url ):
 # https://www.google.com/search?q=python+compress+a+folder+best+rates
 def shutil_compress( source_dir, output_filename ):
     __func__ = inspect.currentframe().f_code.co_name
+    assert source_dir and output_filename
     # 'xztar' uses LZMA compression, which offers the best ratio
     output_filename = output_filename.removesuffix( '.tar.xz' )
     try:
