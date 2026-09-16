@@ -973,7 +973,7 @@ function tweezers_original_folder_name() {
     local url127="${1}"
     local old_ifs="$IFS"
     declare -a local my_array
-    IFS="/" read -r -a my_array <<< "${url127}}"
+    IFS="/" read -r -a my_array <<< "${url127}"
     IFS="$old_ifs"
     echo "${my_array[5]}"
     return 0
