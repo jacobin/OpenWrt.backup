@@ -495,10 +495,15 @@ tee_echo "Package redundant config Openclash files. Only 5 external files are le
 ###############################################################################
 ## 打包多余的config openclash文件。外头只留5个 ###############################
 ###############################################################################
-tar_old_files "/etc/config/openclash.backup"       "/etc/config/openclash."        2 1000
-tar_old_files "${DIR0}/yamls"               "${DIR0}/*.yaml"         2 1000
-tar_old_files "${DIR0}/wget.log"            "${DIR0}/wget-log.???"   1 1000
-tar_old_files "${DIR0}/config/config_yamls" "${DIR0}/config/*.yaml." 0 1000
+tar_old_files "/etc/config/openclash.backup" "/etc/config/openclash." 2 1000
+tar_old_files "${DIR0}/yamls"                "${DIR0}/*.yaml"         2 1000
+tar_old_files "${DIR0}/wget.log"             "${DIR0}/wget-log.???"   1 1000
+tar_old_files "${DIR0}/config/config_yamls"  "${DIR0}/config/*.yaml." 0 1000
+
+###############################################################################
+## 避免使用了NNN.yaml们的旧文件（总有订阅通不过Openclash的检查） ##############
+###############################################################################
+find ${DIR0}/config -maxdepth 1 -type f -regex '.*/[0-9]*$*.ya\?ml' -exec rm {} \;
 
 tee_echo "Restart Openclash."
 ###############################################################################
