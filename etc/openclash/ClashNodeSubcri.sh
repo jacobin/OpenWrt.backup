@@ -144,11 +144,11 @@ let nNNdaysago=$(( nNow - (( ${ACCEPTABLE_DAYs} - 1 )*24*60*60) - (nNow-nTodayYY
 # nLastFeedbackDatetime
 let nLastFeedbackDatetime=0
 if [ -f "${DIR0}/ClashNodeSubcri.urls.constrict" ]; then
-	let nLastFeedbackDatetime=$( date -d "$(date -r '${DIR0}/ClashNodeSubcri.urls.constrict' '+%Y-%m-%d %H:%M:%S')" +%s )
+	let nLastFeedbackDatetime=$( date -d "$(date -r """${DIR0}/ClashNodeSubcri.urls.constrict""" '+%Y-%m-%d %H:%M:%S')" +%s )
 fi
 
 # nSubUrlsFileDatetime
-let nSubUrlsFileDatetime=$( date -d "$(date -r '${DIR0}/ClashNodeSubcri.urls' '+%Y-%m-%d %H:%M:%S')" +%s )
+let nSubUrlsFileDatetime=$( date -d "$(date -r """${DIR0}/ClashNodeSubcri.urls""" '+%Y-%m-%d %H:%M:%S')" +%s )
 
 # ${DIR0}/ClashNodeSubcri.constrict
 if [ ! -f "${DIR0}/ClashNodeSubcri.constrict" ] || (( nLastFeedbackDatetime < nNNdaysago )) || (( (nNow - nSubUrlsFileDatetime) < 60 )); then
