@@ -144,11 +144,11 @@ let nNNdaysago=$(( nNow - (( ${ACCEPTABLE_DAYs} - 1 )*24*60*60) - (nNow-nTodayYY
 # nLastFeedbackDatetime
 let nLastFeedbackDatetime=0
 if [ -f "${DIR0}/ClashNodeSubcri.urls.constrict" ]; then
-	let nLastFeedbackDatetime=$( date -d "$(date -r '/etc/openclash/ClashNodeSubcri.urls.constrict' '+%Y-%m-%d %H:%M:%S')" +%s )
+	let nLastFeedbackDatetime=$( date -d "$(date -r '${DIR0}/ClashNodeSubcri.urls.constrict' '+%Y-%m-%d %H:%M:%S')" +%s )
 fi
 
 # nSubUrlsFileDatetime
-let nSubUrlsFileDatetime=$( date -d "$(date -r '/etc/openclash/ClashNodeSubcri.urls' '+%Y-%m-%d %H:%M:%S')" +%s )
+let nSubUrlsFileDatetime=$( date -d "$(date -r '${DIR0}/ClashNodeSubcri.urls' '+%Y-%m-%d %H:%M:%S')" +%s )
 
 # ${DIR0}/ClashNodeSubcri.constrict
 if [ ! -f "${DIR0}/ClashNodeSubcri.constrict" ] || (( nLastFeedbackDatetime < nNNdaysago )) || (( (nNow - nSubUrlsFileDatetime) < 60 )); then
@@ -264,7 +264,7 @@ tee_echo "Download the subscribed raw data to local ${DATA_DIR}/original after a
 # https://stackoverflow.com/questions/62021429/why-does-command-line-rm-not-accept-quotation-marks-for-directories-with-spaces
 if [ -f "${DIR0}/ClashNodeSubcri.loop"6 ]; then
     mv -f "${DIR0}/ClashNodeSubcri.loop"6 "${DIR0}/loop6.bak/ClashNodeSubcri.loop6.$(date +%Y%m%d_%H%M%S)" &> /dev/null
-    tar_old_files "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6" "/etc/openclash/loop6.bak/ClashNodeSubcri.loop6" 2 1000
+    tar_old_files "${DIR0}/loop6.bak/ClashNodeSubcri.loop6" "${DIR0}/loop6.bak/ClashNodeSubcri.loop6" 2 1000
 fi
 rm -f "${DIR0}/ClashNodeSubcri.loop"? > /dev/null 2>&1
 cp -f "${DIR0}/ClashNodeSubcri.urls.constrict" "${DIR0}/ClashNodeSubcri.loop1" &> /dev/null
@@ -496,9 +496,9 @@ tee_echo "Package redundant config Openclash files. Only 5 external files are le
 ## 打包多余的config openclash文件。外头只留5个 ###############################
 ###############################################################################
 tar_old_files "/etc/config/openclash.backup"       "/etc/config/openclash."        2 1000
-tar_old_files "/etc/openclash/yamls"               "/etc/openclash/*.yaml"         2 1000
-tar_old_files "/etc/openclash/wget.log"            "/etc/openclash/wget-log.???"   1 1000
-tar_old_files "/etc/openclash/config/config_yamls" "/etc/openclash/config/*.yaml." 0 1000
+tar_old_files "${DIR0}/yamls"               "${DIR0}/*.yaml"         2 1000
+tar_old_files "${DIR0}/wget.log"            "${DIR0}/wget-log.???"   1 1000
+tar_old_files "${DIR0}/config/config_yamls" "${DIR0}/config/*.yaml." 0 1000
 
 tee_echo "Restart Openclash."
 ###############################################################################
