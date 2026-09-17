@@ -7,9 +7,11 @@
 # https://stackoverflow.com/questions/43158140/way-to-create-multiline-comments-in-bash
 << EOF
     original
-        --> pass2subconverter
-            --> etc_config_openclash.mutable("PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH")
-                --> /etc/config/openclash
+        --> slice
+            --> pass2subconverter
+                --> filterout_snioff
+                    --> etc_config_openclash.mutable("PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH")
+                        --> /etc/config/openclash
 EOF
 
 ###############################################################################
@@ -40,6 +42,7 @@ CONVERTER="http://127.0.0.1:${CVT_PORT}"
          WEB_ORIG_DAT="http://127.0.0.1/Hxy/openclash/original"
          WEB_SLIC_DAT="http://127.0.0.1/Hxy/openclash/slice"
 WEB_PASS2SUBCONVERTER="http://127.0.0.1/Hxy/openclash/pass2subconverter"
+ WEB_FILTEROUT_SNIOFF="http://127.0.0.1/Hxy/openclash/filterout_snioff"
 let ACCEPTABLE_DAYs=7
 let SLICE_SIZE=20
 let SUBCONVERTER_SLICE_SIZE=5
@@ -84,7 +87,8 @@ declare -a existing_dirs=("${DIR0}/loop6.bak"
                             "${DATA_DIR}"
                             "${DATA_DIR}/original"
                             "${DATA_DIR}/slice"
-                            "${DATA_DIR}/pass2subconverter")
+                            "${DATA_DIR}/pass2subconverter"
+                            "${DATA_DIR}/filterout_snioff")
 for dir in "${existing_dirs[@]}"; do mkdir -p "${dir}" > /dev/null 2>&1; done
 for dir in "${existing_dirs[@]}"; do
     if [ ! -d "${dir}" ]; then
@@ -422,12 +426,79 @@ for subscri in "${arrSubscri[@]}"; do
     echo "${WEB_PASS2SUBCONVERTER}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls"
 done
 
+tee_echo "Check if the configuration file passes Mihomo's validity check."
+###############################################################################
+## 生成 "${DATA_DIR}/filterout_snioff/* #########################################
+##***************************************************************************##
+## 之所以有这么一节代码的插入，是因为经过clash/mihomo核心的订阅检测过程之后，##
+## 开始应用之于运行的时刻，有错误报告说该yaml譬如41.yaml中有sni给出bool类型的##
+## 值。clash/mihomo核心检测认为sni: off是布尔值的表达。WTF！###################
+###############################################################################
+# # test coding 1/2
+# read -p "Press enter to continue"
+# cp -f "/xyH.tmp/aaa/H087-freev2.txt" "/www/Hxy/openclash/pass2subconverter/H087-freev2.txt"
+# cp -f "/xyH.tmp/aaa/H120-emzclash.txt" "/www/Hxy/openclash/pass2subconverter/H120-emzclash.txt"
+# read -p "Press enter to continue"
+if [ ! -f "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls" ]; then
+    tee_echo "\tFile \"${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls\" not found!"
+    singleton_clean_up 1
+fi
+
+declare -a arrSubscri=()
+readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls")
+let subsSize=${#arrSubscri[@]}
+if [ ${subsSize} -le 0 ]; then
+    tee_echo "\tThe number of PASS2SUBCONVERTERS is zero.!"
+    singleton_clean_up 1
+fi
+
+rm "${DIR0}/ClashNodeSubcri.snioff.urls" > /dev/null 2>&1
+for (( j=0; j<${subsSize}; j++ )); do
+    # subscri
+    subscri=${arrSubscri[$j]}
+
+    # url, configFNameDotExtension
+    arrSplit=(${subscri//,/ })
+    url=${arrSplit[0]}
+    configFNameDotExtension=${arrSplit[1]}
+
+    # pass2subfname
+    pass2subfname=$( tweezers_pass2subconverter_fname "${url}" )
+
+    # beEdited
+    beEdited=false
+    if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/pass2subconverter/${pass2subfname}" &>/dev/null; then
+        if grep -q 'sni: off' "${DATA_DIR}/pass2subconverter/${pass2subfname}"; then
+            cp -f "${DATA_DIR}/pass2subconverter/${pass2subfname}" "${DATA_DIR}/filterout_snioff/${pass2subfname}"
+            sed -i -e 's/sni: off/sni: "off"/g' "${DATA_DIR}/filterout_snioff/${pass2subfname}"
+            beEdited=true
+        fi
+    else
+        if base64 --decode --ignore-garbage "${DATA_DIR}/pass2subconverter/${pass2subfname}" > "${DATA_DIR}/filterout_snioff/${pass2subfname}.base64decode.result" 2>/dev/null; then
+            if grep -q 'sni=off' "${DATA_DIR}/filterout_snioff/${pass2subfname}.base64decode.result" 2>/dev/null; then
+                sed -i -e 's/sni=off/sni=www.off.com/g' "${DATA_DIR}/filterout_snioff/${pass2subfname}.base64decode.result" 2>/dev/null
+                base64 -w0 "${DATA_DIR}/filterout_snioff/${pass2subfname}.base64decode.result" > "${DATA_DIR}/filterout_snioff/${pass2subfname}"
+                beEdited=true
+            fi
+        fi
+        rm -f "${DATA_DIR}/filterout_snioff/${pass2subfname}.base64decode.result" &> /dev/null
+    fi
+
+    if ${beEdited}; then
+        echo "${WEB_FILTEROUT_SNIOFF}/${pass2subfname},${configFNameDotExtension}" >> "${DIR0}/ClashNodeSubcri.snioff.urls"
+    else
+        echo "${subscri}" >> "${DIR0}/ClashNodeSubcri.snioff.urls"
+    fi
+done
+# # test coding 2/2
+# exit 0
+
 tee_echo "Generate '${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable'."
 ###############################################################################
 ## 生成 "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" ################
 ###############################################################################
-if [ ! -f "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls" ]; then
-    tee_echo "\tFile \"${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls\" not found!"
+if [ ! -f "${DIR0}/ClashNodeSubcri.snioff.urls" ]; then
+    tee_echo "\tFile \"${DIR0}/ClashNodeSubcri.snioff.urls\" not found!"
     singleton_clean_up 1
 fi
 
@@ -437,7 +508,7 @@ echo -e "\toption custom_domain_dns_server '${directDns}'\n" >> "${DIR0}/ClashNo
 
 declare -a clashConfigNames=()
 declare -a arrSubscri=()
-readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls")
+readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.snioff.urls")
 let subsSize=${#arrSubscri[@]}
 tee_echo "\tsubsSize:${subsSize}"
 
@@ -982,6 +1053,20 @@ function tweezers_original_folder_name() {
     IFS="/" read -r -a my_array <<< "${url127}"
     IFS="$old_ifs"
     echo "${my_array[5]}"
+    return 0
+}
+
+###############################################################################
+############### function: tweezers_pass2subconverter_fname ####################
+###############################################################################
+function tweezers_pass2subconverter_fname() {
+    assert_true "[ $# -eq 1 ]" "There must be one and only one parameter."
+    local url127="${1}"
+    local old_ifs="$IFS"
+    declare -a local my_array
+    IFS="/" read -r -a my_array <<< "${url127}"
+    IFS="$old_ifs"
+    echo "${my_array[6]}"
     return 0
 }
 
