@@ -336,6 +336,8 @@ for (( i=1; i<=5; i++ )); do
             if base64 --decode --ignore-garbage "${targetDisasFPath}" > "${DATA_DIR}/original/${fname}.base64decode.result" 2>/dev/null; then
                 # https://fabianlee.org/2024/06/22/yq-validate-yaml-syntax
                 targetDisasFPath="${DATA_DIR}/original/${fname}.base64decode.result"
+            else
+                rm -f "${DATA_DIR}/original/${fname}.base64decode.result" &> /dev/null
             fi
 
             # If it is a YAML file format ...
