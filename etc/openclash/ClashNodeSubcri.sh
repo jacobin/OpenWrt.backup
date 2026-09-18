@@ -1386,7 +1386,17 @@ function fnFeedbackSubsystem() {
     fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7 "${DIR0}/ClashNodeSubcri.urls.db.Link0sizeOver7"
 
     #//////////////////////////////////////////////////////////////////////
-    # 2. LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
+    # 2. LinkNotWorthTryingOver7
+    if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
+        fnTableExtractPresent4Last7consecutiveDays \
+            "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" \
+            LinkNotWorthTryingOver7 \
+            ${ACCEPTABLE_DAYs}
+    fi
+    fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTryingOver7 "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTryingOver7"
+
+    #//////////////////////////////////////////////////////////////////////
+    # 3. LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
     declare -a local LinkDiscard
     fnLinkDiscard \
         Link404Over7 \
@@ -1395,19 +1405,24 @@ function fnFeedbackSubsystem() {
         LinkDiscard
     fnAddDatetimeMarkAndAppend2Eof LinkDiscard "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard"
 
+    #//////////////////////////////////////////////////////////////////////////
+    # 4. LinkDiscard2 <== (LinkDiscard, LinkNotWorthTryingOver7)
+    declare -a local LinkDiscard2
+    LinkDiscard2=( "${LinkDiscard[@]}" "${LinkNotWorthTryingOver7[@]}" )
+
     #//////////////////////////////////////////////////////////////////////
-    # 3. LinkWorthTrying, LinkNotWorthTrying
+    # 5. LinkWorthTrying, LinkNotWorthTrying
     declare -a local LinkWorthTrying LinkNotWorthTrying
-    # 3.1 arrSubscri
+    # 5.1 arrSubscri
     declare -a local arrSubscri
     readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
     local subsSize=${#arrSubscri[@]}
     assert_true "(( 0 < subsSize ))" "Subscription configuration item count is 0"
 
-    # 3.2 LinkWorthTrying, LinkNotWorthTrying
+    # 5.2 LinkWorthTrying, LinkNotWorthTrying
     fnClashNodeSubcriUrlsSubtractDiscarded \
         arrSubscri \
-        LinkDiscard \
+        LinkDiscard2 \
         LinkWorthTrying \
         LinkNotWorthTrying
 
