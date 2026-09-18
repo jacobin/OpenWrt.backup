@@ -428,7 +428,7 @@ done
 
 tee_echo "Check if the configuration file passes Mihomo's validity check."
 ###############################################################################
-## 生成 "${DATA_DIR}/filterout_snioff/* #########################################
+## 生成 "${DATA_DIR}/filterout_snioff/* #######################################
 ##***************************************************************************##
 ## 之所以有这么一节代码的插入，是因为经过clash/mihomo核心的订阅检测过程之后，##
 ## 开始应用之于运行的时刻，有错误报告说该yaml譬如41.yaml中有sni给出bool类型的##
@@ -564,7 +564,7 @@ cp -f "${DIR0}/ClashNodeSubcri.cfg" "/etc/config/openclash" &> /dev/null
 
 tee_echo "Package redundant config Openclash files. Only 5 external files are left."
 ###############################################################################
-## 打包多余的config openclash文件。外头只留5个 ###############################
+## 打包多余的config openclash文件。外头只留5个 ################################
 ###############################################################################
 tar_old_files "/etc/config/backup.openclash" "/etc/config/openclash." 2 1000
 tar_old_files "${DIR0}/yamls"                "${DIR0}/*.yaml"         2 1000
@@ -587,11 +587,17 @@ tee_echo "Restart Openclash."
 ## 如果启动失败...fuckoffsnioff的细作都干过了，看起来Mihomo的订阅合并有毛病 ###
 ###############################################################################
 if ! pgrep -x "/etc/openclash/clash" > /dev/null; then
-    tee_echo "There is an issue with Mihomo's subscription merging; after fixing the editing error, I restarted it."
+    tee_echo "Perhaps there is an error with Mihomo's subscription merging"
     if grep -q 'sni: off,' "${DIR0}/config/${final1}.yaml" 2>/dev/null; then
         sed -i -e 's/sni: off,/sni: "off",/g' "${DIR0}/config/${final1}.yaml" 2>/dev/null
+        tee_echo "Modify '/etc/config/openclash' to trigger a full restart of Mihomo."
+        sed -i '1i' /etc/config/openclash
+        /etc/init.d/openclash start
+        tee_echo "Restarted it after fixing the configuration editing error."
     fi
-    /etc/init.d/openclash start
+fi
+if ! pgrep -x "/etc/openclash/clash" > /dev/null; then
+    tee_echo "Oh, startup failed."
 fi
 
 tee_echo "Main program finishes running."
