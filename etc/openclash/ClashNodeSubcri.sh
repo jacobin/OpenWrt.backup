@@ -583,6 +583,17 @@ tee_echo "Restart Openclash."
 # "/etc/init.d/openclash" restart
 /usr/share/openclash/openclash.sh > /dev/null 2>&1
 
+###############################################################################
+## 如果启动失败...fuckoffsnioff的细作都干过了，看起来Mihomo的订阅合并有毛病 ###
+###############################################################################
+if ! pgrep -x "/etc/openclash/clash" > /dev/null; then
+    tee_echo "There is an issue with Mihomo's subscription merging; after fixing the editing error, I restarted it."
+    if grep -q 'sni: off,' "${DIR0}/config/${final1}.yaml" 2>/dev/null; then
+        sed -i -e 's/sni: off,/sni: "off",/g' "${DIR0}/config/${final1}.yaml" 2>/dev/null
+    fi
+    /etc/init.d/openclash start
+fi
+
 tee_echo "Main program finishes running."
 ###############################################################################
 ## 主程序运行结束，程序运行单例清场 ###########################################
