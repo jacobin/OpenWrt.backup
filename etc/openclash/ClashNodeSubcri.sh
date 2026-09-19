@@ -1394,8 +1394,8 @@ function fnFeedbackSubsystem() {
             ${ACCEPTABLE_DAYs}
     fi
     fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTryingWithin7 "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTryingWithin7"
-  # echo 111111111111111111111111111111111111111 LinkNotWorthTryingWithin7
-  # printf "%s\n" "${LinkNotWorthTryingWithin7[@]}"
+ #D echo 111111111111111111111111111111111111111 LinkNotWorthTryingWithin7
+ #D printf "%s\n" "${LinkNotWorthTryingWithin7[@]}"
 
     #//////////////////////////////////////////////////////////////////////
     # 3. LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
@@ -1406,15 +1406,15 @@ function fnFeedbackSubsystem() {
         Link0sizeOver7 \
         LinkDiscard
     fnAddDatetimeMarkAndAppend2Eof LinkDiscard "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard"
-  # echo 222222222222222222222222222222222222222 LinkDiscard
-  # printf "%s\n" "${LinkDiscard[@]}"
+ #D echo 222222222222222222222222222222222222222 LinkDiscard
+ #D printf "%s\n" "${LinkDiscard[@]}"
 
     #//////////////////////////////////////////////////////////////////////////
     # 4. LinkDiscard2 <== (LinkDiscard, LinkNotWorthTryingWithin7)
     declare -a local LinkDiscard2
     LinkDiscard2=( "${LinkDiscard[@]}" "${LinkNotWorthTryingWithin7[@]}" )
-  # echo 33333333333333333333333333333333333333 LinkDiscard2
-  # printf "%s\n" "${LinkDiscard2[@]}"
+ #D echo 33333333333333333333333333333333333333 LinkDiscard2
+ #D printf "%s\n" "${LinkDiscard2[@]}"
 
     #//////////////////////////////////////////////////////////////////////
     # 5. LinkWorthTrying, LinkNotWorthTrying
@@ -1434,13 +1434,13 @@ function fnFeedbackSubsystem() {
 
     fnAddDatetimeMarkAndAppend2Eof LinkWorthTrying "${DIR0}/ClashNodeSubcri.urls.db.LinkWorthTrying"
     fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTrying "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying"
-  # echo 44444444444444444444444444444444444444 LinkWorthTrying
-  # printf "%s\n" "${LinkWorthTrying[@]}"
-  # echo 55555555555555555555555555555555555555 LinkNotWorthTrying
-  # printf "%s\n" "${LinkNotWorthTrying[@]}"
+ #D echo 44444444444444444444444444444444444444 LinkWorthTrying
+ #D printf "%s\n" "${LinkWorthTrying[@]}"
+ #D echo 55555555555555555555555555555555555555 LinkNotWorthTrying
+ #D printf "%s\n" "${LinkNotWorthTrying[@]}"
 
     printf '%s\n' "${LinkWorthTrying[@]}" > "${fpathClashNodeSubcriNew}"
-  # exit 0
+ #D exit 0
 }
 
 ###############################################################################
@@ -1577,8 +1577,8 @@ function fnTableExtractPresent4Last7Days() {
             arrBucketNN[ nBucketIdx ]+="|"
         fi
     done
-  # echo AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA arrBucketNN
-  # printf "%s\n" "${arrBucketNN[@]}"
+ #D echo AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA arrBucketNN
+ #D printf "%s\n" "${arrBucketNN[@]}"
 
     local let nBucketNNsize=${#arrBucketNN[@]}
   # if (( nBucketNNsize < ${NN} )); then
@@ -1601,8 +1601,8 @@ function fnTableExtractPresent4Last7Days() {
     done
     # https://stackoverflow.com/questions/13648410/how-can-i-get-unique-values-from-an-array-in-bash
     arrUrlName0=($(echo "${arrUrlName0[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
-  # echo BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB arrUrlName0
-  # printf "%s\n" "${arrUrlName0[@]}"
+ #D echo BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB arrUrlName0
+ #D printf "%s\n" "${arrUrlName0[@]}"
 
     arrNNresult=("${arrUrlName0[@]}")
     return 0
