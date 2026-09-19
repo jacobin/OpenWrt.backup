@@ -1138,44 +1138,12 @@ function fnTableExtractPresent4Last7consecutiveDays() {
     local sTableFPath=$1
     local -n arrNNresult=$2
     local let NN=$3
-    assert_true "! (( ${#arrNNresult[@]} ))" "This is an output parameter; its initial value must be empty."
-
-    assert_true "[ -f ${sTableFPath} ]" "The specified table file must exist."
-    local let nFilesize=$(get_file_size "$sTableFPath")
-    assert_true "(( 20 < ${nFilesize} ))" "The file size is too small; it appears you have tampered with the data."
-
-    declare -i local let j=-1 k=-1
-
-    # arrTableRec_sorted_unique
-    declare -a local arrTableRec
-    declare -a local arrTableRec_sorted_unique
-    readarray -t arrTableRec < ${sTableFPath}
-    assert_true "[ ${#arrTableRec[@]} -gt 0 ]" "The file exists, but it contains zero records; this is not normal."
-    readarray -t arrTableRec_sorted_unique < <(printf "%s\n" "${arrTableRec[@]}" | sort -u)
-    local let nRecords=${#arrTableRec_sorted_unique[@]}
-    assert_true "[ ${nRecords} -gt 0 ]" "The number of records after sorting and deduplication is 0, which is not normal."
-
-    # nNNdaysago
-    local let nNow=$( date '+%s' )
-    local let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-    local let nNNdaysago=$(( nNow - (( ${NN} - 1 )*24*60*60) - (nNow-nTodayYYYYmmdd) ))
 
     # arrNNdatetime, arrNNUrlName
     declare -a local arrNNdatetime
     declare -a local arrNNUrlName
-    for (( k=0, j=$((--nRecords)); 0<=j; j-- )); do
-        local let nThisLen=${#arrTableRec_sorted_unique[j]}
-        assert_true "(( 20 < nThisLen ))" "This record \"${arrTableRec_sorted_unique[j]}\" is too short; it doesn't seem like a legitimate record."
-        local sDatetime=${arrTableRec_sorted_unique[j]: 0: 15 }
-        local sUrlName=${arrTableRec_sorted_unique[j]: 16 }
-        assert_true "is_valid_datetime \"${sDatetime}\"" "The first 15 characters of the \"${arrTableRec_sorted_unique[j]}\" are not a valid timestamp."
-        local sStdDatetime=$(trans2datetimestring "${sDatetime}")
-        local let nDatetime=$(date -d "${sStdDatetime}" +%s)
-        if (( nDatetime < nNNdaysago )); then break; fi
-        arrNNdatetime[k]=${nDatetime}
-        arrNNUrlName[k]=${sUrlName}
-        ((k++))
-    done
+    Bucketing "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName
+    assert_true "[[ ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ]]" "The lengths of these two arrays should be equal."
 
     local let nRecNNsize=${#arrNNUrlName[@]}
     if (( nRecNNsize < ${NN} )); then
@@ -1525,44 +1493,15 @@ function fnTableExtractPresent4Last7Days() {
     local sTableFPath=$1
     local -n arrNNresult=$2
     local let NN=$3
-    assert_true "! (( ${#arrNNresult[@]} ))" "This is an output parameter; its initial value must be empty."
-
-    assert_true "[ -f ${sTableFPath} ]" "The specified table file must exist."
-    local let nFilesize=$(get_file_size "$sTableFPath")
-    assert_true "(( 20 < ${nFilesize} ))" "The file size is too small; it appears you have tampered with the data."
-
-    declare -i local let j=-1 k=-1
-
-    # arrTableRec_sorted_unique
-    declare -a local arrTableRec
-    declare -a local arrTableRec_sorted_unique
-    readarray -t arrTableRec < ${sTableFPath}
-    assert_true "[ ${#arrTableRec[@]} -gt 0 ]" "The file exists, but it contains zero records; this is not normal."
-    readarray -t arrTableRec_sorted_unique < <(printf "%s\n" "${arrTableRec[@]}" | sort -u)
-    local let nRecords=${#arrTableRec_sorted_unique[@]}
-    assert_true "[ ${nRecords} -gt 0 ]" "The number of records after sorting and deduplication is 0, which is not normal."
-
-    # nNNdaysago
-    local let nNow=$( date '+%s' )
-    local let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-    local let nNNdaysago=$(( nNow - (( ${NN} - 1 )*24*60*60) - (nNow-nTodayYYYYmmdd) ))
 
     # arrNNdatetime, arrNNUrlName
     declare -a local arrNNdatetime
     declare -a local arrNNUrlName
-    for (( k=0, j=$((--nRecords)); 0<=j; j-- )); do
-        local let nThisLen=${#arrTableRec_sorted_unique[j]}
-        assert_true "(( 20 < nThisLen ))" "This record \"${arrTableRec_sorted_unique[j]}\" is too short; it doesn't seem like a legitimate record."
-        local sDatetime=${arrTableRec_sorted_unique[j]: 0: 15 }
-        local sUrlName=${arrTableRec_sorted_unique[j]: 16 }
-        assert_true "is_valid_datetime \"${sDatetime}\"" "The first 15 characters of the \"${arrTableRec_sorted_unique[j]}\" are not a valid timestamp."
-        local sStdDatetime=$(trans2datetimestring "${sDatetime}")
-        local let nDatetime=$(date -d "${sStdDatetime}" +%s)
-        if (( nDatetime < nNNdaysago )); then break; fi
-        arrNNdatetime[k]=${nDatetime}
-        arrNNUrlName[k]=${sUrlName}
-        ((k++))
-    done
+    Bucketing "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName
+    assert_true "[[ ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ]]" "The lengths of these two arrays should be equal."
+ #D echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa arrNNUrlName
+ #D printf "%s\n" "${arrNNUrlName[@]}"
+ #D exit 0
 
     local let nRecNNsize=${#arrNNUrlName[@]}
   # if (( nRecNNsize < ${NN} )); then
@@ -1607,6 +1546,53 @@ function fnTableExtractPresent4Last7Days() {
 
     arrNNresult=("${arrUrlName0[@]}")
     return 0
+}
+
+#//////////////////////////////////////////////////////////////////////////////
+#///////////////////////// function: Bucketing ////////////////////////////////
+#//////////////////////////////////////////////////////////////////////////////
+function Bucketing() {
+    local sTableFPath=$1
+    local let NN=$2
+    local -n arrNNdatetime_=$3
+    local -n arrNNUrlName_=$4
+    assert_true "! (( ${#arrNNdatetime_[@]} ))" "Parameter 3 is an output parameter; its initial value must be empty."
+    assert_true "! (( ${#arrNNUrlName_[@]} ))" "Parameter 4 is an output parameter; its initial value must be empty."
+
+    assert_true "[ -f ${sTableFPath} ]" "The specified table file must exist."
+    local let nFilesize=$(get_file_size "$sTableFPath")
+    assert_true "(( 20 < ${nFilesize} ))" "The file size is too small; it appears you have tampered with the data."
+
+    declare -i local let j=-1 k=-1
+
+    # arrTableRec_sorted_unique
+    declare -a local arrTableRec
+    declare -a local arrTableRec_sorted_unique
+    readarray -t arrTableRec < ${sTableFPath}
+    assert_true "[ ${#arrTableRec[@]} -gt 0 ]" "The file exists, but it contains zero records; this is not normal."
+    readarray -t arrTableRec_sorted_unique < <(printf "%s\n" "${arrTableRec[@]}" | sort -u)
+    local let nRecords=${#arrTableRec_sorted_unique[@]}
+    assert_true "[ ${nRecords} -gt 0 ]" "The number of records after sorting and deduplication is 0, which is not normal."
+
+    # nNNdaysago
+    local let nNow=$( date '+%s' )
+    local let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
+    local let nNNdaysago=$(( nNow - (( ${NN} - 1 )*24*60*60) - (nNow-nTodayYYYYmmdd) ))
+
+    # arrNNdatetime_, arrNNUrlName_
+    for (( k=0, j=$((--nRecords)); 0<=j; j-- )); do
+        local let nThisLen=${#arrTableRec_sorted_unique[j]}
+        assert_true "(( 20 < nThisLen ))" "This record \"${arrTableRec_sorted_unique[j]}\" is too short; it doesn't seem like a legitimate record."
+        local sDatetime=${arrTableRec_sorted_unique[j]: 0: 15 }
+        local sUrlName=${arrTableRec_sorted_unique[j]: 16 }
+        assert_true "is_valid_datetime \"${sDatetime}\"" "The first 15 characters of the \"${arrTableRec_sorted_unique[j]}\" are not a valid timestamp."
+        local sStdDatetime=$(trans2datetimestring "${sDatetime}")
+        local let nDatetime=$(date -d "${sStdDatetime}" +%s)
+        if (( nDatetime < nNNdaysago )); then break; fi
+        arrNNdatetime_[k]=${nDatetime}
+        arrNNUrlName_[k]=${sUrlName}
+        ((k++))
+    done
 }
 
 ###############################################################################
