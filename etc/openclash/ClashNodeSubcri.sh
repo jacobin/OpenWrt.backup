@@ -1388,7 +1388,7 @@ function fnFeedbackSubsystem() {
     #//////////////////////////////////////////////////////////////////////
     # 2. LinkNotWorthTryingWithin7
     if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
-        fnTableExtractPresent4Last7consecutiveDays \
+        fnTableExtractPresent4Last7Days \
             "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" \
             LinkNotWorthTryingWithin7 \
             ${ACCEPTABLE_DAYs}
@@ -1505,6 +1505,90 @@ function _DEBUG() {
 # #Increment variable val by 1
 # let va++
 # echo 'new value:'$va
+
+###############################################################################
+############ function: fnTableExtractPresent4Last7Days ########################
+###############################################################################
+function fnTableExtractPresent4Last7Days() {
+    local sTableFPath=$1
+    local -n arrNNresult=$2
+    local let NN=$3
+    assert_true "! (( ${#arrNNresult[@]} ))" "This is an output parameter; its initial value must be empty."
+
+    assert_true "[ -f ${sTableFPath} ]" "The specified table file must exist."
+    local let nFilesize=$(get_file_size "$sTableFPath")
+    assert_true "(( 20 < ${nFilesize} ))" "The file size is too small; it appears you have tampered with the data."
+
+    declare -i local let j=-1 k=-1
+
+    # arrTableRec_sorted_unique
+    declare -a local arrTableRec
+    declare -a local arrTableRec_sorted_unique
+    readarray -t arrTableRec < ${sTableFPath}
+    assert_true "[ ${#arrTableRec[@]} -gt 0 ]" "The file exists, but it contains zero records; this is not normal."
+    readarray -t arrTableRec_sorted_unique < <(printf "%s\n" "${arrTableRec[@]}" | sort -u)
+    local let nRecords=${#arrTableRec_sorted_unique[@]}
+    assert_true "[ ${nRecords} -gt 0 ]" "The number of records after sorting and deduplication is 0, which is not normal."
+
+    # nNNdaysago
+    local let nNow=$( date '+%s' )
+    local let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
+    local let nNNdaysago=$(( nNow - (( ${NN} - 1 )*24*60*60) - (nNow-nTodayYYYYmmdd) ))
+
+    # arrNNdatetime, arrNNUrlName
+    declare -a local arrNNdatetime
+    declare -a local arrNNUrlName
+    for (( k=0, j=$((--nRecords)); 0<=j; j-- )); do
+        local let nThisLen=${#arrTableRec_sorted_unique[j]}
+        assert_true "(( 20 < nThisLen ))" "This record \"${arrTableRec_sorted_unique[j]}\" is too short; it doesn't seem like a legitimate record."
+        local sDatetime=${arrTableRec_sorted_unique[j]: 0: 15 }
+        local sUrlName=${arrTableRec_sorted_unique[j]: 16 }
+        assert_true "is_valid_datetime \"${sDatetime}\"" "The first 15 characters of the \"${arrTableRec_sorted_unique[j]}\" are not a valid timestamp."
+        local sStdDatetime=$(trans2datetimestring "${sDatetime}")
+        local let nDatetime=$(date -d "${sStdDatetime}" +%s)
+        if (( nDatetime < nNNdaysago )); then break; fi
+        arrNNdatetime[k]=${nDatetime}
+        arrNNUrlName[k]=${sUrlName}
+        ((k++))
+    done
+
+    local let nRecNNsize=${#arrNNUrlName[@]}
+    if (( nRecNNsize < ${NN} )); then
+        return 1
+    fi
+
+    # arrBucketNN
+    declare -a local arrBucketNN
+    for (( j=0; j<nRecNNsize; j++ )); do
+        local let nBucketIdx=$(( ( arrNNdatetime[j] - nNNdaysago ) / (24*60*60) ))
+        if (( 0 <= nBucketIdx )); then
+            arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
+            arrBucketNN[ nBucketIdx ]+="|"
+        fi
+    done
+
+    local let nBucketNNsize=${#arrBucketNN[@]}
+  # if (( nBucketNNsize < ${NN} )); then
+  #     return 1
+  # fi
+  #
+  # assert_true "(( ${NN} == nBucketNNsize ))" "The number of buckets $nBucketNNsize should be equal to ${NN}."
+  #
+  # # There are only ${NN} buckets, and each bucket contains one or more urls, with each url separated by a '|'.
+    # arrUrlName0
+    declare -a local arrUrlName0
+    arrUrlName0=(${arrBucketNN[0]//|/ })
+    for (( k=1; k<nBucketNNsize; k++ )); do
+        declare -a local arrUrlNameK
+        arrUrlNameK=( ${arrBucketNN[k]//|/ })
+        declare -a local arrUrlNameIntersetResult
+        ArrayIntersect arrUrlName0 arrUrlNameK arrUrlNameIntersetResult
+        arrUrlName0=("${arrUrlNameIntersetResult[@]}")
+    done
+
+    arrNNresult=("${arrUrlName0[@]}")
+    return 0
+}
 
 ###############################################################################
 ##################################### END #####################################
