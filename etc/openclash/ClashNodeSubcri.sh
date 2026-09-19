@@ -1386,14 +1386,14 @@ function fnFeedbackSubsystem() {
     fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7 "${DIR0}/ClashNodeSubcri.urls.db.Link0sizeOver7"
 
     #//////////////////////////////////////////////////////////////////////
-    # 2. LinkNotWorthTryingOver7
+    # 2. LinkNotWorthTryingWithin7
     if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
         fnTableExtractPresent4Last7consecutiveDays \
             "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" \
-            LinkNotWorthTryingOver7 \
+            LinkNotWorthTryingWithin7 \
             ${ACCEPTABLE_DAYs}
     fi
-    fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTryingOver7 "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTryingOver7"
+    fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTryingWithin7 "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTryingWithin7"
 
     #//////////////////////////////////////////////////////////////////////
     # 3. LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
@@ -1406,9 +1406,9 @@ function fnFeedbackSubsystem() {
     fnAddDatetimeMarkAndAppend2Eof LinkDiscard "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard"
 
     #//////////////////////////////////////////////////////////////////////////
-    # 4. LinkDiscard2 <== (LinkDiscard, LinkNotWorthTryingOver7)
+    # 4. LinkDiscard2 <== (LinkDiscard, LinkNotWorthTryingWithin7)
     declare -a local LinkDiscard2
-    LinkDiscard2=( "${LinkDiscard[@]}" "${LinkNotWorthTryingOver7[@]}" )
+    LinkDiscard2=( "${LinkDiscard[@]}" "${LinkNotWorthTryingWithin7[@]}" )
 
     #//////////////////////////////////////////////////////////////////////
     # 5. LinkWorthTrying, LinkNotWorthTrying
