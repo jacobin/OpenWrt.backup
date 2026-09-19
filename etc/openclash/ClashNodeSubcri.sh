@@ -1582,9 +1582,12 @@ function fnTableExtractPresent4Last7Days() {
         declare -a local arrUrlNameK
         arrUrlNameK=( ${arrBucketNN[k]//|/ })
         declare -a local arrUrlNameIntersetResult
-        ArrayIntersect arrUrlName0 arrUrlNameK arrUrlNameIntersetResult
+  #     ArrayIntersect arrUrlName0 arrUrlNameK arrUrlNameIntersetResult
+        arrUrlNameIntersetResult=( "${arrUrlName0[@]}" "${arrUrlNameK[@]}" )
         arrUrlName0=("${arrUrlNameIntersetResult[@]}")
     done
+    # https://stackoverflow.com/questions/13648410/how-can-i-get-unique-values-from-an-array-in-bash
+    arrUrlName0=($(echo "${arrUrlName0[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
 
     arrNNresult=("${arrUrlName0[@]}")
     return 0
