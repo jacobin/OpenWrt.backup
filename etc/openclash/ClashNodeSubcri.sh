@@ -1559,6 +1559,7 @@ function Bucketing() {
     assert_true "! (( ${#arrNNdatetime_[@]} ))" "Parameter 3 is an output parameter; its initial value must be empty."
     assert_true "! (( ${#arrNNUrlName_[@]} ))" "Parameter 4 is an output parameter; its initial value must be empty."
 
+    assert_true "[[ 0 < ${NN} ]]" "The specified number of days must be greater than 0."
     assert_true "[ -f ${sTableFPath} ]" "The specified table file must exist."
     local let nFilesize=$(get_file_size "$sTableFPath")
     assert_true "(( 20 < ${nFilesize} ))" "The file size is too small; it appears you have tampered with the data."
