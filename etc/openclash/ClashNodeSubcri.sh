@@ -1564,9 +1564,9 @@ function fnTableExtractPresent4Last7Days() {
     done
 
     local let nRecNNsize=${#arrNNUrlName[@]}
-    if (( nRecNNsize < ${NN} )); then
-        return 1
-    fi
+  # if (( nRecNNsize < ${NN} )); then
+  #     return 1
+  # fi
 
     # arrBucketNN
     declare -a local arrBucketNN
