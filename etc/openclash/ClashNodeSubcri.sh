@@ -1386,6 +1386,7 @@ function fnFeedbackSubsystem() {
     fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7 "${DIR0}/ClashNodeSubcri.urls.db.Link0sizeOver7"
 
     #//////////////////////////////////////////////////////////////////////
+    declare -a local LinkNotWorthTryingWithin7
     # 2. LinkNotWorthTryingWithin7
     if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
         fnTableExtractPresent4Last7Days \
