@@ -1142,7 +1142,7 @@ function fnTableExtractPresent4Last7consecutiveDays() {
     # arrNNdatetime, arrNNUrlName
     declare -a local arrNNdatetime
     declare -a local arrNNUrlName
-    Bucketing "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName
+    _bucketing "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName
     assert_true "[[ ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ]]" "The lengths of these two arrays should be equal."
 
     local let nRecNNsize=${#arrNNUrlName[@]}
@@ -1497,7 +1497,7 @@ function fnTableExtractPresent4Last7Days() {
     # arrNNdatetime, arrNNUrlName
     declare -a local arrNNdatetime
     declare -a local arrNNUrlName
-    Bucketing "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName
+    _bucketing "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName
     assert_true "[[ ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ]]" "The lengths of these two arrays should be equal."
  #D echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa arrNNUrlName
  #D printf "%s\n" "${arrNNUrlName[@]}"
@@ -1551,7 +1551,7 @@ function fnTableExtractPresent4Last7Days() {
 #//////////////////////////////////////////////////////////////////////////////
 #///////////////////////// function: Bucketing ////////////////////////////////
 #//////////////////////////////////////////////////////////////////////////////
-function Bucketing() {
+function _bucketing() {
     local sTableFPath=$1
     local let NN=$2
     local -n arrNNdatetime_=$3
