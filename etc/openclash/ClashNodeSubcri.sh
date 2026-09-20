@@ -1353,9 +1353,8 @@ function fnFeedbackSubsystem() {
     fi
     fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7 "${DIR0}/ClashNodeSubcri.urls.db.Link0sizeOver7"
 
-    #//////////////////////////////////////////////////////////////////////
+    # 1.4 LinkNotWorthTryingWithin7
     declare -a local LinkNotWorthTryingWithin7
-    # 2. LinkNotWorthTryingWithin7
     if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
         fnTableExtractPresent4Last7Days \
             "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" \
@@ -1367,7 +1366,8 @@ function fnFeedbackSubsystem() {
  #D printf "%s\n" "${LinkNotWorthTryingWithin7[@]}"
 
     #//////////////////////////////////////////////////////////////////////
-    # 3. LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
+    # 2. LinkDiscard2 <== [(Link404Over7, LinkInactiveOver7, Link0sizeOver7), LinkNotWorthTryingWithin7]
+    # 2.1 LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
     declare -a local LinkDiscard
     fnLinkDiscard \
         Link404Over7 \
@@ -1379,22 +1379,24 @@ function fnFeedbackSubsystem() {
  #D printf "%s\n" "${LinkDiscard[@]}"
 
     #//////////////////////////////////////////////////////////////////////////
-    # 4. LinkDiscard2 <== (LinkDiscard, LinkNotWorthTryingWithin7)
+    # 2.2. LinkDiscard2 <== (LinkDiscard, LinkNotWorthTryingWithin7)
     declare -a local LinkDiscard2
     LinkDiscard2=( "${LinkDiscard[@]}" "${LinkNotWorthTryingWithin7[@]}" )
+    LinkDiscard2=($(echo "${LinkDiscard2[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+    fnAddDatetimeMarkAndAppend2Eof LinkDiscard2 "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard2"
  #D echo 33333333333333333333333333333333333333 LinkDiscard2
  #D printf "%s\n" "${LinkDiscard2[@]}"
 
     #//////////////////////////////////////////////////////////////////////
-    # 5. LinkWorthTrying, LinkNotWorthTrying
+    # 3. LinkWorthTrying, LinkNotWorthTrying
     declare -a local LinkWorthTrying LinkNotWorthTrying
-    # 5.1 arrSubscri
+    # 3.1 arrSubscri
     declare -a local arrSubscri
     readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
     local subsSize=${#arrSubscri[@]}
     assert_true "(( 0 < subsSize ))" "Subscription configuration item count is 0"
 
-    # 5.2 LinkWorthTrying, LinkNotWorthTrying
+    # 3.2 LinkWorthTrying, LinkNotWorthTrying
     fnClashNodeSubcriUrlsSubtractDiscarded \
         arrSubscri \
         LinkDiscard2 \
@@ -1549,7 +1551,7 @@ function fnTableExtractPresent4Last7Days() {
 }
 
 #//////////////////////////////////////////////////////////////////////////////
-#///////////////////////// function: Bucketing ////////////////////////////////
+#///////////////////////// function: _bucketing ///////////////////////////////
 #//////////////////////////////////////////////////////////////////////////////
 function _bucketing() {
     local sTableFPath=$1
