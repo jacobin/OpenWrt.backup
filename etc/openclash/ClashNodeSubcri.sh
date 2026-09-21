@@ -1415,11 +1415,11 @@ function fnFeedbackSubsystem() {
 }
 
 ###############################################################################
-################## function: trans2datetimestring #############################
+################## function: trans2stddatetimestring #############################
 ###############################################################################
-function trans2datetimestring() {
+function trans2stddatetimestring() {
     local s="$1"
-    assert_true "((15 <= ${#s}))" "trans2datetimestring() cannot accept strings shorter than 15."
+    assert_true "((15 <= ${#s}))" "trans2stddatetimestring() cannot accept strings shorter than 15."
     local sDatetime="${s:0:4}-${s:4:2}-${s:6:2} ${s:9:2}:${s:11:2}:${s:13:2}"
     echo ${sDatetime}
 }
@@ -1589,7 +1589,7 @@ function _bucketing() {
         local sDatetime=${arrTableRec_sorted_unique[j]: 0: 15 }
         local sUrlName=${arrTableRec_sorted_unique[j]: 16 }
         assert_true "is_valid_datetime \"${sDatetime}\"" "The first 15 characters of the \"${arrTableRec_sorted_unique[j]}\" are not a valid timestamp."
-        local sStdDatetime=$(trans2datetimestring "${sDatetime}")
+        local sStdDatetime=$(trans2stddatetimestring "${sDatetime}")
         local let nDatetime=$(date -d "${sStdDatetime}" +%s)
         if (( nDatetime < nNNdaysago )); then break; fi
         arrNNdatetime_[k]=${nDatetime}
