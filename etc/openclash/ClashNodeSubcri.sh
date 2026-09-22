@@ -15,20 +15,19 @@
 EOF
 
 ###############################################################################
-## 置函数于脚本文件的末尾 #####################################################
+## baseName ###################################################################
 ###############################################################################
-# https://unix.stackexchange.com/questions/724122/is-there-a-way-to-put-helper-functions-at-the-end-of-a-script-file#:~:text=Another%20way%20to%20do%20this,entire%20bash%20script%20in%20functions?
-source <(sed '1,/^# HELPER FUNCTIONS #$/d' "$0")
+# https://stackoverflow.com/questions/2664740/extract-file-basename-without-path-and-extension-in-bash
+baseName=$(basename "$0"); baseName="${baseName%.*}"
 
 ###############################################################################
 ## 程序运行单例 ###############################################################
 ###############################################################################
 # https://stackoverflow.com/questions/6870221/is-there-any-mutex-semaphore-mechanism-in-shell-scripts
 # https://breezetemple.github.io/2018/07/19/shell-flock/
-F_LOCK=/var/tmp/$(basename "$0").lock
-F_PID=/var/tmp/$(basename "$0").pid
+F_LOCK=/var/tmp/${baseName}.lock
+F_PID=/var/tmp/${baseName}.pid
 exec 3> ${F_LOCK}
-if ! is_not_running; then exit 1; fi
 
 ###############################################################################
 ## 全局变量 ###################################################################
@@ -48,6 +47,19 @@ let SLICE_SIZE=20
 let SUBCONVERTER_SLICE_SIZE=5
 
 declare -i let i=-1 j=-2
+
+
+###############################################################################
+## 置函数于脚本文件的末尾 #####################################################
+###############################################################################
+# https://unix.stackexchange.com/questions/724122/is-there-a-way-to-put-helper-functions-at-the-end-of-a-script-file#:~:text=Another%20way%20to%20do%20this,entire%20bash%20script%20in%20functions?
+(sed '1,/^# HELPER FUNCTIONS #$/d' "$0") > $(dirname "$(readlink -f "$0")")/${baseName}.helper_function.sh
+source <(sed '1,/^# HELPER FUNCTIONS #$/d' "$0")
+
+###############################################################################
+## is_not_running() ###########################################################
+###############################################################################
+if ! is_not_running; then exit 1; fi
 
 tee_echo "Try to synchronize and calibrate time from WAN"
 ###############################################################################
@@ -97,10 +109,10 @@ for dir in "${existing_dirs[@]}"; do
     fi
 done
 
-declare -a existing_files=("${DIR0}/ClashNodeSubcri.urls"
-                            "${DIR0}/ClashNodeSubcri.etc_config_openclash.const"
-                            "${DIR0}/ClashNodeSubcri.sliceyaml.py"
-                            "${DIR0}/ClashNodeSubcri.SortCsvByFiled.py")
+declare -a existing_files=("${DIR0}/${baseName}.urls"
+                            "${DIR0}/${baseName}.etc_config_openclash.const"
+                            "${DIR0}/${baseName}.sliceyaml.py"
+                            "${DIR0}/${baseName}.SortCsvByFiled.py")
 for fiLe in "${existing_files[@]}"; do
     if [ ! -f "${fiLe}" ]; then
         tee_echo "\tFile \"${fiLe}\" not found!"
@@ -108,9 +120,9 @@ for fiLe in "${existing_files[@]}"; do
     fi
 done
 
-file_hash=$(sha256sum "${DIR0}/ClashNodeSubcri.etc_config_openclash.const" 2>/dev/null | awk '{print $1}')
+file_hash=$(sha256sum "${DIR0}/${baseName}.etc_config_openclash.const" 2>/dev/null | awk '{print $1}')
 if [ "$file_hash" != "2c92ca6c301f7a927821002bfc43ba26988d314ef869645c6b3e2a29a6ab44f1" ]; then
-    tee_echo "\tThe SHA256 of file \"${DIR0}/ClashNodeSubcri.etc_config_openclash.const\" is incorrect, please check"
+    tee_echo "\tThe SHA256 of file \"${DIR0}/${baseName}.etc_config_openclash.const\" is incorrect, please check"
     singleton_clean_up 1
 fi
 
@@ -147,18 +159,18 @@ let nNNdaysago=$(( nNow - (( ${ACCEPTABLE_DAYs} - 1 )*24*60*60) - (nNow-nTodayYY
 
 # nLastFeedbackDatetime
 let nLastFeedbackDatetime=0
-if [ -f "${DIR0}/ClashNodeSubcri.urls.constrict" ]; then
-	let nLastFeedbackDatetime=$( date -d "$(date -r """${DIR0}/ClashNodeSubcri.urls.constrict""" '+%Y-%m-%d %H:%M:%S')" +%s )
+if [ -f "${DIR0}/${baseName}.urls.constrict" ]; then
+	let nLastFeedbackDatetime=$( date -d "$(date -r """${DIR0}/${baseName}.urls.constrict""" '+%Y-%m-%d %H:%M:%S')" +%s )
 fi
 
 # nSubUrlsFileDatetime
-let nSubUrlsFileDatetime=$( date -d "$(date -r """${DIR0}/ClashNodeSubcri.urls""" '+%Y-%m-%d %H:%M:%S')" +%s )
+let nSubUrlsFileDatetime=$( date -d "$(date -r """${DIR0}/${baseName}.urls""" '+%Y-%m-%d %H:%M:%S')" +%s )
 
-# ${DIR0}/ClashNodeSubcri.constrict
-if [ ! -f "${DIR0}/ClashNodeSubcri.constrict" ] || (( nLastFeedbackDatetime < nNNdaysago )) || (( (nNow - nSubUrlsFileDatetime) < 60 )); then
-    fnFeedbackSubsystem "${DIR0}/ClashNodeSubcri.urls.constrict"
-    python "${DIR0}/ClashNodeSubcri.SortCsvByFiled.py" "-i${DIR0}/ClashNodeSubcri.urls.constrict" "-o${DIR0}/ClashNodeSubcri.urls.constrict" -x1
-    assert_true "[ -f \"${DIR0}/ClashNodeSubcri.urls.constrict\" ]" "The generated file \"${DIR0}/ClashNodeSubcri.urls.constrict\" does not exist."
+# ${DIR0}/${baseName}.constrict
+if [ ! -f "${DIR0}/${baseName}.constrict" ] || (( nLastFeedbackDatetime < nNNdaysago )) || (( (nNow - nSubUrlsFileDatetime) < 60 )); then
+    fnFeedbackSubsystem "${DIR0}/${baseName}.urls.constrict"
+    python "${DIR0}/${baseName}.SortCsvByFiled.py" "-i${DIR0}/${baseName}.urls.constrict" "-o${DIR0}/${baseName}.urls.constrict" -x1
+    assert_true "[ -f \"${DIR0}/${baseName}.urls.constrict\" ]" "The generated file \"${DIR0}/${baseName}.urls.constrict\" does not exist."
 fi
 
 tee_echo "Check for duplicate 'configuration names'"
@@ -167,7 +179,7 @@ tee_echo "Check for duplicate 'configuration names'"
 ###############################################################################
 declare -a clashConfigNames=()
 declare -a arrSubscri=()
-readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.urls.constrict" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
+readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.urls.constrict" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
 let subsSize=${#arrSubscri[@]}
 if (( subsSize <= 0 )); then
     tee_echo "\tSubscription configuration item count is 0"
@@ -201,7 +213,7 @@ declare -A uniqClashConfigNames=()
 for ip in "${clashConfigNames[@]}"; do uniqClashConfigNames[$ip]=0; done
 if (( ${#uniqClashConfigNames[@]} < ${#clashConfigNames[@]} )); then
     tee_echo "\tItems with counts (duplicates have count > 1):"
-    printf "%s\n" "${clashConfigNames[@]}" | sort | uniq -c | sed '/^      1 /d' | sed 's/^/\t /' | tee -a "${DIR0}/ClashNodeSubcri.log"
+    printf "%s\n" "${clashConfigNames[@]}" | sort | uniq -c | sed '/^      1 /d' | sed 's/^/\t /' | tee -a "${DIR0}/${baseName}.log"
     singleton_clean_up 1
 fi
 unset clashConfigNames
@@ -266,21 +278,21 @@ tee_echo "Download the subscribed raw data to local ${DATA_DIR}/original after a
 ## 最多尝试5次，把所订阅的原始的数据下载到本地${DATA_DIR}/original ############
 ###############################################################################
 # https://stackoverflow.com/questions/62021429/why-does-command-line-rm-not-accept-quotation-marks-for-directories-with-spaces
-if [ -f "${DIR0}/ClashNodeSubcri.loop"6 ]; then
-    mv -f "${DIR0}/ClashNodeSubcri.loop"6 "${DIR0}/loop6.bak/ClashNodeSubcri.loop6.$(date +%Y%m%d_%H%M%S)" &> /dev/null
-    tar_old_files "${DIR0}/loop6.bak/ClashNodeSubcri.backup.loop6" "${DIR0}/loop6.bak/ClashNodeSubcri.loop6" 2 1000
+if [ -f "${DIR0}/${baseName}.loop"6 ]; then
+    mv -f "${DIR0}/${baseName}.loop"6 "${DIR0}/loop6.bak/${baseName}.loop6.$(date +%Y%m%d_%H%M%S)" &> /dev/null
+    tar_old_files "${DIR0}/loop6.bak/${baseName}.backup.loop6" "${DIR0}/loop6.bak/${baseName}.loop6" 2 1000
 fi
-rm -f "${DIR0}/ClashNodeSubcri.loop"? > /dev/null 2>&1
-cp -f "${DIR0}/ClashNodeSubcri.urls.constrict" "${DIR0}/ClashNodeSubcri.loop1" &> /dev/null
-rm "${DIR0}/ClashNodeSubcri.127.urls" > /dev/null 2>&1
+rm -f "${DIR0}/${baseName}.loop"? > /dev/null 2>&1
+cp -f "${DIR0}/${baseName}.urls.constrict" "${DIR0}/${baseName}.loop1" &> /dev/null
+rm "${DIR0}/${baseName}.127.urls" > /dev/null 2>&1
 for (( i=1; i<=5; i++ )); do
     tee_echo "Loop${i}"
-    if ! [ -f "${DIR0}/ClashNodeSubcri.loop$i" ]; then break; fi
+    if ! [ -f "${DIR0}/${baseName}.loop$i" ]; then break; fi
 
     # https://unix.stackexchange.com/questions/485221/read-lines-into-array-one-element-per-line-using-bash
     # https://www.google.com/search?q=bash+read+line+except+comment&pws=0&gl=us&gws_rd=cr
     declare -a arrSubscri=()
-    readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.loop$i" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d' )
+    readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.loop$i" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d' )
     let subsSize=${#arrSubscri[@]}
     if (( subsSize <= 0 )); then break; fi
 
@@ -297,20 +309,20 @@ for (( i=1; i<=5; i++ )); do
         tee_echo2 "$(GetTitle ${fname} 60)"
 
         if ! wget --no-check-certificate --spider "${url}" 2>/dev/null; then
-            echo ${url},${fname} >> "${DIR0}/ClashNodeSubcri.loop$j"
+            echo ${url},${fname} >> "${DIR0}/${baseName}.loop$j"
             continue
         fi
 
         wget --no-check-certificate --dns-timeout=10 --connect-timeout=10 --read-timeout=30 --tries=2 "${url}" -O"${DATA_DIR}/original/${fname}.tmp"
         if ! [[ $? -eq 0 && -f "${DATA_DIR}/original/${fname}.tmp" ]]; then
-            echo ${url},${fname} >> "${DIR0}/ClashNodeSubcri.loop$j"
+            echo ${url},${fname} >> "${DIR0}/${baseName}.loop$j"
             continue
         fi
 
         let thisFileSize=$(get_file_size "${DATA_DIR}/original/${fname}.tmp")
         if ! [[ 0 < ${thisFileSize} ]]; then
             tee_echo "\tThe size of URL \"${url}\" is zero"
-            echo "$(date +%Y%m%d_%H%M%S) ${url},${fname}" >> "${DIR0}/ClashNodeSubcri.0size"
+            echo "$(date +%Y%m%d_%H%M%S) ${url},${fname}" >> "${DIR0}/${baseName}.0size"
             continue
         fi
 
@@ -323,7 +335,7 @@ for (( i=1; i<=5; i++ )); do
             [[ $((nowDatetime - oldFiletime)) -gt $((${ACCEPTABLE_DAYs}*24*60*60)) ]] && bTooOldFile=true || bTooOldFile=false
             if [[ "${bTooOldFile}" == "true" ]]; then
                 tee_echo "\tFile \"${url}\" is too old and has NOT been updated for more than ${ACCEPTABLE_DAYs} days"
-                echo "$(date +%Y%m%d_%H%M%S) ${url},${fname}" >> "${DIR0}/ClashNodeSubcri.oldsubs"
+                echo "$(date +%Y%m%d_%H%M%S) ${url},${fname}" >> "${DIR0}/${baseName}.oldsubs"
                 continue
             fi
         else
@@ -331,7 +343,7 @@ for (( i=1; i<=5; i++ )); do
         fi
 
         if [[ -z "${tobe_sliced}" ]]; then
-            echo "${WEB_ORIG_DAT}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.urls"
+            echo "${WEB_ORIG_DAT}/${fname},${fname}" >> "${DIR0}/${baseName}.127.urls"
         else
             targetDisasFPath="${DATA_DIR}/original/${fname}"
 
@@ -348,11 +360,11 @@ for (( i=1; i<=5; i++ )); do
             if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${targetDisasFPath}" &>/dev/null; then
                 # Slicing the node data of yaml
                 declare -a arrSliceYaml=()
-                readarray -t arrSliceYaml < <( python "${DIR0}/ClashNodeSubcri.sliceyaml.py" "-i${targetDisasFPath}" "-o${DATA_DIR}/slice" "-f${fname}" -z${SLICE_SIZE} )
+                readarray -t arrSliceYaml < <( python "${DIR0}/${baseName}.sliceyaml.py" "-i${targetDisasFPath}" "-o${DATA_DIR}/slice" "-f${fname}" -z${SLICE_SIZE} )
                 if [ -f "${DATA_DIR}/slice/${arrSliceYaml[0]}" ]; then
                     for aSlice in "${arrSliceYaml[@]}"; do
                         assert_true "[ -f \"${DATA_DIR}/slice/${aSlice}\" ]" "File \"${DATA_DIR}/slice/${aSlice}\" that should exist does not exist"
-                        echo "${WEB_SLIC_DAT}/${aSlice},${aSlice}" >> "${DIR0}/ClashNodeSubcri.127.urls"
+                        echo "${WEB_SLIC_DAT}/${aSlice},${aSlice}" >> "${DIR0}/${baseName}.127.urls"
                     done
                 fi
             else
@@ -366,7 +378,7 @@ for (( i=1; i<=5; i++ )); do
                     if ! [[ ${v2rayLine} == \#* || ${v2rayLine} == "ss://"* ]]; then
                         if (( lineNo % ${SLICE_SIZE} == 1 )); then
                             newSubFName=${fname}.$(printf %05d ${fileNo}).txt
-                            echo "${WEB_SLIC_DAT}/${newSubFName},${newSubFName}" >> "${DIR0}/ClashNodeSubcri.127.urls"
+                            echo "${WEB_SLIC_DAT}/${newSubFName},${newSubFName}" >> "${DIR0}/${baseName}.127.urls"
                             rm -f "${DATA_DIR}/slice/${newSubFName}" &> /dev/null
                             echo "$v2rayLine" > "${DATA_DIR}/slice/${newSubFName}"
                             ((fileNo++))
@@ -387,9 +399,9 @@ tee_echo "Convert data files that 'cannot be subscribed to via Openclash' to ${D
 ###############################################################################
 ## 把哪些『不能“通过Openclash进行订阅”』的数据文件进行base64的编码转换到${DATA_DIR}/pass2subconverter
 ###############################################################################
-rm -f "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls" > /dev/null 2>&1
+rm -f "${DIR0}/${baseName}.127.pass2subconverter.urls" > /dev/null 2>&1
 declare -a arrSubscri=()
-readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.urls")
+readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.127.urls")
 
 if [ ${#arrSubscri[@]} -le 0 ]; then
     tee_echo "\tNo valid download, program exits.!"
@@ -423,7 +435,7 @@ for subscri in "${arrSubscri[@]}"; do
         fi
     fi
     assert_true "[[ $? -eq 0 ]]" "Operation \"${operation}\" on file \"${DATA_DIR}/${folderName}/${fname}\" failed"
-    echo "${WEB_PASS2SUBCONVERTER}/${fname},${fname}" >> "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls"
+    echo "${WEB_PASS2SUBCONVERTER}/${fname},${fname}" >> "${DIR0}/${baseName}.127.pass2subconverter.urls"
 done
 
 tee_echo "Check if the configuration file passes Mihomo's validity check."
@@ -439,20 +451,20 @@ tee_echo "Check if the configuration file passes Mihomo's validity check."
 # cp -f "/xyH.tmp/aaa/H087-freev2.txt" "/www/Hxy/openclash/pass2subconverter/H087-freev2.txt"
 # cp -f "/xyH.tmp/aaa/H120-emzclash.txt" "/www/Hxy/openclash/pass2subconverter/H120-emzclash.txt"
 # read -p "Press enter to continue"
-if [ ! -f "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls" ]; then
-    tee_echo "\tFile \"${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls\" not found!"
+if [ ! -f "${DIR0}/${baseName}.127.pass2subconverter.urls" ]; then
+    tee_echo "\tFile \"${DIR0}/${baseName}.127.pass2subconverter.urls\" not found!"
     singleton_clean_up 1
 fi
 
 declare -a arrSubscri=()
-readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.127.pass2subconverter.urls")
+readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.127.pass2subconverter.urls")
 let subsSize=${#arrSubscri[@]}
 if [ ${subsSize} -le 0 ]; then
     tee_echo "\tThe number of PASS2SUBCONVERTERS is zero.!"
     singleton_clean_up 1
 fi
 
-rm "${DIR0}/ClashNodeSubcri.snioff.urls" > /dev/null 2>&1
+rm "${DIR0}/${baseName}.snioff.urls" > /dev/null 2>&1
 for (( j=0; j<${subsSize}; j++ )); do
     # subscri
     subscri=${arrSubscri[$j]}
@@ -485,30 +497,30 @@ for (( j=0; j<${subsSize}; j++ )); do
     fi
 
     if ${beEdited}; then
-        echo "${WEB_FILTEROUT_SNIOFF}/${pass2subfname},${configFNameDotExtension}" >> "${DIR0}/ClashNodeSubcri.snioff.urls"
+        echo "${WEB_FILTEROUT_SNIOFF}/${pass2subfname},${configFNameDotExtension}" >> "${DIR0}/${baseName}.snioff.urls"
     else
-        echo "${subscri}" >> "${DIR0}/ClashNodeSubcri.snioff.urls"
+        echo "${subscri}" >> "${DIR0}/${baseName}.snioff.urls"
     fi
 done
 # # test coding 2/2
 # exit 0
 
-tee_echo "Generate '${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable'."
+tee_echo "Generate '${DIR0}/${baseName}.etc_config_openclash.mutable'."
 ###############################################################################
-## 生成 "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" ################
+## 生成 "${DIR0}/${baseName}.etc_config_openclash.mutable" ####################
 ###############################################################################
-if [ ! -f "${DIR0}/ClashNodeSubcri.snioff.urls" ]; then
-    tee_echo "\tFile \"${DIR0}/ClashNodeSubcri.snioff.urls\" not found!"
+if [ ! -f "${DIR0}/${baseName}.snioff.urls" ]; then
+    tee_echo "\tFile \"${DIR0}/${baseName}.snioff.urls\" not found!"
     singleton_clean_up 1
 fi
 
-rm -f "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" > /dev/null 2>&1
-echo -e "\toption config_path 'PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH'\n" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
-echo -e "\toption custom_domain_dns_server '${directDns}'\n" >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+rm -f "${DIR0}/${baseName}.etc_config_openclash.mutable" > /dev/null 2>&1
+echo -e "\toption config_path 'PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH'\n" >> "${DIR0}/${baseName}.etc_config_openclash.mutable"
+echo -e "\toption custom_domain_dns_server '${directDns}'\n" >> "${DIR0}/${baseName}.etc_config_openclash.mutable"
 
 declare -a clashConfigNames=()
 declare -a arrSubscri=()
-readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.snioff.urls")
+readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.snioff.urls")
 let subsSize=${#arrSubscri[@]}
 tee_echo "\tsubsSize:${subsSize}"
 
@@ -531,13 +543,13 @@ for (( j=0; j<${subsSize}; j++ )); do
     # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
     clashConfigNames[$j]=$(echo "${configFName}" | xargs)
     # https://stackoverflow.com/questions/525872/echo-tab-characters-in-bash-script
-    echo -e "config config_subscribe"                    >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
-    echo -e "\toption sub_ua 'clash.meta'"               >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
-    echo -e "\toption sub_convert '0'"                   >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
-    echo -e "\toption enabled '1'"                       >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
-    echo -e "\toption name '${clashConfigNames[${j}]}'"  >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
-    echo -e "\toption address '${url}'"                  >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
-    echo -e ""                                           >> "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+    echo -e "config config_subscribe"                    >> "${DIR0}/${baseName}.etc_config_openclash.mutable"
+    echo -e "\toption sub_ua 'clash.meta'"               >> "${DIR0}/${baseName}.etc_config_openclash.mutable"
+    echo -e "\toption sub_convert '0'"                   >> "${DIR0}/${baseName}.etc_config_openclash.mutable"
+    echo -e "\toption enabled '1'"                       >> "${DIR0}/${baseName}.etc_config_openclash.mutable"
+    echo -e "\toption name '${clashConfigNames[${j}]}'"  >> "${DIR0}/${baseName}.etc_config_openclash.mutable"
+    echo -e "\toption address '${url}'"                  >> "${DIR0}/${baseName}.etc_config_openclash.mutable"
+    echo -e ""                                           >> "${DIR0}/${baseName}.etc_config_openclash.mutable"
 done
 
 ###############################################################################
@@ -549,18 +561,18 @@ if (( 1 < ${#clashConfigNames[@]} )); then
 fi
 
 ###############################################################################
-sed -i "s#PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH#${DIR0}\/config\/${final1}.yaml#g" "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+sed -i "s#PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH#${DIR0}\/config\/${final1}.yaml#g" "${DIR0}/${baseName}.etc_config_openclash.mutable"
 
 ###############################################################################
-# "${DIR0}/ClashNodeSubcri.cfg"
-rm -f "${DIR0}/ClashNodeSubcri.cfg" &> /dev/null
-cat "${DIR0}/ClashNodeSubcri.etc_config_openclash.const"   >  "${DIR0}/ClashNodeSubcri.cfg"
-cat "${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable" >> "${DIR0}/ClashNodeSubcri.cfg"
+# "${DIR0}/${baseName}.cfg"
+rm -f "${DIR0}/${baseName}.cfg" &> /dev/null
+cat "${DIR0}/${baseName}.etc_config_openclash.const"   >  "${DIR0}/${baseName}.cfg"
+cat "${DIR0}/${baseName}.etc_config_openclash.mutable" >> "${DIR0}/${baseName}.cfg"
 
 ###############################################################################
 # "/etc/config/openclash"
 mv -f "/etc/config/openclash" "/etc/config/openclash.$(date +%Y%m%d_%H%M%S)" &> /dev/null
-cp -f "${DIR0}/ClashNodeSubcri.cfg" "/etc/config/openclash" &> /dev/null
+cp -f "${DIR0}/${baseName}.cfg" "/etc/config/openclash" &> /dev/null
 
 tee_echo "Package redundant config Openclash files. Only 5 external files are left."
 ###############################################################################
@@ -703,7 +715,7 @@ function combine_subscri() {
         local resultOptName="${depth}$((i+1))"
         arrGroup[${i}]="${resultOptName}"
 
-        local fpathMuta="${DIR0}/ClashNodeSubcri.etc_config_openclash.mutable"
+        local fpathMuta="${DIR0}/${baseName}.etc_config_openclash.mutable"
         echo -e "config config_subscribe"          >> ${fpathMuta}
         echo -e "\toption sub_ua 'clash.meta'"     >> ${fpathMuta}
         echo -e "\toption sub_convert '0'"         >> ${fpathMuta}
@@ -774,12 +786,12 @@ function assert_true() {
 ######################### function: tee_echo ##################################
 ###############################################################################
 function tee_echo() {
-    echo -e $(date "+%Y-%m-%d %H:%M:%S $1") | tee -a "${DIR0}/ClashNodeSubcri.log"
+    echo -e $(date "+%Y-%m-%d %H:%M:%S $1") | tee -a "${DIR0}/${baseName}.log"
 }
 
 function tee_echo2() {
     echo -e "\n\n\n"
-    echo -e $(date "+%Y-%m-%d %H:%M:%S $1") | tee -a "${DIR0}/ClashNodeSubcri.log"
+    echo -e $(date "+%Y-%m-%d %H:%M:%S $1") | tee -a "${DIR0}/${baseName}.log"
 }
 
 ###############################################################################
@@ -1187,7 +1199,7 @@ function fnTableExtractPresent4Last7consecutiveDays() {
 ########################## function: fnFile2Table #############################
 ###############################################################################
 # 把诸如如下格式的文件:
-#     ClashNodeSubcri.loop6.20260827_130247:
+#     ${baseName}.loop6.20260827_130247:
 #         https://raw.githubusercontent.com/ssrsub/ssr/master/ss-sub,H009-github.ssrsub.txt
 #         https://cdn.jsdelivr.net/gh/Alvin9999/pac2@latest/clash/config.yaml,H011-ChromeGo02.yaml
 # 转换为形如格式:
@@ -1322,10 +1334,10 @@ function fnFeedbackSubsystem() {
     # 1. Link404Over7, LinkInactiveOver7, Link0sizeOver7
     declare -a local Link404Over7 LinkInactiveOver7 Link0sizeOver7
     # 1.1 loop6.bak/Link404Over7
-    if fnIsCompliantFolders "${DIR0}/loop6.bak/ClashNodeSubcri.loop6"; then
+    if fnIsCompliantFolders "${DIR0}/loop6.bak/${baseName}.loop6"; then
         local fpathTmp=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
         fnFile2Table \
-            "${DIR0}/loop6.bak/ClashNodeSubcri.loop6" \
+            "${DIR0}/loop6.bak/${baseName}.loop6" \
             "${fpathTmp}"
         fnTableExtractPresent4Last7consecutiveDays \
             "${fpathTmp}" \
@@ -1333,35 +1345,35 @@ function fnFeedbackSubsystem() {
             ${ACCEPTABLE_DAYs}
         rm -f "${fpathTmp}"
     fi
-    fnAddDatetimeMarkAndAppend2Eof Link404Over7 "${DIR0}/ClashNodeSubcri.urls.db.Link404Over7"
+    fnAddDatetimeMarkAndAppend2Eof Link404Over7 "${DIR0}/${baseName}.urls.db.Link404Over7"
 
     # 1.2 oldsubs/LinkInactiveOver7
-    if [ -f "${DIR0}/ClashNodeSubcri.oldsubs" ]; then
+    if [ -f "${DIR0}/${baseName}.oldsubs" ]; then
         fnTableExtractPresent4Last7consecutiveDays \
-            "${DIR0}/ClashNodeSubcri.oldsubs" \
+            "${DIR0}/${baseName}.oldsubs" \
             LinkInactiveOver7 \
             ${ACCEPTABLE_DAYs}
     fi
-    fnAddDatetimeMarkAndAppend2Eof LinkInactiveOver7 "${DIR0}/ClashNodeSubcri.urls.db.LinkInactiveOver7"
+    fnAddDatetimeMarkAndAppend2Eof LinkInactiveOver7 "${DIR0}/${baseName}.urls.db.LinkInactiveOver7"
 
     # 1.3 0size/Link0sizeOver7
-    if [ -f "${DIR0}/ClashNodeSubcri.0size" ]; then
+    if [ -f "${DIR0}/${baseName}.0size" ]; then
         fnTableExtractPresent4Last7consecutiveDays \
-            "${DIR0}/ClashNodeSubcri.0size" \
+            "${DIR0}/${baseName}.0size" \
             Link0sizeOver7 \
             ${ACCEPTABLE_DAYs}
     fi
-    fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7 "${DIR0}/ClashNodeSubcri.urls.db.Link0sizeOver7"
+    fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7 "${DIR0}/${baseName}.urls.db.Link0sizeOver7"
 
     # 1.4 LinkNotWorthTryingWithin7
     declare -a local LinkNotWorthTryingWithin7
-    if [ -f "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" ]; then
+    if [ -f "${DIR0}/${baseName}.urls.db.LinkNotWorthTrying" ]; then
         fnTableExtractPresent4Last7Days \
-            "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying" \
+            "${DIR0}/${baseName}.urls.db.LinkNotWorthTrying" \
             LinkNotWorthTryingWithin7 \
             ${ACCEPTABLE_DAYs}
     fi
-    fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTryingWithin7 "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTryingWithin7"
+    fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTryingWithin7 "${DIR0}/${baseName}.urls.db.LinkNotWorthTryingWithin7"
  #D echo 111111111111111111111111111111111111111 LinkNotWorthTryingWithin7
  #D printf "%s\n" "${LinkNotWorthTryingWithin7[@]}"
 
@@ -1374,7 +1386,7 @@ function fnFeedbackSubsystem() {
         LinkInactiveOver7 \
         Link0sizeOver7 \
         LinkDiscard
-    fnAddDatetimeMarkAndAppend2Eof LinkDiscard "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard"
+    fnAddDatetimeMarkAndAppend2Eof LinkDiscard "${DIR0}/${baseName}.urls.db.LinkDiscard"
  #D echo 222222222222222222222222222222222222222 LinkDiscard
  #D printf "%s\n" "${LinkDiscard[@]}"
 
@@ -1383,7 +1395,7 @@ function fnFeedbackSubsystem() {
     declare -a local LinkDiscard2
     LinkDiscard2=( "${LinkDiscard[@]}" "${LinkNotWorthTryingWithin7[@]}" )
     LinkDiscard2=($(echo "${LinkDiscard2[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
-    fnAddDatetimeMarkAndAppend2Eof LinkDiscard2 "${DIR0}/ClashNodeSubcri.urls.db.LinkDiscard2"
+    fnAddDatetimeMarkAndAppend2Eof LinkDiscard2 "${DIR0}/${baseName}.urls.db.LinkDiscard2"
  #D echo 33333333333333333333333333333333333333 LinkDiscard2
  #D printf "%s\n" "${LinkDiscard2[@]}"
 
@@ -1392,7 +1404,7 @@ function fnFeedbackSubsystem() {
     declare -a local LinkWorthTrying LinkNotWorthTrying
     # 3.1 arrSubscri
     declare -a local arrSubscri
-    readarray -t arrSubscri < <(cat "${DIR0}/ClashNodeSubcri.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
+    readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
     local subsSize=${#arrSubscri[@]}
     assert_true "(( 0 < subsSize ))" "Subscription configuration item count is 0"
 
@@ -1403,8 +1415,8 @@ function fnFeedbackSubsystem() {
         LinkWorthTrying \
         LinkNotWorthTrying
 
-    fnAddDatetimeMarkAndAppend2Eof LinkWorthTrying "${DIR0}/ClashNodeSubcri.urls.db.LinkWorthTrying"
-    fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTrying "${DIR0}/ClashNodeSubcri.urls.db.LinkNotWorthTrying"
+    fnAddDatetimeMarkAndAppend2Eof LinkWorthTrying "${DIR0}/${baseName}.urls.db.LinkWorthTrying"
+    fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTrying "${DIR0}/${baseName}.urls.db.LinkNotWorthTrying"
  #D echo 44444444444444444444444444444444444444 LinkWorthTrying
  #D printf "%s\n" "${LinkWorthTrying[@]}"
  #D echo 55555555555555555555555555555555555555 LinkNotWorthTrying
@@ -1415,7 +1427,7 @@ function fnFeedbackSubsystem() {
 }
 
 ###############################################################################
-################## function: trans2stddatetimestring #############################
+################## function: trans2stddatetimestring ##########################
 ###############################################################################
 function trans2stddatetimestring() {
     local s="$1"
@@ -1572,10 +1584,10 @@ function _all_datetime_urlnameslice_records_from_the_last_NN_days() {
     declare -a local arrTableRec
     declare -a local arrTableRec_sorted_unique
     readarray -t arrTableRec < ${sTableFPath}
-    if ! [ ${#arrTableRec[@]} -gt 0 ]; then return 1; fi
+    assert_true "[ ${#arrTableRec[@]} -gt 0 ]" "The file exists, but it contains zero records; this is not normal."
     readarray -t arrTableRec_sorted_unique < <(printf "%s\n" "${arrTableRec[@]}" | sort -u)
     local let nRecords=${#arrTableRec_sorted_unique[@]}
-    if ! [ ${nRecords} -gt 0 ]; then return 1; fi
+    assert_true "[ ${nRecords} -gt 0 ]" "The number of records after sorting and deduplication is 0, which is not normal."
 
     # nNNdaysago
     local let nNow=$( date '+%s' )
