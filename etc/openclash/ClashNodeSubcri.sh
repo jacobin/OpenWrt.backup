@@ -61,10 +61,10 @@ source <(sed '1,/^# HELPER FUNCTIONS #$/d' "$0")
 ###############################################################################
 if ! is_not_running; then exit 1; fi
 
-# function afun() { assert_true "((2==1))" "sssssssssssssssssssss"; }
+# function afun() { ASSERT "((2==1))" "sssssssssssssssssssss"; }
 # function bfun() { afun; }
 # function cfun() { bfun; }
-# assert_true "((2==1))" "Test the latest version of assert_true()."
+# ASSERT "((2==1))" "Test the latest version of ASSERT()."
 # cfun
 # exit 0
 
@@ -177,7 +177,7 @@ let nSubUrlsFileDatetime=$( date -d "$(date -r """${DIR0}/${baseName}.urls""" '+
 if [ ! -f "${DIR0}/${baseName}.constrict" ] || (( nLastFeedbackDatetime < nNNdaysago )) || (( (nNow - nSubUrlsFileDatetime) < 60 )); then
     fnFeedbackSubsystem "${DIR0}/${baseName}.urls.constrict"
     python "${DIR0}/${baseName}.SortCsvByFiled.py" "-i${DIR0}/${baseName}.urls.constrict" "-o${DIR0}/${baseName}.urls.constrict" -x1
-    assert_true "[ -f \"${DIR0}/${baseName}.urls.constrict\" ]" "The generated file \"${DIR0}/${baseName}.urls.constrict\" does not exist."
+    ASSERT "[ -f \"${DIR0}/${baseName}.urls.constrict\" ]" "The generated file \"${DIR0}/${baseName}.urls.constrict\" does not exist."
 fi
 
 tee_echo "Check for duplicate 'configuration names'"
@@ -370,7 +370,7 @@ for (( i=1; i<=5; i++ )); do
                 readarray -t arrSliceYaml < <( python "${DIR0}/${baseName}.sliceyaml.py" "-i${targetDisasFPath}" "-o${DATA_DIR}/slice" "-f${fname}" -z${SLICE_SIZE} )
                 if [ -f "${DATA_DIR}/slice/${arrSliceYaml[0]}" ]; then
                     for aSlice in "${arrSliceYaml[@]}"; do
-                        assert_true "[ -f \"${DATA_DIR}/slice/${aSlice}\" ]" "File \"${DATA_DIR}/slice/${aSlice}\" that should exist does not exist"
+                        ASSERT "[ -f \"${DATA_DIR}/slice/${aSlice}\" ]" "File \"${DATA_DIR}/slice/${aSlice}\" that should exist does not exist"
                         echo "${WEB_SLIC_DAT}/${aSlice},${aSlice}" >> "${DIR0}/${baseName}.127.urls"
                     done
                 fi
@@ -421,7 +421,7 @@ for subscri in "${arrSubscri[@]}"; do
     url127=${arrSplit[0]}
     folderName=$( tweezers_original_folder_name "${url127}" )
     operation="ln"
-    assert_true "[ -f \"${DATA_DIR}/${folderName}/${fname}\" ]" "File \"${DATA_DIR}/${folderName}/${fname}\" that should exist does not exist"
+    ASSERT "[ -f \"${DATA_DIR}/${folderName}/${fname}\" ]" "File \"${DATA_DIR}/${folderName}/${fname}\" that should exist does not exist"
     rm -f "${DATA_DIR}/${folderName}/${fname}.base64decode.result" &> /dev/null
     if base64 --decode --ignore-garbage "${DATA_DIR}/${folderName}/${fname}" > "${DATA_DIR}/${folderName}/${fname}.base64decode.result" 2>/dev/null; then
         # https://fabianlee.org/2024/06/22/yq-validate-yaml-syntax
@@ -441,7 +441,7 @@ for subscri in "${arrSubscri[@]}"; do
             operation="base64"
         fi
     fi
-    assert_true "[[ $? -eq 0 ]]" "Operation \"${operation}\" on file \"${DATA_DIR}/${folderName}/${fname}\" failed"
+    ASSERT "[[ $? -eq 0 ]]" "Operation \"${operation}\" on file \"${DATA_DIR}/${folderName}/${fname}\" failed"
     echo "${WEB_PASS2SUBCONVERTER}/${fname},${fname}" >> "${DIR0}/${baseName}.127.pass2subconverter.urls"
 done
 
@@ -561,7 +561,7 @@ done
 
 ###############################################################################
 let optNameSize=${#clashConfigNames[@]}
-assert_true "[ $optNameSize -gt 0 ]" "The count of configuration items must be greater than 0."
+ASSERT "[ $optNameSize -gt 0 ]" "The count of configuration items must be greater than 0."
 final1=${clashConfigNames[0]}
 if (( 1 < ${#clashConfigNames[@]} )); then
     final1=$(combine_subscri "1" "${clashConfigNames[@]}")
@@ -771,23 +771,23 @@ function combine_subscri() {
 }
 
 ###############################################################################
-######################### function: assert_true ###############################
+######################### function: ASSERT ####################################
 ###############################################################################
-function assert_true() {
+function ASSERT() {
     local condition="$1"
     local message="${2:-Assertion failed!}"
 
     if ! eval "$condition"; then
-        fnStacktrace "ERROR: ${message}"
+        fnStacktrace "failed: ${message}"
         singleton_clean_up 1
     fi
 }
 ## Example usage:
 #VALUE=10
-#assert_true "[ $VALUE -eq 10 ]" "Value is not 10"
+#ASSERT "[ $VALUE -eq 10 ]" "Value is not 10"
 #
 #ANOTHER_VALUE=5
-#assert_true "[ $ANOTHER_VALUE -gt 10 ]" "Another value is not greater than 10" # This will fail
+#ASSERT "[ $ANOTHER_VALUE -gt 10 ]" "Another value is not greater than 10" # This will fail
 
 ###############################################################################
 ######################### function: tee_echo ##################################
@@ -816,20 +816,20 @@ function tar_old_files() {
     #   |-------------------------- bakSize ---------------------------------|
     #                                                  |<----- nOutside ---->|
     #                       |<-------------- nReserve ---------------------->|
-    assert_true "(( ${nReserve} > ${nOutside} ))" "The number of files to be retained is less than the number of files to be left outside the package; this is incorrect."
+    ASSERT "(( ${nReserve} > ${nOutside} ))" "The number of files to be retained is less than the number of files to be left outside the package; this is incorrect."
 
     local folder1="$(dirname "${tarFPath}")"
     local folder2="$(dirname "${targetFPathMatchingPattern}")"
-    assert_true "[[ ${folder1} == ${folder2} ]]" "\"${folder1}\" and \"${folder2}\" must have the same parent folder"
-    assert_true "! [[ ${targetFPathMatchingPattern} == *\"${tarFPath}\"* || ${tarFPath} == *\"${targetFPathMatchingPattern}\"* ]]" "It must be ensured that \"${tarFPath}\" is not in the pattern matching of \"${targetFPathMatchingPattern}\""
+    ASSERT "[[ ${folder1} == ${folder2} ]]" "\"${folder1}\" and \"${folder2}\" must have the same parent folder"
+    ASSERT "! [[ ${targetFPathMatchingPattern} == *\"${tarFPath}\"* || ${tarFPath} == *\"${targetFPathMatchingPattern}\"* ]]" "It must be ensured that \"${tarFPath}\" is not in the pattern matching of \"${targetFPathMatchingPattern}\""
 
     if [ -f "${tarFPath}.tar.gz" ]; then
         gzip -d "${tarFPath}.tar.gz" &> /dev/null
-        assert_true "[ ! -f \"${tarFPath}.tar.gz\" ]" "Failed to unzip file \"${tarFPath}.tar.gz\"."
+        ASSERT "[ ! -f \"${tarFPath}.tar.gz\" ]" "Failed to unzip file \"${tarFPath}.tar.gz\"."
         tar x -v -f "${tarFPath}.tar" -C "/" >/dev/null 2>&1
-        assert_true "[ -f \"${tarFPath}.tar\" ]" "tar's behavior towards file \"${tarFPath}.tar\" does not meet expectations."
+        ASSERT "[ -f \"${tarFPath}.tar\" ]" "tar's behavior towards file \"${tarFPath}.tar\" does not meet expectations."
         rm -f "${tarFPath}.tar" &> /dev/null
-        assert_true "[ ! -f \"${tarFPath}.tar\" ]" "Delete file \"${tarFPath}.tar\" failed."
+        ASSERT "[ ! -f \"${tarFPath}.tar\" ]" "Delete file \"${tarFPath}.tar\" failed."
     fi
 
     local ListFPathTemp=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
@@ -849,7 +849,7 @@ function tar_old_files() {
     if (( coordB < 0  )); then return; fi
     local let coordA=$(( bakSize - nReserve ))
     if (( coordA < 0  )); then let coordA=0; fi
-    assert_true "(( $coordA <= $coordB ))" "Error in input parameters for tar call"
+    ASSERT "(( $coordA <= $coordB ))" "Error in input parameters for tar call"
 
     local NowDatetime="$(date +'%Y%m%d_%H%M%S')"
     declare -i local let j=-1
@@ -892,7 +892,7 @@ function tar_old_files() {
     eval "$tar_command_string"
     eval "$rm_command_string"
     gzip "${tarFPath}.tar"  &> /dev/null
-    assert_true "[[ -f \"${tarFPath}.tar.gz\" && ! -f \"${tarFPath}.tar\" ]]" "Compressed file \"${tarFPath}.tar\" failed."
+    ASSERT "[[ -f \"${tarFPath}.tar.gz\" && ! -f \"${tarFPath}.tar\" ]]" "Compressed file \"${tarFPath}.tar\" failed."
 }
 
 ###############################################################################
@@ -1064,7 +1064,7 @@ function checkIP() {
 ###############################################################################
 # https://jcgoran.github.io/2021/02/07/bash-string-trimming.html
 function trimstring() {
-    assert_true "[ $# -eq 1 ]" "USAGE: trimstring [STRING]."
+    ASSERT "[ $# -eq 1 ]" "USAGE: trimstring [STRING]."
     local s="${1}"
     local let size_before=${#s}
     local let size_after=0
@@ -1082,7 +1082,7 @@ function trimstring() {
 ############### function: tweezers_original_folder_name #######################
 ###############################################################################
 function tweezers_original_folder_name() {
-    assert_true "[ $# -eq 1 ]" "There must be one and only one parameter."
+    ASSERT "[ $# -eq 1 ]" "There must be one and only one parameter."
     local url127="${1}"
     local old_ifs="$IFS"
     declare -a local my_array
@@ -1096,7 +1096,7 @@ function tweezers_original_folder_name() {
 ############### function: tweezers_pass2subconverter_fname ####################
 ###############################################################################
 function tweezers_pass2subconverter_fname() {
-    assert_true "[ $# -eq 1 ]" "There must be one and only one parameter."
+    ASSERT "[ $# -eq 1 ]" "There must be one and only one parameter."
     local url127="${1}"
     local old_ifs="$IFS"
     declare -a local my_array
@@ -1162,7 +1162,7 @@ function fnTableExtractPresent4Last7consecutiveDays() {
     declare -a local arrNNdatetime
     declare -a local arrNNUrlName
     if ! _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName; then return 1; fi
-    assert_true "[[ ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ]]" "The lengths of these two arrays should be equal."
+    ASSERT "[[ ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ]]" "The lengths of these two arrays should be equal."
 
     local let nRecNNsize=${#arrNNUrlName[@]}
     if (( nRecNNsize < ${NN} )); then
@@ -1184,7 +1184,7 @@ function fnTableExtractPresent4Last7consecutiveDays() {
         return 1
     fi
 
-    assert_true "(( ${NN} == nBucketNNsize ))" "The number of buckets $nBucketNNsize should be equal to ${NN}."
+    ASSERT "(( ${NN} == nBucketNNsize ))" "The number of buckets $nBucketNNsize should be equal to ${NN}."
 
     # There are only ${NN} buckets, and each bucket contains one or more urls, with each url separated by a '|'.
     # arrUrlName0
@@ -1217,29 +1217,29 @@ function fnFile2Table() {
     local sTarFPath=$1
     local sTableResultFPath=$2
     [ -f "${sTableResultFPath}" ] || touch "${sTableResultFPath}"
-    assert_true "[ -f \"${sTableResultFPath}\" ]" "There cannot be a file at that location \"${sTableResultFPath}\"."
+    ASSERT "[ -f \"${sTableResultFPath}\" ]" "There cannot be a file at that location \"${sTableResultFPath}\"."
 
     if [ -f "${sTarFPath}.tar.gz" ]; then
         gzip -d "${sTarFPath}.tar.gz" &> /dev/null
-        assert_true "[ ! -f \"${sTarFPath}.tar.gz\" ]" "Failed to unzip file \"${sTarFPath}.tar.gz\"."
+        ASSERT "[ ! -f \"${sTarFPath}.tar.gz\" ]" "Failed to unzip file \"${sTarFPath}.tar.gz\"."
         tar x -v -f "${sTarFPath}.tar" -C "/" >/dev/null 2>&1
-        assert_true "[ -f \"${sTarFPath}.tar\" ]" "tar's behavior towards file \"${sTarFPath}.tar\" does not meet expectations."
+        ASSERT "[ -f \"${sTarFPath}.tar\" ]" "tar's behavior towards file \"${sTarFPath}.tar\" does not meet expectations."
         rm -f "${sTarFPath}.tar" &> /dev/null
-        assert_true "[ ! -f \"${sTarFPath}.tar\" ]" "Delete file \"${sTarFPath}.tar\" failed."
+        ASSERT "[ ! -f \"${sTarFPath}.tar\" ]" "Delete file \"${sTarFPath}.tar\" failed."
     fi
 
     # arrFilepaths
     declare -i local let j=-1
     declare -a local arrFilepaths
     readarray -t arrFilepaths < <( ls -t -r -1 ${sTarFPath}.2???????_?????? )
-    assert_true "[[ ${#arrFilepaths[@]} -gt 0 ]]" "There are no compliant files in folder \"${sTarFPath}\""
+    ASSERT "[[ ${#arrFilepaths[@]} -gt 0 ]]" "There are no compliant files in folder \"${sTarFPath}\""
     local let nFPathCounts=${#arrFilepaths[@]}
     for (( j=0; j<nFPathCounts; j++ )); do
         local sFPath=${arrFilepaths[j]}
         local let nFPathLen=${#sFPath}
-        assert_true "(( 15 < nFPathLen ))" "The list of filenames for naturalization is incorrect."
+        ASSERT "(( 15 < nFPathLen ))" "The list of filenames for naturalization is incorrect."
         local sLast15chars=${sFPath: -15}
-        assert_true "is_valid_datetime \"${sLast15chars}\"" "The last 15 characters \"${sLast15chars}\" of the filename must be a date expression."
+        ASSERT "is_valid_datetime \"${sLast15chars}\"" "The last 15 characters \"${sLast15chars}\" of the filename must be a date expression."
         declare -a local arrUrlNames
         readarray -t arrUrlNames < ${sFPath}
         for aUrlName in "${arrUrlNames[@]}"; do
@@ -1413,7 +1413,7 @@ function fnFeedbackSubsystem() {
     declare -a local arrSubscri
     readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
     local subsSize=${#arrSubscri[@]}
-    assert_true "(( 0 < subsSize ))" "Subscription configuration item count is 0"
+    ASSERT "(( 0 < subsSize ))" "Subscription configuration item count is 0"
 
     # 3.2 LinkWorthTrying, LinkNotWorthTrying
     fnClashNodeSubcriUrlsSubtractDiscarded \
@@ -1438,7 +1438,7 @@ function fnFeedbackSubsystem() {
 ###############################################################################
 function trans2stddatetimestring() {
     local s="$1"
-    assert_true "((15 <= ${#s}))" "trans2stddatetimestring() cannot accept strings shorter than 15."
+    ASSERT "((15 <= ${#s}))" "trans2stddatetimestring() cannot accept strings shorter than 15."
     local sDatetime="${s:0:4}-${s:4:2}-${s:6:2} ${s:9:2}:${s:11:2}:${s:13:2}"
     echo ${sDatetime}
 }
@@ -1519,7 +1519,7 @@ function fnTableExtractPresent4Last7Days() {
     declare -a local arrNNdatetime
     declare -a local arrNNUrlName
     _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName
-    assert_true "[[ ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ]]" "The lengths of these two arrays should be equal."
+    ASSERT "[[ ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ]]" "The lengths of these two arrays should be equal."
  #D echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa arrNNUrlName
  #D printf "%s\n" "${arrNNUrlName[@]}"
  #D exit 0
@@ -1546,7 +1546,7 @@ function fnTableExtractPresent4Last7Days() {
   #     return 1
   # fi
   #
-  # assert_true "(( ${NN} == nBucketNNsize ))" "The number of buckets $nBucketNNsize should be equal to ${NN}."
+  # ASSERT "(( ${NN} == nBucketNNsize ))" "The number of buckets $nBucketNNsize should be equal to ${NN}."
   #
   # # There are only ${NN} buckets, and each bucket contains one or more urls, with each url separated by a '|'.
     # arrUrlName0
@@ -1577,13 +1577,13 @@ function _all_datetime_urlnameslice_records_from_the_last_NN_days() {
     local let NN=$2
     local -n arrNNdatetime_=$3
     local -n arrNNUrlName_=$4
-    assert_true "! (( ${#arrNNdatetime_[@]} ))" "Parameter 3 is an output parameter; its initial value must be empty."
-    assert_true "! (( ${#arrNNUrlName_[@]} ))" "Parameter 4 is an output parameter; its initial value must be empty."
+    ASSERT "! (( ${#arrNNdatetime_[@]} ))" "Parameter 3 is an output parameter; its initial value must be empty."
+    ASSERT "! (( ${#arrNNUrlName_[@]} ))" "Parameter 4 is an output parameter; its initial value must be empty."
 
-    assert_true "[[ 0 < ${NN} ]]" "The specified number of days must be greater than 0."
-    assert_true "[ -f ${sTableFPath} ]" "The specified table file must exist."
+    ASSERT "[[ 0 < ${NN} ]]" "The specified number of days must be greater than 0."
+    ASSERT "[ -f ${sTableFPath} ]" "The specified table file must exist."
     local let nFilesize=$(get_file_size "$sTableFPath")
-    assert_true "(( 20 < ${nFilesize} ))" "The file size is too small; it appears you have tampered with the data."
+    ASSERT "(( 20 < ${nFilesize} ))" "The file size is too small; it appears you have tampered with the data."
 
     declare -i local let j=-1 k=-1
 
@@ -1591,10 +1591,10 @@ function _all_datetime_urlnameslice_records_from_the_last_NN_days() {
     declare -a local arrTableRec
     declare -a local arrTableRec_sorted_unique
     readarray -t arrTableRec < ${sTableFPath}
-    assert_true "[ ${#arrTableRec[@]} -gt 0 ]" "The file exists, but it contains zero records; this is not normal."
+    ASSERT "[ ${#arrTableRec[@]} -gt 0 ]" "The file exists, but it contains zero records; this is not normal."
     readarray -t arrTableRec_sorted_unique < <(printf "%s\n" "${arrTableRec[@]}" | sort -u)
     local let nRecords=${#arrTableRec_sorted_unique[@]}
-    assert_true "[ ${nRecords} -gt 0 ]" "The number of records after sorting and deduplication is 0, which is not normal."
+    ASSERT "[ ${nRecords} -gt 0 ]" "The number of records after sorting and deduplication is 0, which is not normal."
 
     # nNNdaysago
     local let nNow=$( date '+%s' )
@@ -1604,10 +1604,10 @@ function _all_datetime_urlnameslice_records_from_the_last_NN_days() {
     # arrNNdatetime_, arrNNUrlName_
     for (( k=0, j=$((--nRecords)); 0<=j; j-- )); do
         local let nThisLen=${#arrTableRec_sorted_unique[j]}
-        assert_true "(( 20 < nThisLen ))" "This record \"${arrTableRec_sorted_unique[j]}\" is too short; it doesn't seem like a legitimate record."
+        ASSERT "(( 20 < nThisLen ))" "This record \"${arrTableRec_sorted_unique[j]}\" is too short; it doesn't seem like a legitimate record."
         local sDatetime=${arrTableRec_sorted_unique[j]: 0: 15 }
         local sUrlName=${arrTableRec_sorted_unique[j]: 16 }
-        assert_true "is_valid_datetime \"${sDatetime}\"" "The first 15 characters of the \"${arrTableRec_sorted_unique[j]}\" are not a valid timestamp."
+        ASSERT "is_valid_datetime \"${sDatetime}\"" "The first 15 characters of the \"${arrTableRec_sorted_unique[j]}\" are not a valid timestamp."
         local sStdDatetime=$(trans2stddatetimestring "${sDatetime}")
         local let nDatetime=$(date -d "${sStdDatetime}" +%s)
         if (( nDatetime < nNNdaysago )); then break; fi
