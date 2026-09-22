@@ -1142,7 +1142,7 @@ function fnTableExtractPresent4Last7consecutiveDays() {
     # arrNNdatetime, arrNNUrlName
     declare -a local arrNNdatetime
     declare -a local arrNNUrlName
-    _bucketing "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName
+    if ! _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName; then return 1; fi
     assert_true "[[ ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ]]" "The lengths of these two arrays should be equal."
 
     local let nRecNNsize=${#arrNNUrlName[@]}
@@ -1499,7 +1499,7 @@ function fnTableExtractPresent4Last7Days() {
     # arrNNdatetime, arrNNUrlName
     declare -a local arrNNdatetime
     declare -a local arrNNUrlName
-    _bucketing "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName
+    _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName
     assert_true "[[ ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ]]" "The lengths of these two arrays should be equal."
  #D echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa arrNNUrlName
  #D printf "%s\n" "${arrNNUrlName[@]}"
@@ -1551,9 +1551,9 @@ function fnTableExtractPresent4Last7Days() {
 }
 
 #//////////////////////////////////////////////////////////////////////////////
-#///////////////////////// function: _bucketing ///////////////////////////////
+#/////// function: _all_datetime_urlnameslice_records_from_the_last_NN_days ///
 #//////////////////////////////////////////////////////////////////////////////
-function _bucketing() {
+function _all_datetime_urlnameslice_records_from_the_last_NN_days() {
     local sTableFPath=$1
     local let NN=$2
     local -n arrNNdatetime_=$3
@@ -1572,10 +1572,10 @@ function _bucketing() {
     declare -a local arrTableRec
     declare -a local arrTableRec_sorted_unique
     readarray -t arrTableRec < ${sTableFPath}
-    assert_true "[ ${#arrTableRec[@]} -gt 0 ]" "The file exists, but it contains zero records; this is not normal."
+    if ! [ ${#arrTableRec[@]} -gt 0 ]; then return 1; fi
     readarray -t arrTableRec_sorted_unique < <(printf "%s\n" "${arrTableRec[@]}" | sort -u)
     local let nRecords=${#arrTableRec_sorted_unique[@]}
-    assert_true "[ ${nRecords} -gt 0 ]" "The number of records after sorting and deduplication is 0, which is not normal."
+    if ! [ ${nRecords} -gt 0 ]; then return 1; fi
 
     # nNNdaysago
     local let nNow=$( date '+%s' )
