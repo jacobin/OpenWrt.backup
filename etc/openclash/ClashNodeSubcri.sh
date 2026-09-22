@@ -48,7 +48,6 @@ let SUBCONVERTER_SLICE_SIZE=5
 
 declare -i let i=-1 j=-2
 
-
 ###############################################################################
 ## 置函数于脚本文件的末尾 #####################################################
 ###############################################################################
@@ -1158,15 +1157,19 @@ function fnTableExtractPresent4Last7consecutiveDays() {
     local -n arrNNresult=$2
     local let NN=$3
 
+    ASSERT "! (( ${#arrNNresult[@]} ))" "The array used to hold the returned data must initially be empty."
+
     # arrNNdatetime, arrNNUrlName
     declare -a local arrNNdatetime
     declare -a local arrNNUrlName
-    if ! _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName; then return 1; fi
-    ASSERT "[[ ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ]]" "The lengths of these two arrays should be equal."
+    if ! _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName; then return; fi
+    ASSERT "(( 0 < ${#arrNNdatetime[@]} ))" "The lengths of \"arrNNdatetime\" should NOT be 0."
+    ASSERT "(( 0 < ${#arrNNUrlName[@]} ))" "The lengths of \"arrNNUrlName\" should NOT be 0."
+    ASSERT "(( ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ))" "\"arrNNdatetime\" must be equal to \"arrNNUrlName\"."
 
     local let nRecNNsize=${#arrNNUrlName[@]}
     if (( nRecNNsize < ${NN} )); then
-        return 1
+        return
     fi
 
     # arrBucketNN
@@ -1181,7 +1184,7 @@ function fnTableExtractPresent4Last7consecutiveDays() {
 
     local let nBucketNNsize=${#arrBucketNN[@]}
     if (( nBucketNNsize < ${NN} )); then
-        return 1
+        return
     fi
 
     ASSERT "(( ${NN} == nBucketNNsize ))" "The number of buckets $nBucketNNsize should be equal to ${NN}."
@@ -1194,12 +1197,12 @@ function fnTableExtractPresent4Last7consecutiveDays() {
         declare -a local arrUrlNameK
         arrUrlNameK=( ${arrBucketNN[k]//|/ })
         declare -a local arrUrlNameIntersetResult
+        arrUrlNameIntersetResult=()
         ArrayIntersect arrUrlName0 arrUrlNameK arrUrlNameIntersetResult
         arrUrlName0=("${arrUrlNameIntersetResult[@]}")
     done
 
     arrNNresult=("${arrUrlName0[@]}")
-    return 0
 }
 
 ###############################################################################
@@ -1262,6 +1265,64 @@ function fnAddDatetimeMarkAndAppend2Eof() {
 }
 
 ###############################################################################
+############# function: fnAddDatetimeMarkAndAppend2EofOldest1Per7 #############
+###############################################################################
+function fnAddDatetimeMarkAndAppend2EofOldest1Per7() {
+    local -n arrUrlNameSlice=$1
+    local sTableFPath=$2
+
+    declare -i local let j=-1 k=-1
+
+    # arrNNdatetime, arrNNUrlName
+    declare -a local arrNNdatetime
+    declare -a local arrNNUrlName
+    if ! _all_datetime_urlnameslice_records_from_the_last_NN_days \
+            "${sTableFPath}" \
+            "${ACCEPTABLE_DAYs}" \
+            arrNNdatetime \
+            arrNNUrlName; then
+        return
+    fi
+    ASSERT "(( ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ))" "Datetime and UrlNameSlice exist as a pair, so the number of elements in each should be the same."
+ #D let arrSize=${#arrNNdatetime[@]}
+ #D for (( j=0; j < arrSize; j++ )); do
+ #D     echo $(date -d "@${arrNNdatetime[j]}" "+%Y-%m-%d %H:%M:%S") ${arrNNUrlName[j]}
+ #D done
+
+    # nNNdaysago
+    local let nNow=$( date '+%s' )
+    local let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
+    local let nNNdaysago=$(( nNow - (( ${ACCEPTABLE_DAYs} - 1 )*24*60*60) - (nNow-nTodayYYYYmmdd) ))
+
+    # arrBucketNN
+    declare -a local arrBucketNN
+    local let nRecNNsize=${#arrNNUrlName[@]}
+    for (( j=0; j<nRecNNsize; j++ )); do
+        local let nBucketIdx=$(( ( arrNNdatetime[j] - nNNdaysago ) / (24*60*60) ))
+        ASSERT "(( 0 <= nBucketIdx ))" "The selected units are guaranteed to fall within the seven-day timeframe."
+        arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
+        arrBucketNN[ nBucketIdx ]+="|"
+    done
+    local let nBucketNNsize=${#arrBucketNN[@]}
+    ASSERT "(( nBucketNNsize <= ACCEPTABLE_DAYs ))" "The result of the sorting is a maximum of seven buckets."
+
+    # Select records that do not exist in the NN Pool and write them to the file.
+    for (( j=0; j<${#arrUrlNameSlice[@]}; j++ )); do
+        local foundWithin7=false
+        for (( k=0; k < nBucketNNsize; k++ )); do
+            # https://stackoverflow.com/questions/229551/how-to-check-if-a-string-contains-a-substring-in-bash
+            if [[ ${arrBucketNN[k]} == *"${arrUrlNameSlice[j]}"* ]]; then
+                foundWithin7=true
+            fi
+        done
+
+        if [ "$foundWithin7" == false ]; then
+            echo $(date +%Y%m%d_%H%M%S) ${arrUrlNameSlice[j]} >> "${sTableFPath}"
+        fi
+    done
+}
+
+###############################################################################
 ########################## function: fnLinkDiscard ############################
 ###############################################################################
 function fnLinkDiscard() {
@@ -1269,6 +1330,8 @@ function fnLinkDiscard() {
     local -n LinkInactiveOver7_=$2
     local -n Link0sizeOver7_=$3
     local -n LinkDiscard_=$4
+
+    ASSERT "! (( ${#LinkDiscard_[@]} ))" "The array used to hold the returned data must initially be empty."
 
     # ( Link404Over7_, LinkInactiveOver7_, Link0sizeOver7_ ) ==> LinkDiscard_
     LinkDiscard_=($(printf "%s\n" "${Link404Over7_[@]}" "${LinkInactiveOver7_[@]}" "${Link0sizeOver7_[@]}" | sort -u))
@@ -1282,8 +1345,8 @@ function fnClashNodeSubcriUrlsSubtractDiscarded() {
     local -n AllDiscarded=$2           # in
     local -n arrLinkWorthTrying_=$3    # out
     local -n arrLinkNotWorthTrying_=$4 # out
-    arrLinkWorthTrying_=()
-    arrLinkNotWorthTrying_=()
+    ASSERT "! (( ${#arrLinkWorthTrying_[@]} ))" "The array used to hold the returned data must initially be empty."
+    ASSERT "! (( ${#arrLinkNotWorthTrying_[@]} ))" "The array used to hold the returned data must initially be empty."
 
     declare -i local let j=-1 k=-1
 
@@ -1380,7 +1443,7 @@ function fnFeedbackSubsystem() {
             LinkNotWorthTryingWithin7 \
             ${ACCEPTABLE_DAYs}
     fi
-    fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTryingWithin7 "${DIR0}/${baseName}.urls.db.LinkNotWorthTryingWithin7"
+    fnAddDatetimeMarkAndAppend2EofOldest1Per7 LinkNotWorthTryingWithin7 "${DIR0}/${baseName}.urls.db.LinkNotWorthTryingWithin7"
  #D echo 111111111111111111111111111111111111111 LinkNotWorthTryingWithin7
  #D printf "%s\n" "${LinkNotWorthTryingWithin7[@]}"
 
@@ -1453,7 +1516,7 @@ function ArrayIntersect() {
     local -n array1=$1
     local -n array2=$2
     local -n result=$3                    # use nameref for indirection
-    result=()
+    ASSERT "! (( ${#result[@]} ))" "The array used to hold the returned data must initially be empty."
 
     local l2=" ${array2[*]} "             # add framing blanks
     for item in ${array1[@]}; do
@@ -1464,21 +1527,20 @@ function ArrayIntersect() {
 }
 
 ###############################################################################
-################# function: ArrayIntersect4contain_spaces #####################
+################# function: ArrayIntersect4element_contain_spaces #############
 ###############################################################################
 # https://www.google.com/search?q=bash+array+interset+with+space&pws=0&gl=us&gws_rd=cr
-function ArrayIntersect4contain_spaces() {
+function ArrayIntersect4element_contain_spaces() {
     local -n array1=$1
     local -n array2=$2
     local -n result=$3
+    ASSERT "! (( ${#result[@]} ))" "The array used to hold the returned data must initially be empty."
 
-    declare -A map
+    declare -A local map
 
     for item in "${array1[@]}"; do
         map["$item"]=1
     done
-
-    result=()
 
     for item in "${array2[@]}"; do
         if [[ -n "${map["$item"]}" ]]; then
@@ -1489,7 +1551,7 @@ function ArrayIntersect4contain_spaces() {
 # # Define arrays with spaces in the elements
 # list1=("apple pie" "banana split" "cherry tart" "date")
 # list2=("banana split" "fig" "cherry tart" "elderberry")
-# ArrayIntersect4contain_spaces list1 list2 list3
+# ArrayIntersect4element_contain_spaces list1 list2 list3
 # printf '%s\n' "${list3[@]}"
 
 ###############################################################################
@@ -1515,35 +1577,31 @@ function fnTableExtractPresent4Last7Days() {
     local -n arrNNresult=$2
     local let NN=$3
 
+    ASSERT "! (( ${#arrNNresult[@]} ))" "The array used to hold the returned data must initially be empty."
+
     # arrNNdatetime, arrNNUrlName
     declare -a local arrNNdatetime
     declare -a local arrNNUrlName
-    _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName
-    ASSERT "[[ ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ]]" "The lengths of these two arrays should be equal."
- #D echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa arrNNUrlName
- #D printf "%s\n" "${arrNNUrlName[@]}"
- #D exit 0
+    if ! _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName; then return; fi
+    ASSERT "(( 0 < ${#arrNNdatetime[@]} ))" "The lengths of \"arrNNdatetime\" should NOT be 0."
+    ASSERT "(( 0 < ${#arrNNUrlName[@]} ))" "The lengths of \"arrNNUrlName\" should NOT be 0."
+    ASSERT "(( ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ))" "\"arrNNdatetime\" must be equal to \"arrNNUrlName\"."
+ #D printf "%s\n" "${arrNNUrlName[@]}"; exit 0
 
     local let nRecNNsize=${#arrNNUrlName[@]}
-  # if (( nRecNNsize < ${NN} )); then
-  #     return 1
-  # fi
-
     # arrBucketNN
     declare -a local arrBucketNN
     for (( j=0; j<nRecNNsize; j++ )); do
         local let nBucketIdx=$(( ( arrNNdatetime[j] - nNNdaysago ) / (24*60*60) ))
-        if (( 0 <= nBucketIdx )); then
-            arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
-            arrBucketNN[ nBucketIdx ]+="|"
-        fi
+        ASSERT "(( 0 <= nBucketIdx ))" "The value of nBucketIdx cannot be less than 0."
+        arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
+        arrBucketNN[ nBucketIdx ]+="|"
     done
- #D echo AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA arrBucketNN
- #D printf "%s\n" "${arrBucketNN[@]}"
+ #D printf "%s\n" "${arrBucketNN[@]}"; exit 0
 
     local let nBucketNNsize=${#arrBucketNN[@]}
   # if (( nBucketNNsize < ${NN} )); then
-  #     return 1
+  #     return
   # fi
   #
   # ASSERT "(( ${NN} == nBucketNNsize ))" "The number of buckets $nBucketNNsize should be equal to ${NN}."
@@ -1556,6 +1614,7 @@ function fnTableExtractPresent4Last7Days() {
         declare -a local arrUrlNameK
         arrUrlNameK=( ${arrBucketNN[k]//|/ })
         declare -a local arrUrlNameIntersetResult
+  #     arrUrlNameIntersetResult=()
   #     ArrayIntersect arrUrlName0 arrUrlNameK arrUrlNameIntersetResult
         arrUrlNameIntersetResult=( "${arrUrlName0[@]}" "${arrUrlNameK[@]}" )
         arrUrlName0=("${arrUrlNameIntersetResult[@]}")
@@ -1566,7 +1625,6 @@ function fnTableExtractPresent4Last7Days() {
  #D printf "%s\n" "${arrUrlName0[@]}"
 
     arrNNresult=("${arrUrlName0[@]}")
-    return 0
 }
 
 #//////////////////////////////////////////////////////////////////////////////
@@ -1591,10 +1649,10 @@ function _all_datetime_urlnameslice_records_from_the_last_NN_days() {
     declare -a local arrTableRec
     declare -a local arrTableRec_sorted_unique
     readarray -t arrTableRec < ${sTableFPath}
-    ASSERT "[ ${#arrTableRec[@]} -gt 0 ]" "The file exists, but it contains zero records; this is not normal."
+    if ! (( 0 < ${#arrTableRec[@]} )); then return 1; fi
     readarray -t arrTableRec_sorted_unique < <(printf "%s\n" "${arrTableRec[@]}" | sort -u)
     local let nRecords=${#arrTableRec_sorted_unique[@]}
-    ASSERT "[ ${nRecords} -gt 0 ]" "The number of records after sorting and deduplication is 0, which is not normal."
+    if ! (( 0 < nRecords )); then return 1; fi
 
     # nNNdaysago
     local let nNow=$( date '+%s' )
@@ -1610,11 +1668,13 @@ function _all_datetime_urlnameslice_records_from_the_last_NN_days() {
         ASSERT "is_valid_datetime \"${sDatetime}\"" "The first 15 characters of the \"${arrTableRec_sorted_unique[j]}\" are not a valid timestamp."
         local sStdDatetime=$(trans2stddatetimestring "${sDatetime}")
         local let nDatetime=$(date -d "${sStdDatetime}" +%s)
-        if (( nDatetime < nNNdaysago )); then break; fi
+        if (( nDatetime < nNNdaysago )); then break; fi # Right, use `break` instead of `continue`, because the data has already been sorted and we are iterating in reverse order.
         arrNNdatetime_[k]=${nDatetime}
         arrNNUrlName_[k]=${sUrlName}
         ((k++))
     done
+
+    return 0
 }
 
 ###############################################################################
