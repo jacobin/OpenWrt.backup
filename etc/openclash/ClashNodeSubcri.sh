@@ -1444,8 +1444,7 @@ function fnFeedbackSubsystem() {
             ${ACCEPTABLE_DAYs}
     fi
     fnAddDatetimeMarkAndAppend2EofOldest1Per7 LinkNotWorthTryingWithin7 "${DIR0}/${baseName}.urls.db.LinkNotWorthTryingWithin7"
- #D echo 111111111111111111111111111111111111111 LinkNotWorthTryingWithin7
- #D printf "%s\n" "${LinkNotWorthTryingWithin7[@]}"
+ #D printf "%s\n" "${LinkNotWorthTryingWithin7[@]}"; exit 0
 
     #//////////////////////////////////////////////////////////////////////
     # 2. LinkDiscard2 <== [(Link404Over7, LinkInactiveOver7, Link0sizeOver7), LinkNotWorthTryingWithin7]
@@ -1457,8 +1456,7 @@ function fnFeedbackSubsystem() {
         Link0sizeOver7 \
         LinkDiscard
     fnAddDatetimeMarkAndAppend2Eof LinkDiscard "${DIR0}/${baseName}.urls.db.LinkDiscard"
- #D echo 222222222222222222222222222222222222222 LinkDiscard
- #D printf "%s\n" "${LinkDiscard[@]}"
+ #D printf "%s\n" "${LinkDiscard[@]}"; exit 0
 
     #//////////////////////////////////////////////////////////////////////////
     # 2.2. LinkDiscard2 <== (LinkDiscard, LinkNotWorthTryingWithin7)
@@ -1466,8 +1464,7 @@ function fnFeedbackSubsystem() {
     LinkDiscard2=( "${LinkDiscard[@]}" "${LinkNotWorthTryingWithin7[@]}" )
     LinkDiscard2=($(echo "${LinkDiscard2[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
     fnAddDatetimeMarkAndAppend2Eof LinkDiscard2 "${DIR0}/${baseName}.urls.db.LinkDiscard2"
- #D echo 33333333333333333333333333333333333333 LinkDiscard2
- #D printf "%s\n" "${LinkDiscard2[@]}"
+ #D printf "%s\n" "${LinkDiscard2[@]}"; exit 0
 
     #//////////////////////////////////////////////////////////////////////
     # 3. LinkWorthTrying, LinkNotWorthTrying
@@ -1487,13 +1484,10 @@ function fnFeedbackSubsystem() {
 
     fnAddDatetimeMarkAndAppend2Eof LinkWorthTrying "${DIR0}/${baseName}.urls.db.LinkWorthTrying"
     fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTrying "${DIR0}/${baseName}.urls.db.LinkNotWorthTrying"
- #D echo 44444444444444444444444444444444444444 LinkWorthTrying
- #D printf "%s\n" "${LinkWorthTrying[@]}"
- #D echo 55555555555555555555555555555555555555 LinkNotWorthTrying
- #D printf "%s\n" "${LinkNotWorthTrying[@]}"
+ #D printf "%s\n" "${LinkWorthTrying[@]}"; exit 0
+ #D printf "%s\n" "${LinkNotWorthTrying[@]}"; exit 0
 
     printf '%s\n' "${LinkWorthTrying[@]}" > "${fpathClashNodeSubcriNew}"
- #D exit 0
 }
 
 ###############################################################################
@@ -1621,8 +1615,7 @@ function fnTableExtractPresent4Last7Days() {
     done
     # https://stackoverflow.com/questions/13648410/how-can-i-get-unique-values-from-an-array-in-bash
     arrUrlName0=($(echo "${arrUrlName0[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
- #D echo BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB arrUrlName0
- #D printf "%s\n" "${arrUrlName0[@]}"
+ #D printf "%s\n" "${arrUrlName0[@]}"; exit 0
 
     arrNNresult=("${arrUrlName0[@]}")
 }
@@ -1680,9 +1673,9 @@ function _all_datetime_urlnameslice_records_from_the_last_NN_days() {
 ###############################################################################
 ###############################################################################
 ###############################################################################
-##{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
-## stacktrace {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
-##{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+##{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+## stacktrace {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+##{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
 # https://stackoverflow.com/questions/51653450/show-call-stack-in-bash
 
 ###############################################################################
