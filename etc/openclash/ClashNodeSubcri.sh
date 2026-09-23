@@ -158,26 +158,26 @@ tee_echo "Start running the feedback subsystem"
 ###############################################################################
 ## 开始运行节点链接检测反馈子系统 #############################################
 ###############################################################################
-# nNNdaysago
-let nNow=$( date '+%s' )
-let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-let nNNdaysago=$(( nNow - (( ${ACCEPTABLE_DAYs} - 1 )*24*60*60) - (nNow-nTodayYYYYmmdd) ))
-
-# nLastFeedbackDatetime
-let nLastFeedbackDatetime=0
-if [ -f "${DIR0}/${baseName}.urls.constrict" ]; then
-	let nLastFeedbackDatetime=$( date -d "$(date -r """${DIR0}/${baseName}.urls.constrict""" '+%Y-%m-%d %H:%M:%S')" +%s )
-fi
-
-# nSubUrlsFileDatetime
-let nSubUrlsFileDatetime=$( date -d "$(date -r """${DIR0}/${baseName}.urls""" '+%Y-%m-%d %H:%M:%S')" +%s )
-
-# ${DIR0}/${baseName}.constrict
-if [ ! -f "${DIR0}/${baseName}.constrict" ] || (( nLastFeedbackDatetime < nNNdaysago )) || (( (nNow - nSubUrlsFileDatetime) < 60 )); then
+# # nNNdaysago
+# let nNow=$( date '+%s' )
+# let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
+# let nNNdaysago=$(( nNow - (( ${ACCEPTABLE_DAYs} - 1 )*24*60*60) - (nNow-nTodayYYYYmmdd) ))
+#
+# # nLastFeedbackDatetime
+# let nLastFeedbackDatetime=0
+# if [ -f "${DIR0}/${baseName}.urls.constrict" ]; then
+# 	let nLastFeedbackDatetime=$( date -d "$(date -r """${DIR0}/${baseName}.urls.constrict""" '+%Y-%m-%d %H:%M:%S')" +%s )
+# fi
+#
+# # nSubUrlsFileDatetime
+# let nSubUrlsFileDatetime=$( date -d "$(date -r """${DIR0}/${baseName}.urls""" '+%Y-%m-%d %H:%M:%S')" +%s )
+#
+# # ${DIR0}/${baseName}.constrict
+# if [ ! -f "${DIR0}/${baseName}.constrict" ] || (( nLastFeedbackDatetime < nNNdaysago )) || (( (nNow - nSubUrlsFileDatetime) < 60 )); then
     fnFeedbackSubsystem "${DIR0}/${baseName}.urls.constrict"
     python "${DIR0}/${baseName}.SortCsvByFiled.py" "-i${DIR0}/${baseName}.urls.constrict" "-o${DIR0}/${baseName}.urls.constrict" -x1
     ASSERT "[ -f \"${DIR0}/${baseName}.urls.constrict\" ]" "The generated file \"${DIR0}/${baseName}.urls.constrict\" does not exist."
-fi
+# fi
 
 tee_echo "Check for duplicate 'configuration names'"
 ###############################################################################
@@ -1206,6 +1206,63 @@ function fnTableExtractPresent4Last7consecutiveDays() {
 }
 
 ###############################################################################
+############ function: fnTableExtractPresent4Last7Days ########################
+###############################################################################
+function fnTableExtractPresent4Last7Days() {
+    local sTableFPath=$1
+    local -n arrNNresult=$2
+    local let NN=$3
+
+    ASSERT "! (( ${#arrNNresult[@]} ))" "The array used to hold the returned data must initially be empty."
+
+    # arrNNdatetime, arrNNUrlName
+    declare -a local arrNNdatetime
+    declare -a local arrNNUrlName
+    if ! _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName; then return; fi
+    ASSERT "(( 0 < ${#arrNNdatetime[@]} ))" "The lengths of \"arrNNdatetime\" should NOT be 0."
+    ASSERT "(( 0 < ${#arrNNUrlName[@]} ))" "The lengths of \"arrNNUrlName\" should NOT be 0."
+    ASSERT "(( ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ))" "\"arrNNdatetime\" must be equal to \"arrNNUrlName\"."
+ #D printf "%s\n" "${arrNNUrlName[@]}"; exit 0
+
+    local let nRecNNsize=${#arrNNUrlName[@]}
+    # arrBucketNN
+    declare -a local arrBucketNN
+    for (( j=0; j<nRecNNsize; j++ )); do
+        local let nBucketIdx=$(( ( arrNNdatetime[j] - nNNdaysago ) / (24*60*60) ))
+        ASSERT "(( 0 <= nBucketIdx ))" "The value of nBucketIdx cannot be less than 0."
+        arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
+        arrBucketNN[ nBucketIdx ]+="|"
+    done
+ #D printf "%s\n" "${arrBucketNN[@]}"; exit 0
+
+    local let nBucketNNsize=${#arrBucketNN[@]}
+  # if (( nBucketNNsize < ${NN} )); then
+  #     return
+  # fi
+  #
+  # ASSERT "(( ${NN} == nBucketNNsize ))" "The number of buckets $nBucketNNsize should be equal to ${NN}."
+  #
+  # # There are only ${NN} buckets, and each bucket contains one or more urls, with each url separated by a '|'.
+    # arrUrlName0
+    declare -a local arrUrlName0
+    arrUrlName0=(${arrBucketNN[0]//|/ })
+    for (( k=1; k<nBucketNNsize; k++ )); do
+        declare -a local arrUrlNameK
+        arrUrlNameK=( ${arrBucketNN[k]//|/ })
+        declare -a local arrUrlNameIntersetResult
+  #     arrUrlNameIntersetResult=()
+  #     ArrayIntersect arrUrlName0 arrUrlNameK arrUrlNameIntersetResult
+        arrUrlNameIntersetResult=( "${arrUrlName0[@]}" "${arrUrlNameK[@]}" )
+        arrUrlName0=("${arrUrlNameIntersetResult[@]}")
+    done
+    # https://stackoverflow.com/questions/13648410/how-can-i-get-unique-values-from-an-array-in-bash
+    arrUrlName0=($(echo "${arrUrlName0[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+ #D printf "%s\n" "${arrUrlName0[@]}"; exit 0
+
+    arrNNresult=("${arrUrlName0[@]}")
+}
+
+###############################################################################
 ########################## function: fnFile2Table #############################
 ###############################################################################
 # 把诸如如下格式的文件:
@@ -1562,63 +1619,6 @@ function _DEBUG() {
 # #Increment variable val by 1
 # let va++
 # echo 'new value:'$va
-
-###############################################################################
-############ function: fnTableExtractPresent4Last7Days ########################
-###############################################################################
-function fnTableExtractPresent4Last7Days() {
-    local sTableFPath=$1
-    local -n arrNNresult=$2
-    local let NN=$3
-
-    ASSERT "! (( ${#arrNNresult[@]} ))" "The array used to hold the returned data must initially be empty."
-
-    # arrNNdatetime, arrNNUrlName
-    declare -a local arrNNdatetime
-    declare -a local arrNNUrlName
-    if ! _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName; then return; fi
-    ASSERT "(( 0 < ${#arrNNdatetime[@]} ))" "The lengths of \"arrNNdatetime\" should NOT be 0."
-    ASSERT "(( 0 < ${#arrNNUrlName[@]} ))" "The lengths of \"arrNNUrlName\" should NOT be 0."
-    ASSERT "(( ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ))" "\"arrNNdatetime\" must be equal to \"arrNNUrlName\"."
- #D printf "%s\n" "${arrNNUrlName[@]}"; exit 0
-
-    local let nRecNNsize=${#arrNNUrlName[@]}
-    # arrBucketNN
-    declare -a local arrBucketNN
-    for (( j=0; j<nRecNNsize; j++ )); do
-        local let nBucketIdx=$(( ( arrNNdatetime[j] - nNNdaysago ) / (24*60*60) ))
-        ASSERT "(( 0 <= nBucketIdx ))" "The value of nBucketIdx cannot be less than 0."
-        arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
-        arrBucketNN[ nBucketIdx ]+="|"
-    done
- #D printf "%s\n" "${arrBucketNN[@]}"; exit 0
-
-    local let nBucketNNsize=${#arrBucketNN[@]}
-  # if (( nBucketNNsize < ${NN} )); then
-  #     return
-  # fi
-  #
-  # ASSERT "(( ${NN} == nBucketNNsize ))" "The number of buckets $nBucketNNsize should be equal to ${NN}."
-  #
-  # # There are only ${NN} buckets, and each bucket contains one or more urls, with each url separated by a '|'.
-    # arrUrlName0
-    declare -a local arrUrlName0
-    arrUrlName0=(${arrBucketNN[0]//|/ })
-    for (( k=1; k<nBucketNNsize; k++ )); do
-        declare -a local arrUrlNameK
-        arrUrlNameK=( ${arrBucketNN[k]//|/ })
-        declare -a local arrUrlNameIntersetResult
-  #     arrUrlNameIntersetResult=()
-  #     ArrayIntersect arrUrlName0 arrUrlNameK arrUrlNameIntersetResult
-        arrUrlNameIntersetResult=( "${arrUrlName0[@]}" "${arrUrlNameK[@]}" )
-        arrUrlName0=("${arrUrlNameIntersetResult[@]}")
-    done
-    # https://stackoverflow.com/questions/13648410/how-can-i-get-unique-values-from-an-array-in-bash
-    arrUrlName0=($(echo "${arrUrlName0[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
- #D printf "%s\n" "${arrUrlName0[@]}"; exit 0
-
-    arrNNresult=("${arrUrlName0[@]}")
-}
 
 #//////////////////////////////////////////////////////////////////////////////
 #/////// function: _all_datetime_urlnameslice_records_from_the_last_NN_days ///
