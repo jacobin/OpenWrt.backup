@@ -161,7 +161,7 @@ tee_echo "Start running the feedback subsystem"
 # # nNNdaysago
 # let nNow=$( date '+%s' )
 # let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-# let nNNdaysago=$(( nNow - (( ${ACCEPTABLE_DAYs} - 1 )*24*60*60) - (nNow-nTodayYYYYmmdd) ))
+# let nNNdaysago=$(( nNow - (( ${ACCEPTABLE_DAYs} - 1 )*24*60*60) + (nNow-nTodayYYYYmmdd) ))
 #
 # # nLastFeedbackDatetime
 # let nLastFeedbackDatetime=0
@@ -1353,7 +1353,7 @@ function fnAddDatetimeMarkAndAppend2EofOldest1Per7() {
     # nNNdaysago
     local let nNow=$( date '+%s' )
     local let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-    local let nNNdaysago=$(( nNow - (( ${ACCEPTABLE_DAYs} - 1 )*24*60*60) - (nNow-nTodayYYYYmmdd) ))
+    local let nNNdaysago=$(( nNow - (( ${ACCEPTABLE_DAYs} - 1 )*24*60*60) + (nNow-nTodayYYYYmmdd) ))
 
     # arrBucketNN
     declare -a local arrBucketNN
@@ -1657,7 +1657,7 @@ function _all_datetime_urlnameslice_records_from_the_last_NN_days() {
     # nNNdaysago
     local let nNow=$( date '+%s' )
     local let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-    local let nNNdaysago=$(( nNow - (( ${NN} - 1 )*24*60*60) - (nNow-nTodayYYYYmmdd) ))
+    local let nNNdaysago=$(( nNow - (( ${NN} - 1 )*24*60*60) + (nNow-nTodayYYYYmmdd) ))
 
     # arrNNdatetime_, arrNNUrlName_
     for (( k=0, j=$((--nRecords)); 0<=j; j-- )); do
