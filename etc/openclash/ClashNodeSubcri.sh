@@ -1516,11 +1516,11 @@ function fnFeedbackSubsystem() {
             ${ACCEPTABLE_DAYs}
     fi
 	declare -a local LinkNotWorthTryingOldest1Per7
-    fnAddDatetimeMarkAndAppend2EofOldest1Per7 LinkNotWorthTryingWithin7 "${DIR0}/${baseName}.urls.db.LinkNotWorthTryingWithin7" LinkNotWorthTryingOldest1Per7
+    fnAddDatetimeMarkAndAppend2EofOldest1Per7 LinkNotWorthTryingWithin7 "${DIR0}/${baseName}.urls.db.LinkNotWorthTryingOldest1Per7" LinkNotWorthTryingOldest1Per7
  #D printf "%s\n" "${LinkNotWorthTryingWithin7[@]}"; exit 0
 
     #//////////////////////////////////////////////////////////////////////
-    # 2. LinkDiscard2 <== [(Link404Over7, LinkInactiveOver7, Link0sizeOver7), LinkNotWorthTryingWithin7]
+    # 2. LinkDiscard2 <== [(Link404Over7, LinkInactiveOver7, Link0sizeOver7), LinkNotWorthTryingOldest1Per7]
     # 2.1 LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
     declare -a local LinkDiscard
     fnLinkDiscard \
