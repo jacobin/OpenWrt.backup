@@ -1172,14 +1172,18 @@ function fnTableExtractPresent4Last7consecutiveDays() {
         return
     fi
 
+    # nNNdaysago
+    let nNow=$( date '+%s' )
+    let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
+    let nNNdaysago=$(( nNow - ( ( ACCEPTABLE_DAYs - 1 )*24*60*60 ) - (nNow - nTodayYYYYmmdd) ))
+
     # arrBucketNN
     declare -a local arrBucketNN
     for (( j=0; j<nRecNNsize; j++ )); do
         local let nBucketIdx=$(( ( arrNNdatetime[j] - nNNdaysago ) / (24*60*60) ))
-        if (( 0 <= nBucketIdx )); then
-            arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
-            arrBucketNN[ nBucketIdx ]+="|"
-        fi
+        ASSERT "(( 0 <= nBucketIdx )) && (( nBucketIdx < NN ))" "The records obtained after filtering must all fall within the last 7 days."
+        arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
+        arrBucketNN[ nBucketIdx ]+="|"
     done
 
     local let nBucketNNsize=${#arrBucketNN[@]}
@@ -1224,12 +1228,17 @@ function fnTableExtractPresent4Last7Days() {
     ASSERT "(( ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ))" "\"arrNNdatetime\" must be equal to \"arrNNUrlName\"."
  #D printf "%s\n" "${arrNNUrlName[@]}"; exit 0
 
+    # nNNdaysago
+    let nNow=$( date '+%s' )
+    let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
+    let nNNdaysago=$(( nNow - ( ( ACCEPTABLE_DAYs - 1 )*24*60*60 ) - (nNow - nTodayYYYYmmdd) ))
+
     local let nRecNNsize=${#arrNNUrlName[@]}
     # arrBucketNN
     declare -a local arrBucketNN
     for (( j=0; j<nRecNNsize; j++ )); do
         local let nBucketIdx=$(( ( arrNNdatetime[j] - nNNdaysago ) / (24*60*60) ))
-        ASSERT "(( 0 <= nBucketIdx ))" "The value of nBucketIdx cannot be less than 0."
+		ASSERT "(( 0 <= nBucketIdx )) && (( nBucketIdx < NN ))" "The records obtained after filtering must all fall within the last 7 days."
         arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
         arrBucketNN[ nBucketIdx ]+="|"
     done
