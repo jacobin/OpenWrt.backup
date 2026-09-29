@@ -174,7 +174,7 @@ tee_echo "Start running the feedback subsystem"
 #
 # # ${DIR0}/${baseName}.constrict
 # if [ ! -f "${DIR0}/${baseName}.constrict" ] || (( nLastFeedbackDatetime < nNNdaysago )) || (( (nNow - nSubUrlsFileDatetime) < 60 )); then
-    fnFeedbackSubsystem "${DIR0}/${baseName}.urls.constrict"
+    fnFeedbackSubsystem "${ACCEPTABLE_DAYs}" "${DIR0}/${baseName}.urls.constrict"
     python "${DIR0}/${baseName}.SortCsvByFiled.py" "-i${DIR0}/${baseName}.urls.constrict" "-o${DIR0}/${baseName}.urls.constrict" -x1
     ASSERT "[ -f \"${DIR0}/${baseName}.urls.constrict\" ]" "The generated file \"${DIR0}/${baseName}.urls.constrict\" does not exist."
 # fi
@@ -1248,7 +1248,7 @@ function fnTableExtractPresent4Last7consecutiveDays() {
     # nNNdaysago
     let nNow=$( date '+%s' )
     let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-    let nNNdaysago=$(( nNow - ( ( ACCEPTABLE_DAYs - 1 )*24*60*60 ) - (nNow - nTodayYYYYmmdd) ))
+    let nNNdaysago=$(( nNow - ( ( NN - 1 )*24*60*60 ) - (nNow - nTodayYYYYmmdd) ))
 
     # arrBucketNN
     declare -a local arrBucketNN
@@ -1304,7 +1304,7 @@ function fnTableExtractPresent4Last7Days() {
     # nNNdaysago
     let nNow=$( date '+%s' )
     let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-    let nNNdaysago=$(( nNow - ( ( ACCEPTABLE_DAYs - 1 )*24*60*60 ) - (nNow - nTodayYYYYmmdd) ))
+    let nNNdaysago=$(( nNow - ( ( NN - 1 )*24*60*60 ) - (nNow - nTodayYYYYmmdd) ))
 
     local let nRecNNsize=${#arrNNUrlName[@]}
     # arrBucketNN
@@ -1407,9 +1407,10 @@ function fnAddDatetimeMarkAndAppend2Eof() {
 ############# function: fnAddDatetimeMarkAndAppend2EofOldest1Per7 #############
 ###############################################################################
 function fnAddDatetimeMarkAndAppend2EofOldest1Per7() {
-    local -n arrUrlNameSlice=$1 # in
-    local sTableFPath=$2        # out
-    local -n arrOldest1Per7=$3  # out
+    local let NN=$1             # in
+    local -n arrUrlNameSlice=$2 # in
+    local sTableFPath=$3        # out
+    local -n arrOldest1Per7=$4  # out
 
     ASSERT "! (( ${#arrOldest1Per7[@]} ))" "The array used to hold the returned data must initially be empty."
     if (( ${#arrUrlNameSlice[@]} )); then return; fi # If the array is empty, exit immediately.
@@ -1421,7 +1422,7 @@ function fnAddDatetimeMarkAndAppend2EofOldest1Per7() {
     declare -a local arrNNUrlName
     if ! _all_datetime_urlnameslice_records_from_the_last_NN_days \
             "${sTableFPath}" \
-            "${ACCEPTABLE_DAYs}" \
+            "${NN}" \
             arrNNdatetime \
             arrNNUrlName; then
         return
@@ -1435,7 +1436,7 @@ function fnAddDatetimeMarkAndAppend2EofOldest1Per7() {
     # nNNdaysago
     local let nNow=$( date '+%s' )
     local let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-    local let nNNdaysago=$(( nNow - ( ( ACCEPTABLE_DAYs - 1 )*24*60*60 ) - (nNow - nTodayYYYYmmdd) ))
+    local let nNNdaysago=$(( nNow - ( ( NN - 1 )*24*60*60 ) - (nNow - nTodayYYYYmmdd) ))
 
     # arrBucketNN
     declare -a local arrBucketNN
@@ -1447,7 +1448,7 @@ function fnAddDatetimeMarkAndAppend2EofOldest1Per7() {
         arrBucketNN[ nBucketIdx ]+="|"
     done
     local let nBucketNNsize=${#arrBucketNN[@]}
-    ASSERT "(( nBucketNNsize <= ACCEPTABLE_DAYs ))" "The result of the sorting is a maximum of seven buckets."
+    ASSERT "(( nBucketNNsize <= NN ))" "The result of the sorting is a maximum of seven buckets."
 
     # Select records that do not exist in the NN Pool and write them to the file.
     for (( n=0, j=0; j<${#arrUrlNameSlice[@]}; j++ )); do
@@ -1543,7 +1544,8 @@ function fnIsCompliantFolders() {
 ####################### function: fnFeedbackSubsystem #########################
 ###############################################################################
 function fnFeedbackSubsystem() {
-    local fpathClashNodeSubcriNew=$1
+    local let NN=$1
+    local fpathClashNodeSubcriNew=$2
 
     #//////////////////////////////////////////////////////////////////////
     # 1. Link404Over7, LinkInactiveOver7, Link0sizeOver7
@@ -1557,7 +1559,7 @@ function fnFeedbackSubsystem() {
         fnTableExtractPresent4Last7consecutiveDays \
             "${fpathTmp}" \
             Link404Over7 \
-            ${ACCEPTABLE_DAYs}
+            ${NN}
         rm -f "${fpathTmp}"
     fi
     fnAddDatetimeMarkAndAppend2Eof Link404Over7 "${DIR0}/${baseName}.urls.db.Link404Over7"
@@ -1567,7 +1569,7 @@ function fnFeedbackSubsystem() {
         fnTableExtractPresent4Last7consecutiveDays \
             "${DIR0}/${baseName}.oldsubs" \
             LinkInactiveOver7 \
-            ${ACCEPTABLE_DAYs}
+            ${NN}
     fi
     fnAddDatetimeMarkAndAppend2Eof LinkInactiveOver7 "${DIR0}/${baseName}.urls.db.LinkInactiveOver7"
 
@@ -1576,7 +1578,7 @@ function fnFeedbackSubsystem() {
         fnTableExtractPresent4Last7consecutiveDays \
             "${DIR0}/${baseName}.0size" \
             Link0sizeOver7 \
-            ${ACCEPTABLE_DAYs}
+            ${NN}
     fi
     fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7 "${DIR0}/${baseName}.urls.db.Link0sizeOver7"
 
@@ -1586,10 +1588,10 @@ function fnFeedbackSubsystem() {
         fnTableExtractPresent4Last7Days \
             "${DIR0}/${baseName}.urls.db.LinkNotWorthTrying" \
             LinkNotWorthTryingWithin7 \
-            ${ACCEPTABLE_DAYs}
+            ${NN}
     fi
 	declare -a local LinkNotWorthTryingOldest1Per7
-    fnAddDatetimeMarkAndAppend2EofOldest1Per7 LinkNotWorthTryingWithin7 "${DIR0}/${baseName}.urls.db.LinkNotWorthTryingOldest1Per7" LinkNotWorthTryingOldest1Per7
+    fnAddDatetimeMarkAndAppend2EofOldest1Per7 "${NN}" LinkNotWorthTryingWithin7 "${DIR0}/${baseName}.urls.db.LinkNotWorthTryingOldest1Per7" LinkNotWorthTryingOldest1Per7
  #D printf "%s\n" "${LinkNotWorthTryingWithin7[@]}"; exit 0
 
     #//////////////////////////////////////////////////////////////////////
