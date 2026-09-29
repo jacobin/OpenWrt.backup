@@ -1694,9 +1694,9 @@ function ArrayIntersect4element_contain_spaces() {
 # ArrayIntersect4element_contain_spaces list1 list2 list3
 # printf '%s\n' "${list3[@]}"
 
-#//////////////////////////////////////////////////////////////////////////////
-#/////// function: _all_datetime_urlnameslice_records_from_the_last_NN_days ///
-#//////////////////////////////////////////////////////////////////////////////
+###############################################################################
+###### function: _all_datetime_urlnameslice_records_from_the_last_NN_days #####
+###############################################################################
 function _all_datetime_urlnameslice_records_from_the_last_NN_days() {
     local sTableFPath=$1
     local let NN=$2
