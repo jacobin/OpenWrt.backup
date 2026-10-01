@@ -1404,71 +1404,6 @@ function fnAddDatetimeMarkAndAppend2Eof() {
 }
 
 ###############################################################################
-############# function: fnAddDatetimeMarkAndAppend2EofOldest1Per7 #############
-###############################################################################
-function fnAddDatetimeMarkAndAppend2EofOldest1Per7() {
-    local let NN=$1             # in
-    local -n arrUrlNameSlice=$2 # in
-    local sTableFPath=$3        # out
-    local -n arrOldest1Per7=$4  # out
-
-    ASSERT "! (( ${#arrOldest1Per7[@]} ))" "The array used to hold the returned data must initially be empty."
-    if (( ${#arrUrlNameSlice[@]} )); then return; fi # If the array is empty, exit immediately.
-
-    declare -i local let j=-1 k=-1 n=-1
-
-    # arrNNdatetime, arrNNUrlName
-    declare -a local arrNNdatetime
-    declare -a local arrNNUrlName
-    if ! _all_datetime_urlnameslice_records_from_the_last_NN_days \
-            "${sTableFPath}" \
-            "${NN}" \
-            arrNNdatetime \
-            arrNNUrlName; then
-        return
-    fi
-    ASSERT "(( ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ))" "Datetime and UrlNameSlice exist as a pair, so the number of elements in each should be the same."
- #D let arrSize=${#arrNNdatetime[@]}
- #D for (( j=0; j < arrSize; j++ )); do
- #D     echo $(date -d "@${arrNNdatetime[j]}" "+%Y-%m-%d %H:%M:%S") ${arrNNUrlName[j]}
- #D done
-
-    # nNNdaysago
-    local let nNow=$( date '+%s' )
-    local let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-    local let nNNdaysago=$(( nNow - ( ( NN - 1 )*24*60*60 ) - (nNow - nTodayYYYYmmdd) ))
-
-    # arrBucketNN
-    declare -a local arrBucketNN
-    local let nRecNNsize=${#arrNNUrlName[@]}
-    for (( j=0; j<nRecNNsize; j++ )); do
-        local let nBucketIdx=$(( ( arrNNdatetime[j] - nNNdaysago ) / (24*60*60) ))
-        ASSERT "(( 0 <= nBucketIdx ))" "The selected units are guaranteed to fall within the seven-day timeframe."
-        arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
-        arrBucketNN[ nBucketIdx ]+="|"
-    done
-    local let nBucketNNsize=${#arrBucketNN[@]}
-    ASSERT "(( nBucketNNsize <= NN ))" "The result of the sorting is a maximum of seven buckets."
-
-    # Select records that do not exist in the NN Pool and write them to the file.
-    for (( n=0, j=0; j<${#arrUrlNameSlice[@]}; j++ )); do
-        local foundWithin7=false
-        for (( k=0; k < nBucketNNsize; k++ )); do
-            # https://stackoverflow.com/questions/229551/how-to-check-if-a-string-contains-a-substring-in-bash
-            if [[ ${arrBucketNN[k]} == *"${arrUrlNameSlice[j]}"* ]]; then
-                foundWithin7=true
-            fi
-        done
-
-        if [ "$foundWithin7" == false ]; then
-            echo $(date +%Y%m%d_%H%M%S) ${arrUrlNameSlice[j]} >> "${sTableFPath}"
-            arrOldest1Per7[n]=${arrUrlNameSlice[j]}
-            ((n++))
-        fi
-    done
-}
-
-###############################################################################
 ########################## function: fnLinkDiscard ############################
 ###############################################################################
 function fnLinkDiscard() {
@@ -1590,12 +1525,11 @@ function fnFeedbackSubsystem() {
             LinkNotWorthTryingWithin7 \
             ${NN}
     fi
-	declare -a local LinkNotWorthTryingOldest1Per7
-    fnAddDatetimeMarkAndAppend2EofOldest1Per7 "${NN}" LinkNotWorthTryingWithin7 "${DIR0}/${baseName}.urls.db.LinkNotWorthTryingOldest1Per7" LinkNotWorthTryingOldest1Per7
+    fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTryingWithin7 "${DIR0}/${baseName}.urls.db.LinkNotWorthTryingWithin7"
  #D printf "%s\n" "${LinkNotWorthTryingWithin7[@]}"; exit 0
 
     #//////////////////////////////////////////////////////////////////////
-    # 2. LinkDiscard2 <== [(Link404Over7, LinkInactiveOver7, Link0sizeOver7), LinkNotWorthTryingOldest1Per7]
+    # 2. LinkDiscard2 <== [(Link404Over7, LinkInactiveOver7, Link0sizeOver7), LinkNotWorthTryingWithin7]
     # 2.1 LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
     declare -a local LinkDiscard
     fnLinkDiscard \
@@ -1607,9 +1541,9 @@ function fnFeedbackSubsystem() {
  #D printf "%s\n" "${LinkDiscard[@]}"; exit 0
 
     #//////////////////////////////////////////////////////////////////////////
-    # 2.2. LinkDiscard2 <== (LinkDiscard, LinkNotWorthTryingOldest1Per7)
+    # 2.2. LinkDiscard2 <== (LinkDiscard, LinkNotWorthTryingWithin7)
     declare -a local LinkDiscard2
-    LinkDiscard2=( "${LinkDiscard[@]}" "${LinkNotWorthTryingOldest1Per7[@]}" )
+    LinkDiscard2=( "${LinkDiscard[@]}" "${LinkNotWorthTryingWithin7[@]}" )
     LinkDiscard2=($(echo "${LinkDiscard2[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
     fnAddDatetimeMarkAndAppend2Eof LinkDiscard2 "${DIR0}/${baseName}.urls.db.LinkDiscard2"
  #D printf "%s\n" "${LinkDiscard2[@]}"; exit 0
