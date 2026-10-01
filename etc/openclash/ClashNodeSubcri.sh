@@ -1296,9 +1296,8 @@ function fnTableExtractPresent4Last7Days() {
     declare -a local arrNNdatetime
     declare -a local arrNNUrlName
     if ! _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName; then return; fi
-    ASSERT "(( 0 < ${#arrNNdatetime[@]} ))" "The lengths of \"arrNNdatetime\" should NOT be 0."
-    ASSERT "(( 0 < ${#arrNNUrlName[@]} ))" "The lengths of \"arrNNUrlName\" should NOT be 0."
     ASSERT "(( ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ))" "\"arrNNdatetime\" must be equal to \"arrNNUrlName\"."
+    if ! (( 0 < ${#arrNNdatetime[@]} )); then return; fi
  #D printf "%s\n" "${arrNNUrlName[@]}"; exit 0
 
     # nNNdaysago
