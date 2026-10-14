@@ -60,13 +60,6 @@ source <(sed '1,/^# HELPER FUNCTIONS #$/d' "$0")
 ###############################################################################
 if ! is_not_running; then exit 1; fi
 
-# function afun() { ASSERT "((2==1))" "sssssssssssssssssssss"; }
-# function bfun() { afun; }
-# function cfun() { bfun; }
-# ASSERT "((2==1))" "Test the latest version of ASSERT()."
-# cfun
-# exit 0
-
 tee_echo "Try to synchronize and calibrate time from WAN"
 ###############################################################################
 ## 从WAN上同步校准时间 ########################################################
@@ -161,7 +154,7 @@ tee_echo "Start running the feedback subsystem"
 # # nNNdaysago
 # let nNow=$( date '+%s' )
 # let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-# let nNNdaysago=$(( nNow - ( ( ACCEPTABLE_DAYs - 1 )*24*60*60 ) - (nNow - nTodayYYYYmmdd) ))
+# let nNNdaysago=$(( nNow - ( ACCEPTABLE_DAYs*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
 #
 # # nLastFeedbackDatetime
 # let nLastFeedbackDatetime=0
@@ -172,8 +165,8 @@ tee_echo "Start running the feedback subsystem"
 # # nSubUrlsFileDatetime
 # let nSubUrlsFileDatetime=$( date -d "$(date -r """${DIR0}/${baseName}.urls""" '+%Y-%m-%d %H:%M:%S')" +%s )
 #
-# # ${DIR0}/${baseName}.constrict
-# if [ ! -f "${DIR0}/${baseName}.constrict" ] || (( nLastFeedbackDatetime < nNNdaysago )) || (( (nNow - nSubUrlsFileDatetime) < 60 )); then
+# # ${DIR0}/${baseName}.urls.constrict
+# if [ ! -f "${DIR0}/${baseName}.urls.constrict" ] || (( nLastFeedbackDatetime < nNNdaysago )) || (( (nNow - nSubUrlsFileDatetime) < 60 )); then
     fnFeedbackSubsystem "${ACCEPTABLE_DAYs}" "${DIR0}/${baseName}.urls.constrict"
     python "${DIR0}/${baseName}.SortCsvByFiled.py" "-i${DIR0}/${baseName}.urls.constrict" "-o${DIR0}/${baseName}.urls.constrict" -x1
     ASSERT "[ -f \"${DIR0}/${baseName}.urls.constrict\" ]" "The generated file \"${DIR0}/${baseName}.urls.constrict\" does not exist."
@@ -1202,6 +1195,20 @@ function fnStacktrace() {
 ##}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 
 ###############################################################################
+######################### function: reverse_array #############################
+###############################################################################
+function reverse_array() {
+    local -n arr_=$1
+    declare -a local rev_arr_=()
+    declare -i local let i=-1
+    len=${#arr_[@]}
+    for (( i = len - 1; i >= 0; i-- )); do
+        rev_arr_+=("${arr_[i]}")
+    done
+    arr_=("${rev_arr_[@]}")
+}
+
+###############################################################################
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -1236,9 +1243,8 @@ function fnTableExtractPresent4Last7consecutiveDays() {
     declare -a local arrNNdatetime
     declare -a local arrNNUrlName
     if ! _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName; then return; fi
-    ASSERT "(( 0 < ${#arrNNdatetime[@]} ))" "The lengths of \"arrNNdatetime\" should NOT be 0."
-    ASSERT "(( 0 < ${#arrNNUrlName[@]} ))" "The lengths of \"arrNNUrlName\" should NOT be 0."
     ASSERT "(( ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ))" "\"arrNNdatetime\" must be equal to \"arrNNUrlName\"."
+    if ! (( 0 < ${#arrNNdatetime[@]} )); then return; fi
 
     local let nRecNNsize=${#arrNNUrlName[@]}
     if (( nRecNNsize < ${NN} )); then
@@ -1248,7 +1254,7 @@ function fnTableExtractPresent4Last7consecutiveDays() {
     # nNNdaysago
     let nNow=$( date '+%s' )
     let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-    let nNNdaysago=$(( nNow - ( ( NN - 1 )*24*60*60 ) - (nNow - nTodayYYYYmmdd) ))
+    let nNNdaysago=$(( nNow - ( NN*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
 
     # arrBucketNN
     declare -a local arrBucketNN
@@ -1298,47 +1304,90 @@ function fnTableExtractPresent4Last7Days() {
     if ! _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName; then return; fi
     ASSERT "(( ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ))" "\"arrNNdatetime\" must be equal to \"arrNNUrlName\"."
     if ! (( 0 < ${#arrNNdatetime[@]} )); then return; fi
- #D printf "%s\n" "${arrNNUrlName[@]}"; exit 0
 
     # nNNdaysago
     let nNow=$( date '+%s' )
     let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-    let nNNdaysago=$(( nNow - ( ( NN - 1 )*24*60*60 ) - (nNow - nTodayYYYYmmdd) ))
+    let nNNdaysago=$(( nNow - ( NN*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
 
-    local let nRecNNsize=${#arrNNUrlName[@]}
     # arrBucketNN
     declare -a local arrBucketNN
+    local let nRecNNsize=${#arrNNUrlName[@]}
     for (( j=0; j<nRecNNsize; j++ )); do
         local let nBucketIdx=$(( ( arrNNdatetime[j] - nNNdaysago ) / (24*60*60) ))
 		ASSERT "(( 0 <= nBucketIdx )) && (( nBucketIdx < NN ))" "The records obtained after filtering must all fall within the last 7 days."
         arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
         arrBucketNN[ nBucketIdx ]+="|"
     done
- #D printf "%s\n" "${arrBucketNN[@]}"; exit 0
 
-    local let nBucketNNsize=${#arrBucketNN[@]}
-  # if (( nBucketNNsize < ${NN} )); then
-  #     return
-  # fi
-  #
-  # ASSERT "(( ${NN} == nBucketNNsize ))" "The number of buckets $nBucketNNsize should be equal to ${NN}."
-  #
-  # # There are only ${NN} buckets, and each bucket contains one or more urls, with each url separated by a '|'.
     # arrUrlName0
     declare -a local arrUrlName0
+    local let nBucketNNsize=${#arrBucketNN[@]}
     arrUrlName0=(${arrBucketNN[0]//|/ })
     for (( k=1; k<nBucketNNsize; k++ )); do
         declare -a local arrUrlNameK
         arrUrlNameK=( ${arrBucketNN[k]//|/ })
         declare -a local arrUrlNameIntersetResult
-  #     arrUrlNameIntersetResult=()
-  #     ArrayIntersect arrUrlName0 arrUrlNameK arrUrlNameIntersetResult
         arrUrlNameIntersetResult=( "${arrUrlName0[@]}" "${arrUrlNameK[@]}" )
         arrUrlName0=("${arrUrlNameIntersetResult[@]}")
     done
     # https://stackoverflow.com/questions/13648410/how-can-i-get-unique-values-from-an-array-in-bash
     arrUrlName0=($(echo "${arrUrlName0[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
- #D printf "%s\n" "${arrUrlName0[@]}"; exit 0
+
+    arrNNresult=("${arrUrlName0[@]}")
+}
+
+###############################################################################
+############ function: fnTableExtractPresent4NCDays ###########################
+###############################################################################
+function fnTableExtractPresent4NCDays() {
+    local -n arrNNresult=$1
+    local sTableFPath=$2
+    local let NN=$3
+    local let nCount=$4
+
+    ASSERT "! (( ${#arrNNresult[@]} ))" "The array used to hold the returned data must initially be empty."
+
+    # arrNNdatetime, arrNNUrlName
+    declare -a local arrNNdatetime
+    declare -a local arrNNUrlName
+    if ! _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName; then return; fi
+    ASSERT "(( ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ))" "\"arrNNdatetime\" must be equal to \"arrNNUrlName\"."
+  # print_yyyyMMddHHmmss_urlNameSlice arrNNdatetime arrNNUrlName; exit 0
+    if ! (( 0 < ${#arrNNdatetime[@]} )); then return; fi
+
+    # nNNdaysago
+    let nNow=$( date '+%s' )
+    let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
+    let nNNdaysago=$(( nNow - ( NN*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
+
+    # arrBucketNN
+    declare -a local arrBucketNN
+    local let nRecNNsize=${#arrNNUrlName[@]}
+    for (( j=0; j<nRecNNsize; j++ )); do
+        local let nBucketIdx=$(( ( arrNNdatetime[j] - nNNdaysago ) / (24*60*60) ))
+		ASSERT "(( 0 <= nBucketIdx )) && (( nBucketIdx < NN ))" "The records obtained after filtering must all fall within the last 7 days."
+        if (( nBucketIdx < nCount )); then
+            arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
+            arrBucketNN[ nBucketIdx ]+="|"
+        fi
+    done
+
+    if ! (( ${#arrBucketNN[@]} )); then return; fi
+
+    # arrUrlName0
+    declare -a local arrUrlName0
+    local let nBucketNNsize=${#arrBucketNN[@]}
+    arrUrlName0=(${arrBucketNN[0]//|/ })
+    for (( k=1; k<nBucketNNsize; k++ )); do
+        declare -a local arrUrlNameK
+        arrUrlNameK=( ${arrBucketNN[k]//|/ })
+        declare -a local arrUrlNameIntersetResult
+        arrUrlNameIntersetResult=( "${arrUrlName0[@]}" "${arrUrlNameK[@]}" )
+        arrUrlName0=("${arrUrlNameIntersetResult[@]}")
+    done
+    # https://stackoverflow.com/questions/13648410/how-can-i-get-unique-values-from-an-array-in-bash
+    arrUrlName0=($(echo "${arrUrlName0[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
 
     arrNNresult=("${arrUrlName0[@]}")
 }
@@ -1395,10 +1444,21 @@ function fnFile2Table() {
 function fnAddDatetimeMarkAndAppend2Eof() {
     local -n arrUrlNameSlice=$1
     local fpath=$2
+    local nDaysToGoBack=$3
+
+    # ticks
+    local let ticks=$(date +%s%3N)
+    if ! [ -z "$nDaysToGoBack" ]; then
+        ASSERT "isdigit $nDaysToGoBack" "The third input parameter must be a number."
+        let ticks-=$(( 24*60*60*nDaysToGoBack ))
+    fi
+
+    # sDatetime <== ticks
+    local sDatetime=$(date -d @${ticks} +"%Y-%m-%d_%H:%M:%S")
 
     declare -i local let j=-1
     for (( j=0; j<${#arrUrlNameSlice[@]}; j++ )); do
-        echo $(date +%Y%m%d_%H%M%S) ${arrUrlNameSlice[j]} >> "${fpath}"
+        echo ${sDatetime} ${arrUrlNameSlice[j]} >> "${fpath}"
     done
 }
 
@@ -1482,9 +1542,46 @@ function fnFeedbackSubsystem() {
     local fpathClashNodeSubcriNew=$2
 
     #//////////////////////////////////////////////////////////////////////
-    # 1. Link404Over7, LinkInactiveOver7, Link0sizeOver7
+    # 1. arrSubscri
+    declare -a local arrSubscri
+    readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
+    ASSERT "(( 0 < ${#arrSubscri[@]} ))" "Subscription configuration item count is 0"
+
+    #//////////////////////////////////////////////////////////////////////
+    # 2. LinkDiscardOld ==> arrSubscri
+    if [ -f "${DIR0}/${baseName}.urls.db.LinkDiscard" ]; then
+        # 2.1 LinkDiscardOld
+        declare -a local LinkDiscardOld
+        fnTableExtractPresent4Last7Days \
+            "${DIR0}/${baseName}.urls.db.LinkDiscard" \
+            LinkDiscardOld \
+            ${NN}
+
+        # 2.2 arrSubscri
+        if (( ${#LinkDiscardOld[@]} )); then
+            declare -a local arrSubscriTmp
+            ArraySubtract arrSubscri LinkDiscardOld arrSubscriTmp
+            arrSubscri=("${arrSubscriTmp[@]}")
+        fi
+
+        # 2.3 Link8thDays
+        declare -a local Link8thDays
+        fnTableExtractPresent4NCDays \
+            Link8thDays \
+            "${DIR0}/${baseName}.urls.db.LinkDiscard" \
+            $(( NN + 1 )) \
+            1
+        declare -a local arr8thTmp
+        ArraySubtract Link8thDays LinkDiscardOld arr8thTmp
+        Link8thDays=("${arr8thTmp[@]}")
+    fi
+    if ! (( ${#arrSubscri[@]} )); then return; fi
+
+    #//////////////////////////////////////////////////////////////////////
+    # 3. LinkDiscard
     declare -a local Link404Over7 LinkInactiveOver7 Link0sizeOver7
-    # 1.1 loop6.bak/Link404Over7
+
+    # 3.1 loop6.bak/Link404Over7
     if fnIsCompliantFolders "${DIR0}/loop6.bak/${baseName}.loop6"; then
         local fpathTmp=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
         fnFile2Table \
@@ -1498,7 +1595,7 @@ function fnFeedbackSubsystem() {
     fi
     fnAddDatetimeMarkAndAppend2Eof Link404Over7 "${DIR0}/${baseName}.urls.db.Link404Over7"
 
-    # 1.2 oldsubs/LinkInactiveOver7
+    # 3.2 oldsubs/LinkInactiveOver7
     if [ -f "${DIR0}/${baseName}.oldsubs" ]; then
         fnTableExtractPresent4Last7consecutiveDays \
             "${DIR0}/${baseName}.oldsubs" \
@@ -1507,7 +1604,7 @@ function fnFeedbackSubsystem() {
     fi
     fnAddDatetimeMarkAndAppend2Eof LinkInactiveOver7 "${DIR0}/${baseName}.urls.db.LinkInactiveOver7"
 
-    # 1.3 0size/Link0sizeOver7
+    # 3.3 0size/Link0sizeOver7
     if [ -f "${DIR0}/${baseName}.0size" ]; then
         fnTableExtractPresent4Last7consecutiveDays \
             "${DIR0}/${baseName}.0size" \
@@ -1516,20 +1613,7 @@ function fnFeedbackSubsystem() {
     fi
     fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7 "${DIR0}/${baseName}.urls.db.Link0sizeOver7"
 
-    # 1.4 LinkNotWorthTryingWithin7
-    declare -a local LinkNotWorthTryingWithin7
-    if [ -f "${DIR0}/${baseName}.urls.db.LinkNotWorthTrying" ]; then
-        fnTableExtractPresent4Last7Days \
-            "${DIR0}/${baseName}.urls.db.LinkNotWorthTrying" \
-            LinkNotWorthTryingWithin7 \
-            ${NN}
-    fi
-    fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTryingWithin7 "${DIR0}/${baseName}.urls.db.LinkNotWorthTryingWithin7"
- #D printf "%s\n" "${LinkNotWorthTryingWithin7[@]}"; exit 0
-
-    #//////////////////////////////////////////////////////////////////////
-    # 2. LinkDiscard2 <== [(Link404Over7, LinkInactiveOver7, Link0sizeOver7), LinkNotWorthTryingWithin7]
-    # 2.1 LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
+    # 3.4 LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
     declare -a local LinkDiscard
     fnLinkDiscard \
         Link404Over7 \
@@ -1537,36 +1621,19 @@ function fnFeedbackSubsystem() {
         Link0sizeOver7 \
         LinkDiscard
     fnAddDatetimeMarkAndAppend2Eof LinkDiscard "${DIR0}/${baseName}.urls.db.LinkDiscard"
- #D printf "%s\n" "${LinkDiscard[@]}"; exit 0
-
-    #//////////////////////////////////////////////////////////////////////////
-    # 2.2. LinkDiscard2 <== (LinkDiscard, LinkNotWorthTryingWithin7)
-    declare -a local LinkDiscard2
-    LinkDiscard2=( "${LinkDiscard[@]}" "${LinkNotWorthTryingWithin7[@]}" )
-    LinkDiscard2=($(echo "${LinkDiscard2[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
-    fnAddDatetimeMarkAndAppend2Eof LinkDiscard2 "${DIR0}/${baseName}.urls.db.LinkDiscard2"
- #D printf "%s\n" "${LinkDiscard2[@]}"; exit 0
+    fnAddDatetimeMarkAndAppend2Eof Link8thDays "${DIR0}/${baseName}.urls.db.LinkDiscard"
 
     #//////////////////////////////////////////////////////////////////////
-    # 3. LinkWorthTrying, LinkNotWorthTrying
+    # 4. LinkWorthTrying, LinkNotWorthTrying
     declare -a local LinkWorthTrying LinkNotWorthTrying
-    # 3.1 arrSubscri
-    declare -a local arrSubscri
-    readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
-    local subsSize=${#arrSubscri[@]}
-    ASSERT "(( 0 < subsSize ))" "Subscription configuration item count is 0"
-
-    # 3.2 LinkWorthTrying, LinkNotWorthTrying
     fnClashNodeSubcriUrlsSubtractDiscarded \
         arrSubscri \
-        LinkDiscard2 \
+        LinkDiscard \
         LinkWorthTrying \
         LinkNotWorthTrying
 
     fnAddDatetimeMarkAndAppend2Eof LinkWorthTrying "${DIR0}/${baseName}.urls.db.LinkWorthTrying"
     fnAddDatetimeMarkAndAppend2Eof LinkNotWorthTrying "${DIR0}/${baseName}.urls.db.LinkNotWorthTrying"
- #D printf "%s\n" "${LinkWorthTrying[@]}"; exit 0
- #D printf "%s\n" "${LinkNotWorthTrying[@]}"; exit 0
 
     printf '%s\n' "${LinkWorthTrying[@]}" > "${fpathClashNodeSubcriNew}"
 }
@@ -1598,6 +1665,21 @@ function ArrayIntersect() {
         if [[ $l2 =~ " $item " ]] ; then  # use $item as regexp
             result+=($item)
         fi
+    done
+}
+
+###############################################################################
+################# function: ArraySubtract #####################################
+###############################################################################
+# https://stackoverflow.com/questions/10020148/bash-delete-items-present-in-one-array-from-another?rq=3
+function ArraySubtract() {
+    local -n array1_=$1
+    local -n array2_=$2
+    local -n result_=$3
+    ASSERT "! (( ${#result_[@]} ))" "The array used to hold the returned data must initially be empty."
+    result_=("${array1_[@]}")
+    for i in "${array2_[@]}"; do
+        result_=(${result_[@]//*$i*})
     done
 }
 
@@ -1656,10 +1738,11 @@ function _all_datetime_urlnameslice_records_from_the_last_NN_days() {
     local let nRecords=${#arrTableRec_sorted_unique[@]}
     if ! (( 0 < nRecords )); then return 1; fi
 
-    # nNNdaysago
+    # nNNdaysago, n1daysago
     local let nNow=$( date '+%s' )
     local let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-    local let nNNdaysago=$(( nNow - ( ( NN - 1 )*24*60*60 ) - (nNow - nTodayYYYYmmdd) ))
+    local let nNNdaysago=$(( nNow - ( NN*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
+    local let n1daysago=$(( nNow - (nNow - nTodayYYYYmmdd) ))
 
     # arrNNdatetime_, arrNNUrlName_
     for (( k=0, j=$((--nRecords)); 0<=j; j-- )); do
@@ -1670,13 +1753,32 @@ function _all_datetime_urlnameslice_records_from_the_last_NN_days() {
         ASSERT "is_valid_datetime \"${sDatetime}\"" "The first 15 characters of the \"${arrTableRec_sorted_unique[j]}\" are not a valid timestamp."
         local sStdDatetime=$(trans2stddatetimestring "${sDatetime}")
         local let nDatetime=$(date -d "${sStdDatetime}" +%s)
+        if (( n1daysago <= nDatetime )); then continue; fi # Today doesn't count.
         if (( nDatetime < nNNdaysago )); then break; fi # Right, use `break` instead of `continue`, because the data has already been sorted and we are iterating in reverse order.
         arrNNdatetime_[k]=${nDatetime}
         arrNNUrlName_[k]=${sUrlName}
         ((k++))
     done
 
+    ASSERT "(( ${#arrNNdatetime_[@]} == ${#arrNNUrlName_[@]} ))" "\"arrNNdatetime_\" must be equal to \"arrNNUrlName_\"."
+    reverse_array arrNNdatetime_
+    reverse_array arrNNUrlName_
+
     return 0
+}
+
+###############################################################################
+############### function: print_yyyyMMddHHmmss_urlNameSlice ###################
+###############################################################################
+function print_yyyyMMddHHmmss_urlNameSlice() {
+    declare -n arrNNdatetime_=$1
+    declare -n arrNNUrlName_=$2
+    declare -i local let i=-1
+    local let nArrSize=${#arrNNdatetime_[@]}
+    for (( i = 0; i < nArrSize; i++)); do
+        sDatetime=$(date -d @${arrNNdatetime_[i]} +"%Y-%m-%d %H:%M:%S")
+        printf "%s %s\n" "$sDatetime" "${arrNNUrlName_[i]}"
+    done
 }
 
 ###############################################################################
