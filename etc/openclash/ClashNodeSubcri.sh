@@ -75,7 +75,7 @@ tee_echo "Main program starts running"
 ###############################################################################
 ## 主程序开始运行 #############################################################
 ###############################################################################
-let TIMEBEGIN=$(date +%s%3N)
+let TIMEBEGIN=$(date +%s)
 tee_echo "Begin: $(date +%Y%m%d_%H%M%S)"
 
 tee_echo "Check system integrity"
@@ -329,8 +329,8 @@ for (( i=1; i<=5; i++ )); do
         newHash=$(sha256sum "${DATA_DIR}/original/${fname}.tmp" 2>/dev/null | awk '{print $1}')
         if [[ "$newHash" == "$oldHash" ]]; then
             # https://stackoverflow.com/questions/16391208/print-a-files-last-modified-date-in-bash
-            let oldFiletime=$(date -r "${DATA_DIR}/original/${fname}" +%s%3N)
-            let nowDatetime=$(date +%s%3N)
+            let oldFiletime=$(date -r "${DATA_DIR}/original/${fname}" +%s)
+            let nowDatetime=$(date +%s)
             [[ $((nowDatetime - oldFiletime)) -gt $((${ACCEPTABLE_DAYs}*24*60*60)) ]] && bTooOldFile=true || bTooOldFile=false
             if [[ "${bTooOldFile}" == "true" ]]; then
                 tee_echo "\tFile \"${url}\" is too old and has NOT been updated for more than ${ACCEPTABLE_DAYs} days"
@@ -639,7 +639,7 @@ function is_not_running () {
 ######################### function: singleton_clean_up ########################
 ###############################################################################
 function singleton_clean_up() {
-    local let timeEnd=$(date +%s%3N)
+    local let timeEnd=$(date +%s)
     local let total_seconds=$((timeEnd-TIMEBEGIN))
     local let seconds=$((total_seconds % 60))
     local let minutes=$(((total_seconds / 60) % 60))
@@ -1447,7 +1447,7 @@ function fnAddDatetimeMarkAndAppend2Eof() {
     local nDaysToGoBack=$3
 
     # ticks
-    local let ticks=$(date +%s%3N)
+    local let ticks=$(date +%s)
     if ! [ -z "$nDaysToGoBack" ]; then
         ASSERT "isdigit $nDaysToGoBack" "The third input parameter must be a number."
         let ticks-=$(( 24*60*60*nDaysToGoBack ))
