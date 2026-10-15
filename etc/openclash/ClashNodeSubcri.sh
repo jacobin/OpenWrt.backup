@@ -1548,7 +1548,8 @@ function fnFeedbackSubsystem() {
     ASSERT "(( 0 < ${#arrSubscri[@]} ))" "Subscription configuration item count is 0"
 
     #//////////////////////////////////////////////////////////////////////
-    # 2. LinkDiscardOld ==> arrSubscri
+    # 2. LinkDiscardOld ==> arrSubscri, Link8thDays
+    declare -a local Link8thDays
     if [ -f "${DIR0}/${baseName}.urls.db.LinkDiscard" ]; then
         # 2.1 LinkDiscardOld
         declare -a local LinkDiscardOld
@@ -1565,7 +1566,6 @@ function fnFeedbackSubsystem() {
         fi
 
         # 2.3 Link8thDays
-        declare -a local Link8thDays
         fnTableExtractPresent4NCDays \
             Link8thDays \
             "${DIR0}/${baseName}.urls.db.LinkDiscard" \
