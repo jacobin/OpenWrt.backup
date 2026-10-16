@@ -76,7 +76,7 @@ tee_echo "Main program starts running"
 ## 主程序开始运行 #############################################################
 ###############################################################################
 let TIMEBEGIN=$(date +%s)
-tee_echo "Begin: $(date +%Y%m%d_%H%M%S)"
+tee_echo "Begin: $(date -d @${TIMEBEGIN} +%Y%m%d_%H%M%S)"
 
 tee_echo "Check system integrity"
 ###############################################################################
@@ -151,26 +151,9 @@ tee_echo "Start running the feedback subsystem"
 ###############################################################################
 ## 开始运行节点链接检测反馈子系统 #############################################
 ###############################################################################
-# # nNNdaysago
-# let nNow=$( date '+%s' )
-# let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-# let nNNdaysago=$(( nNow - ( ACCEPTABLE_DAYs*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
-#
-# # nLastFeedbackDatetime
-# let nLastFeedbackDatetime=0
-# if [ -f "${DIR0}/${baseName}.urls.constrict" ]; then
-# 	let nLastFeedbackDatetime=$( date -d "$(date -r """${DIR0}/${baseName}.urls.constrict""" '+%Y-%m-%d %H:%M:%S')" +%s )
-# fi
-#
-# # nSubUrlsFileDatetime
-# let nSubUrlsFileDatetime=$( date -d "$(date -r """${DIR0}/${baseName}.urls""" '+%Y-%m-%d %H:%M:%S')" +%s )
-#
-# # ${DIR0}/${baseName}.urls.constrict
-# if [ ! -f "${DIR0}/${baseName}.urls.constrict" ] || (( nLastFeedbackDatetime < nNNdaysago )) || (( (nNow - nSubUrlsFileDatetime) < 60 )); then
-    fnFeedbackSubsystem "${ACCEPTABLE_DAYs}" "${DIR0}/${baseName}.urls.constrict"
-    python "${DIR0}/${baseName}.SortCsvByFiled.py" "-i${DIR0}/${baseName}.urls.constrict" "-o${DIR0}/${baseName}.urls.constrict" -x1
-    ASSERT "[ -f \"${DIR0}/${baseName}.urls.constrict\" ]" "The generated file \"${DIR0}/${baseName}.urls.constrict\" does not exist."
-# fi
+fnFeedbackSubsystem "${ACCEPTABLE_DAYs}" "${DIR0}/${baseName}.urls.constrict"
+python "${DIR0}/${baseName}.SortCsvByFiled.py" "-i${DIR0}/${baseName}.urls.constrict" "-o${DIR0}/${baseName}.urls.constrict" -x1
+ASSERT "[ -f \"${DIR0}/${baseName}.urls.constrict\" ]" "The generated file \"${DIR0}/${baseName}.urls.constrict\" does not exist."
 
 tee_echo "Check for duplicate 'configuration names'"
 ###############################################################################
@@ -278,7 +261,7 @@ tee_echo "Download the subscribed raw data to local ${DATA_DIR}/original after a
 ###############################################################################
 # https://stackoverflow.com/questions/62021429/why-does-command-line-rm-not-accept-quotation-marks-for-directories-with-spaces
 if [ -f "${DIR0}/${baseName}.loop"6 ]; then
-    mv -f "${DIR0}/${baseName}.loop"6 "${DIR0}/loop6.bak/${baseName}.loop6.$(date +%Y%m%d_%H%M%S)" &> /dev/null
+    mv -f "${DIR0}/${baseName}.loop"6 "${DIR0}/loop6.bak/${baseName}.loop6.$(date -d @${TIMEBEGIN} +%Y%m%d_%H%M%S)" &> /dev/null
     tar_old_files "${DIR0}/loop6.bak/${baseName}.backup.loop6" "${DIR0}/loop6.bak/${baseName}.loop6" 2 1000
 fi
 rm -f "${DIR0}/${baseName}.loop"? > /dev/null 2>&1
@@ -321,7 +304,7 @@ for (( i=1; i<=5; i++ )); do
         let thisFileSize=$(get_file_size "${DATA_DIR}/original/${fname}.tmp")
         if ! [[ 0 < ${thisFileSize} ]]; then
             tee_echo "\tThe size of URL \"${url}\" is zero"
-            echo "$(date +%Y%m%d_%H%M%S) ${url},${fname}" >> "${DIR0}/${baseName}.0size"
+            echo "$(date -d @${TIMEBEGIN} +%Y%m%d_%H%M%S) ${url},${fname}" >> "${DIR0}/${baseName}.0size"
             continue
         fi
 
@@ -330,11 +313,11 @@ for (( i=1; i<=5; i++ )); do
         if [[ "$newHash" == "$oldHash" ]]; then
             # https://stackoverflow.com/questions/16391208/print-a-files-last-modified-date-in-bash
             let oldFiletime=$(date -r "${DATA_DIR}/original/${fname}" +%s)
-            let nowDatetime=$(date +%s)
+            let nowDatetime=TIMEBEGIN
             [[ $((nowDatetime - oldFiletime)) -gt $((${ACCEPTABLE_DAYs}*24*60*60)) ]] && bTooOldFile=true || bTooOldFile=false
             if [[ "${bTooOldFile}" == "true" ]]; then
                 tee_echo "\tFile \"${url}\" is too old and has NOT been updated for more than ${ACCEPTABLE_DAYs} days"
-                echo "$(date +%Y%m%d_%H%M%S) ${url},${fname}" >> "${DIR0}/${baseName}.oldsubs"
+                echo "$(date -d @${TIMEBEGIN} +%Y%m%d_%H%M%S) ${url},${fname}" >> "${DIR0}/${baseName}.oldsubs"
                 continue
             fi
         else
@@ -570,7 +553,7 @@ cat "${DIR0}/${baseName}.etc_config_openclash.mutable" >> "${DIR0}/${baseName}.c
 
 ###############################################################################
 # "/etc/config/openclash"
-mv -f "/etc/config/openclash" "/etc/config/openclash.$(date +%Y%m%d_%H%M%S)" &> /dev/null
+mv -f "/etc/config/openclash" "/etc/config/openclash.$(date -d @${TIMEBEGIN} +%Y%m%d_%H%M%S)" &> /dev/null
 cp -f "${DIR0}/${baseName}.cfg" "/etc/config/openclash" &> /dev/null
 
 tee_echo "Package redundant config Openclash files. Only 5 external files are left."
@@ -645,7 +628,7 @@ function singleton_clean_up() {
     local let minutes=$(((total_seconds / 60) % 60))
     local let hours=$((total_seconds / 3600))
     printf -v formatted_string "%02d:%02d:%02d" $hours $minutes $seconds
-    tee_echo "\tEnd: $(date +%Y%m%d_%H%M%S), time escaped:${formatted_string}"
+    tee_echo "\tEnd: $(date -d @${timeEnd} +%Y%m%d_%H%M%S), time escaped:${formatted_string}"
     flock -u 3
     exec 4>&-
     rm -f ${F_LOCK} &> /dev/null
@@ -843,7 +826,7 @@ function tar_old_files() {
     if (( coordA < 0  )); then let coordA=0; fi
     ASSERT "(( $coordA <= $coordB ))" "Error in input parameters for tar call"
 
-    local NowDatetime="$(date +'%Y%m%d_%H%M%S')"
+    local NowDatetime="$(date -d @${TIMEBEGIN} +'%Y%m%d_%H%M%S')"
     declare -i local let j=-1
     for (( j=0; j<bakSize; j++ )); do
         local fpath=${arrOpenclashConfigBakup[$j]}
@@ -1252,9 +1235,9 @@ function fnTableExtractPresent4Last7consecutiveDays() {
     fi
 
     # nNNdaysago
-    let nNow=$( date '+%s' )
-    let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-    let nNNdaysago=$(( nNow - ( NN*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
+    let local nNow=TIMEBEGIN
+    local let nTodayYYYYmmdd=$( date -d "$( date -d @${TIMEBEGIN} '+%F' )" +%s )
+    local let nNNdaysago=$(( nNow - ( NN*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
 
     # arrBucketNN
     declare -a local arrBucketNN
@@ -1306,9 +1289,9 @@ function fnTableExtractPresent4Last7Days() {
     if ! (( 0 < ${#arrNNdatetime[@]} )); then return; fi
 
     # nNNdaysago
-    let nNow=$( date '+%s' )
-    let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-    let nNNdaysago=$(( nNow - ( NN*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
+    let local nNow=TIMEBEGIN
+    local let nTodayYYYYmmdd=$( date -d "$( date -d @${TIMEBEGIN} '+%F' )" +%s )
+    local let nNNdaysago=$(( nNow - ( NN*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
 
     # arrBucketNN
     declare -a local arrBucketNN
@@ -1357,9 +1340,9 @@ function fnTableExtractPresent4NCDays() {
     if ! (( 0 < ${#arrNNdatetime[@]} )); then return; fi
 
     # nNNdaysago
-    let nNow=$( date '+%s' )
-    let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
-    let nNNdaysago=$(( nNow - ( NN*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
+    let local nNow=TIMEBEGIN
+    local let nTodayYYYYmmdd=$( date -d "$( date -d @${TIMEBEGIN} '+%F' )" +%s )
+    local let nNNdaysago=$(( nNow - ( NN*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
 
     # arrBucketNN
     declare -a local arrBucketNN
@@ -1447,7 +1430,7 @@ function fnAddDatetimeMarkAndAppend2Eof() {
     local nDaysToGoBack=$3
 
     # ticks
-    local let ticks=$(date +%s)
+    declare -i let local ticks=TIMEBEGIN
     if ! [ -z "$nDaysToGoBack" ]; then
         ASSERT "isdigit $nDaysToGoBack" "The third input parameter must be a number."
         let ticks-=$(( 24*60*60*nDaysToGoBack ))
@@ -1499,7 +1482,7 @@ function fnClashNodeSubcriUrlsSubtractDiscarded() {
         arrDiscardCfgName[j]=${arrSplit[1]}
     done
 
-    local let subsSize=${#arrSubscri_[@]}
+    declare -i local let subsSize=${#arrSubscri_[@]}
     for (( j=0, k=0, L=0; j<${subsSize}; j++ )); do
         local subscri="${arrSubscri_[j]}"
         local arrSplit=(${subscri//,/ })
@@ -1739,8 +1722,8 @@ function _all_datetime_urlnameslice_records_from_the_last_NN_days() {
     if ! (( 0 < nRecords )); then return 1; fi
 
     # nNNdaysago, n1daysago
-    local let nNow=$( date '+%s' )
-    local let nTodayYYYYmmdd=$( date -d "$( date '+%F' )" +%s )
+    let local nNow=TIMEBEGIN
+    local let nTodayYYYYmmdd=$( date -d "$( date -d @${TIMEBEGIN} '+%F' )" +%s )
     local let nNNdaysago=$(( nNow - ( NN*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
     local let n1daysago=$(( nNow - (nNow - nTodayYYYYmmdd) ))
 
@@ -1780,6 +1763,70 @@ function print_yyyyMMddHHmmss_urlNameSlice() {
         printf "%s %s\n" "$sDatetime" "${arrNNUrlName_[i]}"
     done
 }
+
+###############################################################################
+########################### LocalLet.vs.LetLocal ##############################
+###############################################################################
+#   #!/bin/bash
+#   let a=$(date +%s)
+#   #----------------------------------------------------------------------
+#   function LocalLet.vs.LetLocal1() {
+#       let local b=a
+#       printf "\"%s\":  %s\n"    "let local" $b
+#   }
+#   #----------------------------------------------------------------------
+#   function LocalLet.vs.LetLocal2() {
+#       local let b=a
+#       printf "\"%s\":  %s\n"    "local let" $b
+#   }
+#   #----------------------------------------------------------------------
+#   function LocalLet.vs.LetLocal3() {
+#       let b=a
+#       printf "\"%s\":  %s\n"          "let" $b
+#   }
+#   #----------------------------------------------------------------------
+#   function LocalLet.vs.LetLocal4() {
+#       local b=a
+#       printf "\"%s\":  %s\n"        "local" $b
+#   }
+#   #----------------------------------------------------------------------
+#   function LocalLet.vs.LetLocal5() {
+#       let local b=$a
+#       printf "\"%s\":  %s\n" "let local =$" $b
+#   }
+#   #----------------------------------------------------------------------
+#   function LocalLet.vs.LetLocal6() {
+#       local let b=$a
+#       printf "\"%s\":  %s\n" "local let =$" $b
+#   }
+#   #----------------------------------------------------------------------
+#   function LocalLet.vs.LetLocal7() {
+#       let b=$a
+#       printf "\"%s\":  %s\n"       "let =$" $b
+#   }
+#   #----------------------------------------------------------------------
+#   function LocalLet.vs.LetLocal8() {
+#       local b=$a
+#       printf "\"%s\":  %s\n"     "local =$" $b
+#   }
+#   LocalLet.vs.LetLocal1
+#   LocalLet.vs.LetLocal2
+#   LocalLet.vs.LetLocal3
+#   LocalLet.vs.LetLocal4
+#   LocalLet.vs.LetLocal5
+#   LocalLet.vs.LetLocal6
+#   LocalLet.vs.LetLocal7
+#   LocalLet.vs.LetLocal8
+#   #   # 结果如下
+#   #   root@Lnx:/ws/tmp# ./LocalLet.vs.LetLocal.sh
+#   #   "let local":  1792119285
+#   #   "local let":  a
+#   #   "let":  1792119285
+#   #   "local":  a
+#   #   "let local =$":  1792119285
+#   #   "local let =$":  1792119285
+#   #   "let =$":  1792119285
+#   #   "local =$":  1792119285
 
 ###############################################################################
 ##################################### END #####################################
