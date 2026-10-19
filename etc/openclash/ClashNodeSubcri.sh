@@ -1188,7 +1188,7 @@ function reverse_array() {
     local -n arr_=$1
     declare -a local rev_arr_=()
     declare -i local i=-1
-    len=${#arr_[@]}
+    declare -i local len=${#arr_[@]}
     for (( i = len - 1; i >= 0; i-- )); do
         rev_arr_+=("${arr_[i]}")
     done
