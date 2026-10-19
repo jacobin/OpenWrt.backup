@@ -1226,6 +1226,8 @@ function fnTableExtractPresent4Last7consecutiveDays() {
 
     ASSERT "! (( ${#arrNNresult[@]} ))" "The array used to hold the returned data must initially be empty."
 
+    declare -i local j=-1 k=-1
+
     # arrNNdatetime, arrNNUrlName
     declare -a local arrNNdatetime
     declare -a local arrNNUrlName
@@ -1284,6 +1286,8 @@ function fnTableExtractPresent4Last7Days() {
     declare -i local NN=$3
 
     ASSERT "! (( ${#arrNNresult[@]} ))" "The array used to hold the returned data must initially be empty."
+
+    declare -i local j=-1 k=-1
 
     # arrNNdatetime, arrNNUrlName
     declare -a local arrNNdatetime
@@ -1365,6 +1369,7 @@ function fnTableExtractPresent4NCDays() {
     # arrUrlName0
     declare -a local arrUrlName0
     declare -i local nBucketNNsize=${#arrBucketNN[@]}
+    declare -i local k=-1
     arrUrlName0=(${arrBucketNN[0]//|/ })
     for (( k=1; k<nBucketNNsize; k++ )); do
         declare -a local arrUrlNameK
