@@ -18,8 +18,8 @@ EOF
 ## baseName ###################################################################
 ###############################################################################
 # https://stackoverflow.com/questions/2664740/extract-file-basename-without-path-and-extension-in-bash
-declare -r baseName2=$(basename "$0")
-declare -r baseName="${baseName2%.*}"
+declare -r baseFNameExt=$(basename "$0")
+declare -r baseName="${baseFNameExt%.*}"
 
 ###############################################################################
 ## 程序运行单例 ###############################################################
