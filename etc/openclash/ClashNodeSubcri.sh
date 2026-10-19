@@ -880,6 +880,7 @@ function tar_old_files() {
 # https://blog.csdn.net/Stars____/article/details/106972527
 function LeapYear() {
     local year=$1
+    ASSERT "isdigit \"${year}\"" "The \"${year}\" used to represent the year is not a number."
     if ( (( year%4==0 )) && (( year%100!=0 )) ) || (( year%400==0 )); then
         return 0 # true
     fi
@@ -892,6 +893,7 @@ function LeapYear() {
 function MonthDays() {
     local year=$(expr $1 + 0) # 02 ==> 2
     local month=$(expr $2 + 0)
+    ASSERT "isdigit \"${year}\" && isdigit \"${month}\" && (( 0 < month )) && (( month < 13 )) && (( 0 < year))" "The input year or month, \"${year}\" or \"${month}\", are not valid."
     local Days=( 29 31 28 31 30 31 30 31 31 30 31 30 31 )
 
     if (( 2==month )) && LeapYear $year; then
