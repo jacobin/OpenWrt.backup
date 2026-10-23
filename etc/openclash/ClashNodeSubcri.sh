@@ -36,18 +36,18 @@ exec 3> ${F_LOCK}
 declare -r EXISTENTIAL_CONFIGs="http://127.0.0.1:8080"
 # https://www.google.com/search?q=bash+get+absolute+dirname
 declare -r DIR0=$(dirname "$(readlink -f "$0")")
-declare -r let CVT_PORT=25522
+declare -ri CVT_PORT=25522
 declare -r CONVERTER="http://127.0.0.1:${CVT_PORT}"
 declare -r                          DATA_DIR="/www/Hxy/openclash"
 declare -r          WEB_ORIG_DAT="http://127.0.0.1/Hxy/openclash/original"
 declare -r          WEB_SLIC_DAT="http://127.0.0.1/Hxy/openclash/slice"
 declare -r WEB_PASS2SUBCONVERTER="http://127.0.0.1/Hxy/openclash/pass2subconverter"
 declare -r  WEB_FILTEROUT_SNIOFF="http://127.0.0.1/Hxy/openclash/filterout_snioff"
-declare -r let ACCEPTABLE_DAYs=7
-declare -r let SLICE_SIZE=20
-declare -r let SUBCONVERTER_SLICE_SIZE=5
+declare -ri ACCEPTABLE_DAYs=7
+declare -ri SLICE_SIZE=20
+declare -ri SUBCONVERTER_SLICE_SIZE=5
 
-declare -i let i=-1 j=-2
+declare -i i=-1 j=-2
 
 ###############################################################################
 ## 置函数于脚本文件的末尾 #####################################################
@@ -76,7 +76,7 @@ tee_echo "Main program starts running"
 ###############################################################################
 ## 主程序开始运行 #############################################################
 ###############################################################################
-declare -r -i let TIMEBEGIN=$(date +%s)
+declare -ri TIMEBEGIN=$(date +%s)
 tee_echo "Begin: $(date -d @${TIMEBEGIN} +%Y%m%d_%H%M%S)"
 
 tee_echo "Check system integrity"
@@ -131,8 +131,8 @@ declare -i r=-1
 #STATUS_CODE=$(curl --output /dev/null --silent --head --write-out "%{http_code}" "http://127.0.0.1)
 #if (( STATUS_CODE != 200 )); then
 # https://unix.stackexchange.com/questions/86556/testing-remote-tcp-port-using-telnet-by-running-a-one-line-command
-r=$(bash -c 'exec 3<> /dev/tcp/127.0.0.1/80;echo $?' 2>/dev/null)
-if [ "$r" != "0" ]; then
+let r=$(bash -c 'exec 3<> /dev/tcp/127.0.0.1/80;echo $?' 2>/dev/null)
+if (( r != 0 )); then
     tee_echo "\tWeb service \"http://127.0.0.1\" is not started"
     singleton_clean_up 1
 fi
@@ -144,8 +144,8 @@ if (( STATUS_CODE != 200 )); then
 fi
 
 # https://unix.stackexchange.com/questions/86556/testing-remote-tcp-port-using-telnet-by-running-a-one-line-command
-r=$(bash -c 'exec 3<> /dev/tcp/127.0.0.1/'$CVT_PORT';echo $?' 2>/dev/null)
-if [ "$r" != "0" ]; then
+let r=$(bash -c 'exec 3<> /dev/tcp/127.0.0.1/'$CVT_PORT';echo $?' 2>/dev/null)
+if (( r != 0 )); then
     tee_echo "Service \"subconverter:${CVT_PORT}\" is not started!"
     singleton_clean_up 1
 fi
@@ -165,18 +165,18 @@ tee_echo "Check for duplicate 'configuration names'"
 declare -a clashConfigNames=()
 declare -a arrSubscri=()
 readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.urls.constrict" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
-declare -i let subsSize=${#arrSubscri[@]}
+declare -i subsSize=${#arrSubscri[@]}
 if (( subsSize <= 0 )); then
     tee_echo "\tSubscription configuration item count is 0"
     singleton_clean_up 1
 fi
-for (( j=0; j<${subsSize}; j++ )); do
-    subscri=${arrSubscri[$j]}
+for (( j=0; j<subsSize; j++ )); do
+    declare subscri=${arrSubscri[$j]}
     declare -a arrSplit=(${subscri//,/ })
 
-    split0=${arrSplit[0]}
-    split1=${arrSplit[1]}
-    split2=${arrSplit[2]}
+    declare split0=${arrSplit[0]}
+    declare split1=${arrSplit[1]}
+    declare split2=${arrSplit[2]}
     split0=$(echo "${split0}" | xargs)
     split1=$(echo "${split1}" | xargs)
     split2=$(echo "${split2}" | xargs)
@@ -187,9 +187,9 @@ for (( j=0; j<${subsSize}; j++ )); do
         singleton_clean_up 1
     fi
 
-    configFNameDotExtension=${split1}
+    declare configFNameDotExtension=${split1}
     # https://stackoverflow.com/questions/965053/extract-filename-and-extension-in-bash
-    configFName="${configFNameDotExtension%.*}"
+    declare configFName="${configFNameDotExtension%.*}"
     # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
     clashConfigNames[$j]=$(echo "${configFName}" | xargs)
 done
@@ -207,7 +207,7 @@ tee_echo "Check for available domain name servers"
 ###############################################################################
 ## 检查有否可用的域名服务器 ###################################################
 ###############################################################################
-directDns=''
+declare directDns=''
 declare -r -a dnsServers=("211.136.192.6"
                           "211.139.136.68"
                           "114.114.114.114"
@@ -239,12 +239,12 @@ tee_echo "If the intranet is down, cancel the subscription."
 ###############################################################################
 declare -a arrSpeedTestResult=()
 readarray -t arrSpeedTestResult < <( wget --no-check-certificate -p -O/dev/null "http://www.baidu.com" --dns-timeout=10 --connect-timeout=10 --read-timeout=10 --tries=3 --waitretry=4 2>&1 | grep -o "[0-9.]\\+ [KM]*B/s" )
-declare -i let speedSize=${#arrSpeedTestResult[@]}
+declare -i speedSize=${#arrSpeedTestResult[@]}
 if (( speedSize <= 0 )); then
     tee_echo "\tThe Baidu is NOT available. Exit this time."
     singleton_clean_up 1
 fi
-unset arrSpeedTestResult; unset speedSize
+unset arrSpeedTestResult speedSize
 
 #    tee_echo "If the external network is still available, cancel the subscription."
 #    ###############################################################################
@@ -256,7 +256,7 @@ unset arrSpeedTestResult; unset speedSize
 #        tee_echo "\tThe Youtube is still available. Exit this time."
 #        singleton_clean_up 1
 #    fi
-#    unset arrSpeedTestResult; unset speedSize
+#    unset arrSpeedTestResult speedSize
 
 tee_echo "Download the subscribed raw data to local ${DATA_DIR}/original after a maximum of 5 attempts."
 ###############################################################################
@@ -267,9 +267,11 @@ if [ -f "${DIR0}/${baseName}.loop"6 ]; then
     mv -f "${DIR0}/${baseName}.loop"6 "${DIR0}/loop6.bak/${baseName}.loop6.$(date -d @${TIMEBEGIN} +%Y%m%d_%H%M%S)" &> /dev/null
     tar_old_files "${DIR0}/loop6.bak/${baseName}.backup.loop6" "${DIR0}/loop6.bak/${baseName}.loop6" 2 1000
 fi
+
 rm -f "${DIR0}/${baseName}.loop"? > /dev/null 2>&1
 cp -f "${DIR0}/${baseName}.urls.constrict" "${DIR0}/${baseName}.loop1" &> /dev/null
 rm "${DIR0}/${baseName}.127.urls" > /dev/null 2>&1
+
 for (( i=1; i<=5; i++ )); do
     tee_echo "Loop${i}"
     if ! [ -f "${DIR0}/${baseName}.loop$i" ]; then break; fi
@@ -278,18 +280,17 @@ for (( i=1; i<=5; i++ )); do
     # https://www.google.com/search?q=bash+read+line+except+comment&pws=0&gl=us&gws_rd=cr
     declare -a arrSubscri=()
     readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.loop$i" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d' )
-    declare -i let subsSize=${#arrSubscri[@]}
+    declare -i subsSize=${#arrSubscri[@]}
     if (( subsSize <= 0 )); then break; fi
 
     let j=i+1
     for subscri in "${arrSubscri[@]}"; do
         # https://stackoverflow.com/questions/918886/how-do-i-split-a-string-on-a-delimiter-in-bash
-        declare -a arrSplit=()
-        arrSplit=(${subscri//,/ })
+        declare -a arrSplit=(${subscri//,/ })
         # https://www.google.com/search?q=bash+trim+string&pws=0&gl=us&gws_rd=cr
-        url=$(echo "${arrSplit[0]}" | xargs)
-        fname=$(echo "${arrSplit[1]}" | xargs)
-        tobe_sliced=$(echo "${arrSplit[2]}" | xargs)
+        declare url=$(echo "${arrSplit[0]}" | xargs)
+        declare fname=$(echo "${arrSplit[1]}" | xargs)
+        declare tobe_sliced=$(echo "${arrSplit[2]}" | xargs)
 
         tee_echo2 "$(GetTitle ${fname} 60)"
 
@@ -304,21 +305,21 @@ for (( i=1; i<=5; i++ )); do
             continue
         fi
 
-        declare -i let thisFileSize=$(get_file_size "${DATA_DIR}/original/${fname}.tmp")
-        if ! [[ 0 < ${thisFileSize} ]]; then
+        declare -i thisFileSize=$(get_file_size "${DATA_DIR}/original/${fname}.tmp")
+        if ! (( 0 < thisFileSize )); then
             tee_echo "\tThe size of URL \"${url}\" is zero"
             echo "$(date -d @${TIMEBEGIN} +%Y%m%d_%H%M%S) ${url},${fname}" >> "${DIR0}/${baseName}.0size"
             continue
         fi
 
-        oldHash=$(sha256sum "${DATA_DIR}/original/${fname}" 2>/dev/null | awk '{print $1}')
-        newHash=$(sha256sum "${DATA_DIR}/original/${fname}.tmp" 2>/dev/null | awk '{print $1}')
+        declare oldHash=$(sha256sum "${DATA_DIR}/original/${fname}" 2>/dev/null | awk '{print $1}')
+        declare newHash=$(sha256sum "${DATA_DIR}/original/${fname}.tmp" 2>/dev/null | awk '{print $1}')
         if [[ "$newHash" == "$oldHash" ]]; then
             # https://stackoverflow.com/questions/16391208/print-a-files-last-modified-date-in-bash
-            declare -i let oldFiletime=$(date -r "${DATA_DIR}/original/${fname}" +%s)
-            declare -i let nowDatetime=TIMEBEGIN
+            declare -i oldFiletime=$(date -r "${DATA_DIR}/original/${fname}" +%s)
+            declare -i nowDatetime=TIMEBEGIN
             [[ $((nowDatetime - oldFiletime)) -gt $((${ACCEPTABLE_DAYs}*24*60*60)) ]] && bTooOldFile=true || bTooOldFile=false
-            if [[ "${bTooOldFile}" == "true" ]]; then
+            if $bTooOldFile; then
                 tee_echo "\tFile \"${url}\" is too old and has NOT been updated for more than ${ACCEPTABLE_DAYs} days"
                 echo "$(date -d @${TIMEBEGIN} +%Y%m%d_%H%M%S) ${url},${fname}" >> "${DIR0}/${baseName}.oldsubs"
                 continue
@@ -330,7 +331,7 @@ for (( i=1; i<=5; i++ )); do
         if [[ -z "${tobe_sliced}" ]]; then
             echo "${WEB_ORIG_DAT}/${fname},${fname}" >> "${DIR0}/${baseName}.127.urls"
         else
-            targetDisasFPath="${DATA_DIR}/original/${fname}"
+            declare targetDisasFPath="${DATA_DIR}/original/${fname}"
 
             # If the file is base64 encoded...
             rm -f "${DATA_DIR}/original/${fname}.base64decode.result" &> /dev/null
@@ -346,7 +347,7 @@ for (( i=1; i<=5; i++ )); do
                 # Slicing the node data of yaml
                 declare -a arrSliceYaml=()
                 readarray -t arrSliceYaml < <( python "${DIR0}/${baseName}.sliceyaml.py" "-i${targetDisasFPath}" "-o${DATA_DIR}/slice" "-f${fname}" -z${SLICE_SIZE} )
-                if [ -f "${DATA_DIR}/slice/${arrSliceYaml[0]}" ]; then
+                if (( ${#arrSliceYaml[@]} )) && [ -f "${DATA_DIR}/slice/${arrSliceYaml[0]}" ]; then
                     for aSlice in "${arrSliceYaml[@]}"; do
                         ASSERT "[ -f \"${DATA_DIR}/slice/${aSlice}\" ]" "File \"${DATA_DIR}/slice/${aSlice}\" that should exist does not exist"
                         echo "${WEB_SLIC_DAT}/${aSlice},${aSlice}" >> "${DIR0}/${baseName}.127.urls"
@@ -354,15 +355,15 @@ for (( i=1; i<=5; i++ )); do
                 fi
             else
                 # Slicing the node data of v2ray
-                declare -i let lineNo=1
-                declare -i let fileNo=1
+                declare -i lineNo=1
+                declare -i fileNo=1
                 declare -a v2rayLines=()
                 readarray -t v2rayLines < <(cat "${targetDisasFPath}" | sort -u)
                 for v2rayLine in "${v2rayLines[@]}"; do
                     v2rayLine=$(trimstring "${v2rayLine}")
                     if ! [[ ${v2rayLine} == \#* || ${v2rayLine} == "ss://"* ]]; then
-                        if (( lineNo % ${SLICE_SIZE} == 1 )); then
-                            newSubFName=${fname}.$(printf %05d ${fileNo}).txt
+                        if (( lineNo % SLICE_SIZE == 1 )); then
+                            declare newSubFName=${fname}.$(printf %05d ${fileNo}).txt
                             echo "${WEB_SLIC_DAT}/${newSubFName},${newSubFName}" >> "${DIR0}/${baseName}.127.urls"
                             rm -f "${DATA_DIR}/slice/${newSubFName}" &> /dev/null
                             echo "$v2rayLine" > "${DATA_DIR}/slice/${newSubFName}"
@@ -443,27 +444,27 @@ fi
 
 declare -a arrSubscri=()
 readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.127.pass2subconverter.urls")
-declare -i let subsSize=${#arrSubscri[@]}
-if [ ${subsSize} -le 0 ]; then
+declare -i subsSize=${#arrSubscri[@]}
+if (( subsSize <= 0 )); then
     tee_echo "\tThe number of PASS2SUBCONVERTERS is zero.!"
     singleton_clean_up 1
 fi
 
 rm "${DIR0}/${baseName}.snioff.urls" > /dev/null 2>&1
-for (( j=0; j<${subsSize}; j++ )); do
+for (( j=0; j<subsSize; j++ )); do
     # subscri
-    subscri=${arrSubscri[$j]}
+    declare subscri=${arrSubscri[$j]}
 
     # url, configFNameDotExtension
-    arrSplit=(${subscri//,/ })
-    url=${arrSplit[0]}
-    configFNameDotExtension=${arrSplit[1]}
+    declare -a arrSplit=(${subscri//,/ })
+    declare url=${arrSplit[0]}
+    declare configFNameDotExtension=${arrSplit[1]}
 
     # pass2subfname
-    pass2subfname=$( tweezers_pass2subconverter_fname "${url}" )
+    declare pass2subfname=$( tweezers_pass2subconverter_fname "${url}" )
 
     # beEdited
-    beEdited=false
+    declare beEdited=false
     if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/pass2subconverter/${pass2subfname}" &>/dev/null; then
         if grep -q 'sni: off' "${DATA_DIR}/pass2subconverter/${pass2subfname}"; then
             cp -f "${DATA_DIR}/pass2subconverter/${pass2subfname}" "${DATA_DIR}/filterout_snioff/${pass2subfname}"
@@ -481,7 +482,7 @@ for (( j=0; j<${subsSize}; j++ )); do
         rm -f "${DATA_DIR}/filterout_snioff/${pass2subfname}.base64decode.result" &> /dev/null
     fi
 
-    if ${beEdited}; then
+    if $beEdited; then
         echo "${WEB_FILTEROUT_SNIOFF}/${pass2subfname},${configFNameDotExtension}" >> "${DIR0}/${baseName}.snioff.urls"
     else
         echo "${subscri}" >> "${DIR0}/${baseName}.snioff.urls"
@@ -506,15 +507,15 @@ echo -e "\toption custom_domain_dns_server '${directDns}'\n" >> "${DIR0}/${baseN
 declare -a clashConfigNames=()
 declare -a arrSubscri=()
 readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.snioff.urls")
-declare -i let subsSize=${#arrSubscri[@]}
+declare -i subsSize=${#arrSubscri[@]}
 tee_echo "\tsubsSize:${subsSize}"
 
-if [ ${subsSize} -le 0 ]; then
+if (( subsSize <= 0 )); then
     tee_echo "\tThe number of PASS2SUBCONVERTERS is zero.!"
     singleton_clean_up 1
 fi
 
-for (( j=0; j<${subsSize}; j++ )); do
+for (( j=0; j<subsSize; j++ )); do
     subscri=${arrSubscri[$j]}
     arrSplit=(${subscri//,/ })
     url=${arrSplit[0]}
@@ -538,7 +539,7 @@ for (( j=0; j<${subsSize}; j++ )); do
 done
 
 ###############################################################################
-declare -i let optNameSize=${#clashConfigNames[@]}
+declare -i optNameSize=${#clashConfigNames[@]}
 ASSERT "[ $optNameSize -gt 0 ]" "The count of configuration items must be greater than 0."
 final1=${clashConfigNames[0]}
 if (( 1 < ${#clashConfigNames[@]} )); then
@@ -612,7 +613,8 @@ exit 0
 function is_not_running () {
     if ! flock -xn 3
     then
-        local pid=$(cat ${F_PID})
+        local -r pid=$(cat ${F_PID})
+        ASSERT "isdigit \"${pid}\"" "A PID must be a number."
         echo "${0} (PID: ${pid}) already running ..."
         return 1
     else
@@ -625,11 +627,11 @@ function is_not_running () {
 ######################### function: singleton_clean_up ########################
 ###############################################################################
 function singleton_clean_up() {
-    declare -i local timeEnd=$(date +%s)
-    declare -i local total_seconds=$((timeEnd-TIMEBEGIN))
-    declare -i local seconds=$((total_seconds % 60))
-    declare -i local minutes=$(((total_seconds / 60) % 60))
-    declare -i local hours=$((total_seconds / 3600))
+    local -ri timeEnd=$(date +%s)
+    local -ri total_seconds=timeEnd-TIMEBEGIN
+    local -ri seconds=total_seconds%60
+    local -ri minutes=(total_seconds/60)%60
+    local -ri hours=total_seconds/3600
     printf -v formatted_string "%02d:%02d:%02d" $hours $minutes $seconds
     tee_echo "\tEnd: $(date -d @${timeEnd} +%Y%m%d_%H%M%S), time escaped:${formatted_string}"
     flock -u 3
@@ -643,10 +645,10 @@ function singleton_clean_up() {
 ######################### function: urlencode #################################
 ###############################################################################
 function urlencode() {
-    local old_lc_collate=$LC_COLLATE
+    local -r old_lc_collate=$LC_COLLATE
     LC_COLLATE=C
-    local length="${#1}"
-    declare -i local i=-1
+    local -ri length="${#1}"
+    local -i i=-1
     for (( i = 0; i < length; i++ )); do
         local c="${1:i:1}"
         case $c in
@@ -662,9 +664,10 @@ function urlencode() {
 ######################### function: get_file_size #############################
 ###############################################################################
 function get_file_size() {
-    local filepath="$1"
+    local -r filepath="$1"
     ASSERT "[ -f \"${filepath}\" ]" "You cannot request the size of a file named \"${filepath}\" that does not exist."
-    declare -i local size=$(wc -c < $filepath)
+    local -r size=$(wc -c < $filepath)
+    ASSERT "isdigit \"${size}\"" "The return value \"${size}\" is the file size, which should be a number."
     echo "$size"
 }
 
@@ -673,27 +676,29 @@ function get_file_size() {
 ###############################################################################
 # https://askubuntu.com/questions/674333/how-to-pass-an-array-as-function-argument
 function combine_subscri() {
-    declare -i local depth="$1"
+    local depth="$1"
     shift
+
+    ASSERT "isdigit \"${depth}\"" "The first parameter \"${depth}\", which specifies the depth, must be a number."
 
     local arr=("$@")
     local asize=${#arr[@]}
-    declare -i local groupCount=$(( (asize+SUBCONVERTER_SLICE_SIZE-1)/SUBCONVERTER_SLICE_SIZE ))
+    local -ri groupCount=(asize+SUBCONVERTER_SLICE_SIZE-1)/SUBCONVERTER_SLICE_SIZE
 
-    declare -i local i=-1
+    local -i i=-1
     local arrGroup=()
-    for (( i = 0; i < ${groupCount}; i++ )); do
-        declare -i local begin=$((i*SUBCONVERTER_SLICE_SIZE))
-        declare -i local thissize=0
+    for (( i = 0; i<groupCount; i++ )); do
+        local -i begin=i*SUBCONVERTER_SLICE_SIZE
+        local -i thissize=0
         if (( SUBCONVERTER_SLICE_SIZE < asize-begin )); then
-            thissize=SUBCONVERTER_SLICE_SIZE
+            let thissize=SUBCONVERTER_SLICE_SIZE
         else
-            thissize=$((asize-begin))
+            let thissize=asize-begin
         fi
-        local end=$((begin+thissize))
+        local -i end=begin+thissize
 
         local thisCombine="${EXISTENTIAL_CONFIGs}/${arr[${begin}]}.yaml"
-        declare -i local j=-1
+        local -i j=-1
         for (( j = $((++begin)); j < ${end}; j++ )); do
             thisCombine="${thisCombine}|${EXISTENTIAL_CONFIGs}/${arr[${j}]}.yaml"
         done
@@ -753,8 +758,8 @@ function combine_subscri() {
 ######################### function: ASSERT ####################################
 ###############################################################################
 function ASSERT() {
-    local condition="$1"
-    local message="${2:-Assertion failed!}"
+    local -r condition="$1"
+    local -r message="${2:-Assertion failed!}"
 
     if ! eval "$condition"; then
         fnStacktrace "failed: ${message}"
@@ -785,20 +790,23 @@ function tee_echo2() {
 ###############################################################################
 function tar_old_files() {
     # https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
-    local                   tarFPath=$(echo "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    local targetFPathMatchingPattern=$(echo "$2" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    local                   nOutside=$(echo "$3" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    local                   nReserve=$(echo "$4" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    local -r                   tarFPath=$(echo "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    local -r targetFPathMatchingPattern=$(echo "$2" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    local -r                   nOutside=$(echo "$3" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    local -r                   nReserve=$(echo "$4" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+    ASSERT "isdigit \"${nOutside}\"" "This parameter \"${nOutside}\" must be a number."
+    ASSERT "isdigit \"${nReserve}\"" "This parameter \"${nReserve}\" must be a number."
 
     # {0/filetime0}  {coordA/filetimeA}          coordB/filetimeB}
     #   ^                   ^                          ^
     #   |-------------------------- bakSize ---------------------------------|
     #                                                  |<----- nOutside ---->|
     #                       |<-------------- nReserve ---------------------->|
-    ASSERT "(( ${nReserve} > ${nOutside} ))" "The number of files to be retained is less than the number of files to be left outside the package; this is incorrect."
+    ASSERT "(( nReserve >= nOutside ))" "The number of files to be retained is less than the number of files to be left outside the package; this is incorrect."
 
-    local folder1="$(dirname "${tarFPath}")"
-    local folder2="$(dirname "${targetFPathMatchingPattern}")"
+    local -r folder1="$(dirname "${tarFPath}")"
+    local -r folder2="$(dirname "${targetFPathMatchingPattern}")"
     ASSERT "[[ ${folder1} == ${folder2} ]]" "\"${folder1}\" and \"${folder2}\" must have the same parent folder"
     ASSERT "! [[ ${targetFPathMatchingPattern} == *\"${tarFPath}\"* || ${tarFPath} == *\"${targetFPathMatchingPattern}\"* ]]" "It must be ensured that \"${tarFPath}\" is not in the pattern matching of \"${targetFPathMatchingPattern}\""
 
@@ -811,30 +819,31 @@ function tar_old_files() {
         ASSERT "[ ! -f \"${tarFPath}.tar\" ]" "Delete file \"${tarFPath}.tar\" failed."
     fi
 
-    local ListFPathTemp=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
+    local -r ListFPathTemp=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
     local timemarkPattern=".2???????_??????"
     if [[ "${targetFPathMatchingPattern: -1}" == "." ]]; then timemarkPattern="2???????_??????"; fi
-    ls -t -r -1 ${targetFPathMatchingPattern}                    > ${ListFPathTemp} 2>/dev/null
-    ls -t -r -1 ${targetFPathMatchingPattern}${timemarkPattern} >> ${ListFPathTemp} 2>/dev/null
-    declare -a local arrOpenclashConfigBakup
+    ls -t -r -1 ${targetFPathMatchingPattern}                    >"${ListFPathTemp}" 2>/dev/null
+    ls -t -r -1 ${targetFPathMatchingPattern}${timemarkPattern} >>"${ListFPathTemp}" 2>/dev/null
+    CombileSpacesAndTrimFile "${ListFPathTemp}"
+    # https://stackoverflow.com/questions/9964823/how-to-check-if-a-file-is-empty-in-bash
+    if ! [ -s "${ListFPathTemp}" ]; then return; fi
+    local -a arrOpenclashConfigBakup
     readarray -t arrOpenclashConfigBakup < <(cat "${ListFPathTemp}")
     # https://stackoverflow.com/questions/13648410/how-can-i-get-unique-values-from-an-array-in-bash
     IFS=" " read -r -a arrOpenclashConfigBakup <<< "$(tr ' ' '\n' <<< "${arrOpenclashConfigBakup[@]}" | sort -u | tr '\n' ' ')"
     rm -f "${ListFPathTemp}" &> /dev/null
-    declare -i local bakSize=${#arrOpenclashConfigBakup[@]}
+    local -i bakSize=${#arrOpenclashConfigBakup[@]}
     if (( bakSize == 0 )); then return; fi
 
-    declare -i local coordB=$(( bakSize - nOutside ))
-    if (( coordB < 0  )); then return; fi
-    declare -i local coordA=$(( bakSize - nReserve ))
-    if (( coordA < 0  )); then let coordA=0; fi
-    ASSERT "(( $coordA <= $coordB ))" "Error in input parameters for tar call"
-
-    local NowDatetime="$(date -d @${TIMEBEGIN} +'%Y%m%d_%H%M%S')"
-    declare -i local j=-1
+    local -ri coordB=bakSize-nOutside
+    if (( coordB <= 0  )); then return; fi
+    local -i coordA=bakSize-nReserve
+    ASSERT "(( coordA <= coordB ))" "Error in input parameters for tar call"
+    local -r NowDatetime="$(date -d @${TIMEBEGIN} +'%Y%m%d_%H%M%S')"
+    local -i j=-1
     for (( j=0; j<bakSize; j++ )); do
         local fpath=${arrOpenclashConfigBakup[$j]}
-        local fpathLen=${#fpath}
+        local -i fpathLen=${#fpath}
 
         # bRename
         local bRename=false
@@ -847,26 +856,32 @@ function tar_old_files() {
             bRename=true
         fi
 
-        if [[ "${bRename}" == "true" ]]; then
+        if $bRename; then
             local newFpath="${fpath}.${NowDatetime}"
             mv -f "${fpath}" "${newFpath}" &> /dev/null
             arrOpenclashConfigBakup[$j]="${newFpath}"
         fi
     done
-
     local tar_command_string="tar c -v -f \"${tarFPath}.tar\""
     local rm_command_string="rm -f"
-    for (( j=0; j<coordA; j++ )); do
-        rm_command_string="${rm_command_string} \"${arrOpenclashConfigBakup[$j]}\""
-    done
 
-    for (( j=coordA; j<coordB; j++ )); do
-        # https://www.google.com/search?q=bash+string+equa+ignore+case&pws=0&gl=us&gws_rd=cr
+    local bExecution=false
+    local -ri indexB=coordB-1
+    local -ri indexA=coordA-1
+    for (( j=indexB; indexA<j && 0<=j; j-- )); do
+        bExecution=true
         tar_command_string="${tar_command_string} \"${arrOpenclashConfigBakup[$j]}\""
         rm_command_string="${rm_command_string} \"${arrOpenclashConfigBakup[$j]}\""
     done
+
+    for (( j=indexA; 0<=j; j-- )); do
+        rm_command_string="${rm_command_string} \"${arrOpenclashConfigBakup[$j]}\""
+    done
+
     tar_command_string="${tar_command_string} >/dev/null 2>&1"
     rm_command_string="${rm_command_string} >/dev/null 2>&1"
+
+    if ! $bExecution; then return; fi
 
     eval "$tar_command_string"
     eval "$rm_command_string"
@@ -879,7 +894,7 @@ function tar_old_files() {
 ###############################################################################
 # https://blog.csdn.net/Stars____/article/details/106972527
 function LeapYear() {
-    local year=$1
+    local -r year=$1
     ASSERT "isdigit \"${year}\"" "The \"${year}\" used to represent the year is not a number."
     if ( (( year%4==0 )) && (( year%100!=0 )) ) || (( year%400==0 )); then
         return 0 # true
@@ -891,10 +906,10 @@ function LeapYear() {
 ######################### function: MonthDays #################################
 ###############################################################################
 function MonthDays() {
-    local year=$(expr $1 + 0) # 02 ==> 2
-    local month=$(expr $2 + 0)
+    local -r year=$(expr $1 + 0) # 02 ==> 2
+    local -r month=$(expr $2 + 0)
     ASSERT "isdigit \"${year}\" && isdigit \"${month}\" && (( 0 < month )) && (( month < 13 )) && (( 0 < year))" "The input year or month, \"${year}\" or \"${month}\", are not valid."
-    local Days=( 29 31 28 31 30 31 30 31 31 30 31 30 31 )
+    local -ra Days=( 29 31 28 31 30 31 30 31 31 30 31 30 31 )
 
     if (( 2==month )) && LeapYear $year; then
         month=0;
@@ -908,7 +923,7 @@ function MonthDays() {
 ###############################################################################
 # https://stackoverflow.com/questions/806906/how-do-i-test-if-a-variable-is-a-number-in-bash
 function isdigit() {
-    local str=$1
+    local -r str=$1
     if [[ ! $str =~ ^[0-9]+$ ]]; then
         return 1
     fi
@@ -920,17 +935,17 @@ function isdigit() {
 ###############################################################################
 # https://blog.csdn.net/weixin_45956148/article/details/107862145
 function is_valid_datetime() { # 20260123_102345
-    local sDate=$1
+    local -r sDate=$1
 
     if [ ${#sDate} -ne 15 ];then
         return 1
     fi
 
-    local       YYYYMMDD=${sDate:0:8}
-    local CONNECTED_CHAR=${sDate:8:1}
-    local         hhmmss=${sDate:9:6}
+    local -r       YYYYMMDD=${sDate:0:8}
+    local -r CONNECTED_CHAR=${sDate:8:1}
+    local -r         hhmmss=${sDate:9:6}
 
-    if [ ! $CONNECTED_CHAR=="_" ];then
+    if [ ! "$CONNECTED_CHAR" == "_" ];then
         return 1
     fi
 
@@ -950,26 +965,26 @@ function is_valid_datetime() { # 20260123_102345
         return 1
     fi
 
-    local   sYear=${sDate:0:4}
-    local  sMonth=${sDate:4:2}
-    local    sDay=${sDate:6:2}
-    local   sHour=${sDate:9:2}
-    local sMinute=${sDate:11:2}
-    local sSecond=${sDate:13:2}
+    local -r   sYear=${sDate:0:4}
+    local -r  sMonth=${sDate:4:2}
+    local -r    sDay=${sDate:6:2}
+    local -r   sHour=${sDate:9:2}
+    local -r sMinute=${sDate:11:2}
+    local -r sSecond=${sDate:13:2}
 
     # Numbers like "08" and "09" are treated as octal by bash.
-    declare -i local   nYear=$((10#$sYear))
-    declare -i local  nMonth=$((10#$sMonth))
-    declare -i local    nDay=$((10#$sDay))
-    declare -i local   nHour=$((10#$sHour))
-    declare -i local nMinute=$((10#$sMinute))
-    declare -i local nSecond=$((10#$sSecond))
+    local -ri   nYear=$((10#$sYear))
+    local -ri  nMonth=$((10#$sMonth))
+    local -ri    nDay=$((10#$sDay))
+    local -ri   nHour=$((10#$sHour))
+    local -ri nMinute=$((10#$sMinute))
+    local -ri nSecond=$((10#$sSecond))
 
     if ! { [ ${nMonth} -gt 0 -a ${nMonth} -le 12 ]; }; then
         return 1
     fi
 
-    declare -i local nLastDayOfMonth=$(MonthDays ${nYear} ${nMonth})
+    local -ri nLastDayOfMonth=$(MonthDays ${nYear} ${nMonth})
     if (( ${nDay} <= 0 )) || (( ${nLastDayOfMonth} < ${nDay} )); then
         return 1
     fi
@@ -1006,8 +1021,8 @@ function is_valid_datetime() { # 20260123_102345
 ###############################################################################
 # https://stackoverflow.com/questions/6118948/bash-loop-ping-successful
 function checkIP() {
-    local ip=$1
-    declare -i local rc=-1
+    local -r ip=$1
+    local -i rc=-1
     ((count = 3))                           # Maximum number to try.
     while [[ $count -ne 0 ]] ; do
         ping -c 1 $ip  &>/dev/null          # Try once.
@@ -1047,8 +1062,8 @@ function checkIP() {
 function trimstring() {
     ASSERT "[ $# -eq 1 ]" "USAGE: trimstring [STRING]."
     local s="${1}"
-    declare -i local size_before=${#s}
-    declare -i local size_after=0
+    local -i size_before=${#s}
+    local -i size_after=0
     while [ ${size_before} -ne ${size_after} ]; do
         size_before=${#s}
         s="${s#[[:space:]]}"
@@ -1064,9 +1079,9 @@ function trimstring() {
 ###############################################################################
 function tweezers_original_folder_name() {
     ASSERT "[ $# -eq 1 ]" "There must be one and only one parameter."
-    local url127="${1}"
-    local old_ifs="$IFS"
-    declare -a local my_array
+    local -r url127="${1}"
+    local -r old_ifs="$IFS"
+    local -a my_array
     IFS="/" read -r -a my_array <<< "${url127}"
     IFS="$old_ifs"
     echo "${my_array[5]}"
@@ -1078,9 +1093,9 @@ function tweezers_original_folder_name() {
 ###############################################################################
 function tweezers_pass2subconverter_fname() {
     ASSERT "[ $# -eq 1 ]" "There must be one and only one parameter."
-    local url127="${1}"
-    local old_ifs="$IFS"
-    declare -a local my_array
+    local -r url127="${1}"
+    local -r old_ifs="$IFS"
+    local -a my_array
     IFS="/" read -r -a my_array <<< "${url127}"
     IFS="$old_ifs"
     echo "${my_array[6]}"
@@ -1092,21 +1107,21 @@ function tweezers_pass2subconverter_fname() {
 ###############################################################################
 # $1 -- title, $2 -- total width
 function GetTitle() {
-    local title=$1
-    declare -i local totalWidth=$2
-    declare -i local zTitle=${#title}
+    local -r title=$1
+    local -ri totalWidth=$2
+    local -ri zTitle=${#title}
 
     # # aaaaaaaaaaaaa #
-    if [[ ${totalWidth} < $((zTitle +4)) ]]; then
+    if (( totalWidth < (zTitle +4) )); then
         echo "${title}"
         return
     fi
 
-    declare -i local half=$(( (totalWidth-zTitle) / 2 - 1))
-    declare -i local half2=$((totalWidth-half-1))
+    local -ri half=(totalWidth-zTitle)/2-1
+    local -ri half2=totalWidth-half-1
     # https://stackoverflow.com/questions/5349718/how-can-i-repeat-a-character-in-bash
-    local str=$(printf "%${half}s")
-    local str2=$(printf "%${half2}s")
+    local -r str=$(printf "%${half}s")
+    local -r str2=$(printf "%${half2}s")
     echo "${str// /#}" "${title}" "${str// /#}"
 }
 
@@ -1117,7 +1132,7 @@ function GetTitle() {
 # # IS_DEBUG="off"
 # # Debugging switch function
 function _DEBUG() {
-    [ "$IS_DEBUG" == "on" ] && $@
+    [ "$IS_DEBUG" == "on" ] && "$@"
 }
 # va=1
 # _DEBUG echo 'old value:'$va
@@ -1137,7 +1152,7 @@ function fnStacktrace() {
     local traceinfo=
     local i pref="TRACE: "
     for (( i=${#FUNCNAME[@]}-1; i; i-- )); do
-        traceinfo="${traceinfo}$pref${FUNCNAME[i]}[${BASH_LINENO[i-1]}]"
+        traceinfo="${traceinfo}$pref{${BASH_SOURCE}}${FUNCNAME[i]}[${BASH_LINENO[i-1]}]"
         pref=" -> "
     done
     tee_echo "${traceinfo}: $1"
@@ -1188,9 +1203,9 @@ function fnStacktrace() {
 ###############################################################################
 function reverse_array() {
     local -n arr_=$1
-    declare -a local rev_arr_=()
-    declare -i local i=-1
-    declare -i local len=${#arr_[@]}
+    local -a rev_arr_=()
+    local -i i=-1
+    local -ri len=${#arr_[@]}
     for (( i = len - 1; i >= 0; i-- )); do
         rev_arr_+=("${arr_[i]}")
     done
@@ -1222,55 +1237,56 @@ function reverse_array() {
 ############ function: fnTableExtractPresent4Last7consecutiveDays #############
 ###############################################################################
 function fnTableExtractPresent4Last7consecutiveDays() {
-    local sTableFPath=$1
+    local -r sTableFPath=$1
     local -n arrNNresult=$2
-    declare -i local NN=$3
+    local -r NN=$3
 
     ASSERT "! (( ${#arrNNresult[@]} ))" "The array used to hold the returned data must initially be empty."
+    ASSERT "isdigit \"${NN}\"" "This parameter \"${NN}\" must be a number."
 
-    declare -i local j=-1 k=-1
+    local -i j=-1 k=-1
 
     # arrNNdatetime, arrNNUrlName
-    declare -a local arrNNdatetime
-    declare -a local arrNNUrlName
+    local -a arrNNdatetime
+    local -a arrNNUrlName
     if ! _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName; then return; fi
     ASSERT "(( ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ))" "\"arrNNdatetime\" must be equal to \"arrNNUrlName\"."
     if ! (( 0 < ${#arrNNdatetime[@]} )); then return; fi
 
-    declare -i local nRecNNsize=${#arrNNUrlName[@]}
-    if (( nRecNNsize < ${NN} )); then
+    local -i nRecNNsize=${#arrNNUrlName[@]}
+    if (( nRecNNsize < NN )); then
         return
     fi
 
     # nNNdaysago
-    let local nNow=TIMEBEGIN
-    declare -i local nTodayYYYYmmdd=$( date -d "$( date -d @${TIMEBEGIN} '+%F' )" +%s )
-    declare -i local nNNdaysago=$(( nNow - ( NN*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
+    local -ri nNow=TIMEBEGIN
+    local -ri nTodayYYYYmmdd=$( date -d "$( date -d @${TIMEBEGIN} '+%F' )" +%s )
+    local -ri nNNdaysago=$(( nNow-(NN*24*60*60)-(nNow-nTodayYYYYmmdd) )) # Today doesn't count.
 
     # arrBucketNN
-    declare -a local arrBucketNN
+    local -a arrBucketNN
     for (( j=0; j<nRecNNsize; j++ )); do
-        declare -i local nBucketIdx=$(( ( arrNNdatetime[j] - nNNdaysago ) / (24*60*60) ))
+        local -i nBucketIdx=$(( (arrNNdatetime[j]-nNNdaysago)/(24*60*60) ))
         ASSERT "(( 0 <= nBucketIdx )) && (( nBucketIdx < NN ))" "The records obtained after filtering must all fall within the last 7 days."
         arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
         arrBucketNN[ nBucketIdx ]+="|"
     done
 
-    declare -i local nBucketNNsize=${#arrBucketNN[@]}
-    if (( nBucketNNsize < ${NN} )); then
+    local -ri nBucketNNsize=${#arrBucketNN[@]}
+    if (( nBucketNNsize < NN )); then
         return
     fi
 
-    ASSERT "(( ${NN} == nBucketNNsize ))" "The number of buckets $nBucketNNsize should be equal to ${NN}."
+    ASSERT "(( NN == nBucketNNsize ))" "The number of buckets $nBucketNNsize should be equal to ${NN}."
 
     # There are only ${NN} buckets, and each bucket contains one or more urls, with each url separated by a '|'.
     # arrUrlName0
-    declare -a local arrUrlName0
+    local -a arrUrlName0
     arrUrlName0=(${arrBucketNN[0]//|/ })
     for (( k=1; k<nBucketNNsize; k++ )); do
-        declare -a local arrUrlNameK
+        local -a arrUrlNameK
         arrUrlNameK=( ${arrBucketNN[k]//|/ })
-        declare -a local arrUrlNameIntersetResult
+        local -a arrUrlNameIntersetResult
         arrUrlNameIntersetResult=()
         ArrayIntersect arrUrlName0 arrUrlNameK arrUrlNameIntersetResult
         arrUrlName0=("${arrUrlNameIntersetResult[@]}")
@@ -1283,44 +1299,45 @@ function fnTableExtractPresent4Last7consecutiveDays() {
 ############ function: fnTableExtractPresent4Last7Days ########################
 ###############################################################################
 function fnTableExtractPresent4Last7Days() {
-    local sTableFPath=$1
+    local -r sTableFPath=$1
     local -n arrNNresult=$2
-    declare -i local NN=$3
+    local -r NN=$3
 
     ASSERT "! (( ${#arrNNresult[@]} ))" "The array used to hold the returned data must initially be empty."
+    ASSERT "isdigit \"${NN}\"" "This parameter \"${NN}\" must be a number."
 
-    declare -i local j=-1 k=-1
+    local -i j=-1 k=-1
 
     # arrNNdatetime, arrNNUrlName
-    declare -a local arrNNdatetime
-    declare -a local arrNNUrlName
+    local -a arrNNdatetime
+    local -a arrNNUrlName
     if ! _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName; then return; fi
     ASSERT "(( ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ))" "\"arrNNdatetime\" must be equal to \"arrNNUrlName\"."
     if ! (( 0 < ${#arrNNdatetime[@]} )); then return; fi
 
     # nNNdaysago
-    declare -i local nNow=TIMEBEGIN
-    declare -i local nTodayYYYYmmdd=$( date -d "$( date -d @${TIMEBEGIN} '+%F' )" +%s )
-    declare -i local nNNdaysago=$(( nNow - ( NN*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
+    local -ri nNow=TIMEBEGIN
+    local -ri nTodayYYYYmmdd=$( date -d "$( date -d @${TIMEBEGIN} '+%F' )" +%s )
+    local -ri nNNdaysago=$(( nNow-(NN*24*60*60)-(nNow-nTodayYYYYmmdd) )) # Today doesn't count.
 
     # arrBucketNN
-    declare -a local arrBucketNN
-    declare -i local nRecNNsize=${#arrNNUrlName[@]}
+    local -a arrBucketNN
+    local -ri nRecNNsize=${#arrNNUrlName[@]}
     for (( j=0; j<nRecNNsize; j++ )); do
-        declare -i local nBucketIdx=$(( ( arrNNdatetime[j] - nNNdaysago ) / (24*60*60) ))
+        local -ri nBucketIdx=$(( (arrNNdatetime[j]-nNNdaysago)/(24*60*60) ))
 		ASSERT "(( 0 <= nBucketIdx )) && (( nBucketIdx < NN ))" "The records obtained after filtering must all fall within the last 7 days."
         arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
         arrBucketNN[ nBucketIdx ]+="|"
     done
 
     # arrUrlName0
-    declare -a local arrUrlName0
-    declare -i local nBucketNNsize=${#arrBucketNN[@]}
+    local -a arrUrlName0
+    local -ri nBucketNNsize=${#arrBucketNN[@]}
     arrUrlName0=(${arrBucketNN[0]//|/ })
     for (( k=1; k<nBucketNNsize; k++ )); do
-        declare -a local arrUrlNameK
+        local -a arrUrlNameK
         arrUrlNameK=( ${arrBucketNN[k]//|/ })
-        declare -a local arrUrlNameIntersetResult
+        local -a arrUrlNameIntersetResult
         arrUrlNameIntersetResult=( "${arrUrlName0[@]}" "${arrUrlNameK[@]}" )
         arrUrlName0=("${arrUrlNameIntersetResult[@]}")
     done
@@ -1336,29 +1353,31 @@ function fnTableExtractPresent4Last7Days() {
 function fnTableExtractPresent4NCDays() {
     local -n arrNNresult=$1
     local sTableFPath=$2
-    declare -i local NN=$3
-    declare -i local nCount=$4
+    local -r NN=$3
+    local -r nCount=$4
 
     ASSERT "! (( ${#arrNNresult[@]} ))" "The array used to hold the returned data must initially be empty."
+    ASSERT "isdigit \"${NN}\"" "This parameter \"${NN}\" must be a number."
+    ASSERT "isdigit \"${nCount}\"" "This parameter \"${nCount}\" must be a number."
 
     # arrNNdatetime, arrNNUrlName
-    declare -a local arrNNdatetime
-    declare -a local arrNNUrlName
+    local -a arrNNdatetime
+    local -a arrNNUrlName
     if ! _all_datetime_urlnameslice_records_from_the_last_NN_days "${sTableFPath}" "${NN}" arrNNdatetime arrNNUrlName; then return; fi
     ASSERT "(( ${#arrNNdatetime[@]} == ${#arrNNUrlName[@]} ))" "\"arrNNdatetime\" must be equal to \"arrNNUrlName\"."
   # print_yyyyMMddHHmmss_urlNameSlice arrNNdatetime arrNNUrlName; exit 0
     if ! (( 0 < ${#arrNNdatetime[@]} )); then return; fi
 
     # nNNdaysago
-    declare -i local nNow=TIMEBEGIN
-    declare -i local nTodayYYYYmmdd=$( date -d "$( date -d @${TIMEBEGIN} '+%F' )" +%s )
-    declare -i local nNNdaysago=$(( nNow - ( NN*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
+    local -ri nNow=TIMEBEGIN
+    local -ri nTodayYYYYmmdd=$( date -d "$( date -d @${TIMEBEGIN} '+%F' )" +%s )
+    local -ri nNNdaysago=$(( nNow-(NN*24*60*60)-(nNow-nTodayYYYYmmdd) )) # Today doesn't count.
 
     # arrBucketNN
-    declare -a local arrBucketNN
-    declare -i local nRecNNsize=${#arrNNUrlName[@]}
+    local -a arrBucketNN
+    local -ri nRecNNsize=${#arrNNUrlName[@]}
     for (( j=0; j<nRecNNsize; j++ )); do
-        declare -i local nBucketIdx=$(( ( arrNNdatetime[j] - nNNdaysago ) / (24*60*60) ))
+        local -ri nBucketIdx=$(( (arrNNdatetime[j]-nNNdaysago)/(24*60*60) ))
 		ASSERT "(( 0 <= nBucketIdx )) && (( nBucketIdx < NN ))" "The records obtained after filtering must all fall within the last 7 days."
         if (( nBucketIdx < nCount )); then
             arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
@@ -1369,14 +1388,14 @@ function fnTableExtractPresent4NCDays() {
     if ! (( ${#arrBucketNN[@]} )); then return; fi
 
     # arrUrlName0
-    declare -a local arrUrlName0
-    declare -i local nBucketNNsize=${#arrBucketNN[@]}
-    declare -i local k=-1
+    local -a arrUrlName0
+    local -ri nBucketNNsize=${#arrBucketNN[@]}
+    local -i k=-1
     arrUrlName0=(${arrBucketNN[0]//|/ })
     for (( k=1; k<nBucketNNsize; k++ )); do
-        declare -a local arrUrlNameK
+        local -a arrUrlNameK
         arrUrlNameK=( ${arrBucketNN[k]//|/ })
-        declare -a local arrUrlNameIntersetResult
+        local -a arrUrlNameIntersetResult
         arrUrlNameIntersetResult=( "${arrUrlName0[@]}" "${arrUrlNameK[@]}" )
         arrUrlName0=("${arrUrlNameIntersetResult[@]}")
     done
@@ -1398,8 +1417,8 @@ function fnTableExtractPresent4NCDays() {
 #     20260830_043433 https://gitlab.com/free9999/ipupdate/-/raw/master/quick/3/config.yaml,H177-github.free9999-ChromeGo33.yaml
 #     20260830_043435 https://www.githubip.xyz/Alvin9999/pac2/master/quick/4/config.yaml,H178-github.Alvin9999-ChromeGo34.yaml
 function fnFile2Table() {
-    local sTarFPath=$1
-    local sTableResultFPath=$2
+    local -r sTarFPath=$1
+    local -r sTableResultFPath=$2
     [ -f "${sTableResultFPath}" ] || touch "${sTableResultFPath}"
     ASSERT "[ -f \"${sTableResultFPath}\" ]" "There cannot be a file at that location \"${sTableResultFPath}\"."
 
@@ -1413,18 +1432,17 @@ function fnFile2Table() {
     fi
 
     # arrFilepaths
-    declare -i local j=-1
-    declare -a local arrFilepaths
-    readarray -t arrFilepaths < <( ls -t -r -1 ${sTarFPath}.2???????_?????? )
-    ASSERT "[[ ${#arrFilepaths[@]} -gt 0 ]]" "There are no compliant files in folder \"${sTarFPath}\""
-    declare -i local nFPathCounts=${#arrFilepaths[@]}
+    local -i j=-1
+    local -a arrFilepaths
+    readarray -t arrFilepaths < <( ls -t -r -1 ${sTarFPath}.2???????_?????? 2>/dev/null )
+    local -ri nFPathCounts=${#arrFilepaths[@]}
     for (( j=0; j<nFPathCounts; j++ )); do
         local sFPath=${arrFilepaths[j]}
-        declare -i local nFPathLen=${#sFPath}
+        local -i nFPathLen=${#sFPath}
         ASSERT "(( 15 < nFPathLen ))" "The list of filenames for naturalization is incorrect."
         local sLast15chars=${sFPath: -15}
         ASSERT "is_valid_datetime \"${sLast15chars}\"" "The last 15 characters \"${sLast15chars}\" of the filename must be a date expression."
-        declare -a local arrUrlNames
+        local -a arrUrlNames
         readarray -t arrUrlNames < ${sFPath}
         for aUrlName in "${arrUrlNames[@]}"; do
             echo "${sLast15chars} ${aUrlName}" >> "${sTableResultFPath}"
@@ -1436,21 +1454,21 @@ function fnFile2Table() {
 ################# function: fnAddDatetimeMarkAndAppend2Eof ####################
 ###############################################################################
 function fnAddDatetimeMarkAndAppend2Eof() {
-    local -n arrUrlNameSlice=$1
-    local fpath=$2
-    local nDaysToGoBack=$3
+    local -nr arrUrlNameSlice=$1
+    local -r fpath=$2
+    local -r nDaysToGoBack=$3
 
     # ticks
-    declare -i local ticks=TIMEBEGIN
+    local -i ticks=TIMEBEGIN
     if ! [ -z "$nDaysToGoBack" ]; then
-        ASSERT "isdigit $nDaysToGoBack" "The third input parameter must be a number."
-        let ticks-=$(( 24*60*60*nDaysToGoBack ))
+        ASSERT "isdigit \"${nDaysToGoBack}\"" "The third input parameter must be a number."
+        let ticks-=24*60*60*nDaysToGoBack
     fi
 
     # sDatetime <== ticks
-    local sDatetime=$(date -d @${ticks} +"%Y-%m-%d_%H:%M:%S")
+    local -r sDatetime=$(date -d @${ticks} +"%Y-%m-%d_%H:%M:%S")
 
-    declare -i local j=-1
+    local -i j=-1
     for (( j=0; j<${#arrUrlNameSlice[@]}; j++ )); do
         echo ${sDatetime} ${arrUrlNameSlice[j]} >> "${fpath}"
     done
@@ -1460,9 +1478,9 @@ function fnAddDatetimeMarkAndAppend2Eof() {
 ########################## function: fnLinkDiscard ############################
 ###############################################################################
 function fnLinkDiscard() {
-    local -n Link404Over7_=$1
-    local -n LinkInactiveOver7_=$2
-    local -n Link0sizeOver7_=$3
+    local -nr Link404Over7_=$1
+    local -nr LinkInactiveOver7_=$2
+    local -nr Link0sizeOver7_=$3
     local -n LinkDiscard_=$4
 
     ASSERT "! (( ${#LinkDiscard_[@]} ))" "The array used to hold the returned data must initially be empty."
@@ -1475,28 +1493,28 @@ function fnLinkDiscard() {
 ############### function: fnClashNodeSubcriUrlsSubtractDiscarded ##############
 ###############################################################################
 function fnClashNodeSubcriUrlsSubtractDiscarded() {
-    local -n arrSubscri_=$1            # in
-    local -n AllDiscarded=$2           # in
+    local -nr arrSubscri_=$1           # in
+    local -nr AllDiscarded=$2          # in
     local -n arrLinkWorthTrying_=$3    # out
     local -n arrLinkNotWorthTrying_=$4 # out
     ASSERT "! (( ${#arrLinkWorthTrying_[@]} ))" "The array used to hold the returned data must initially be empty."
     ASSERT "! (( ${#arrLinkNotWorthTrying_[@]} ))" "The array used to hold the returned data must initially be empty."
 
-    declare -i local j=-1 k=-1
+    local -i j=-1 k=-1 L=-1
 
     # arrDiscardCfgName
-    declare -a local arrDiscardCfgName
-    local discardSize=${#AllDiscarded[@]}
-    for (( j=0; j<${discardSize}; j++ )); do
+    local -a arrDiscardCfgName
+    local -ri discardSize=${#AllDiscarded[@]}
+    for (( j=0; j<discardSize; j++ )); do
         local discard=${AllDiscarded[j]}
         local arrSplit=(${discard//,/ })
         arrDiscardCfgName[j]=${arrSplit[1]}
     done
 
-    declare -i local subsSize=${#arrSubscri_[@]}
-    for (( j=0, k=0, L=0; j<${subsSize}; j++ )); do
+    local -ri subsSize=${#arrSubscri_[@]}
+    for (( j=0, k=0, L=0; j<subsSize; j++ )); do
         local subscri="${arrSubscri_[j]}"
-        local arrSplit=(${subscri//,/ })
+        local -a arrSplit=(${subscri//,/ })
 
         local split0=${arrSplit[0]}
         local split1=${arrSplit[1]}
@@ -1519,8 +1537,8 @@ function fnClashNodeSubcriUrlsSubtractDiscarded() {
 ###################### function: fnIsCompliantFolders #########################
 ###############################################################################
 function fnIsCompliantFolders() {
-    local fpathFolder
-    local arrLoop6Files=(${fpathFolder}.????????_??????)
+    local -r fpathFolder="$1"
+    local -a arrLoop6Files=(${fpathFolder}.????????_??????)
     arrLoop6Files+=(${fpathFolder}.tar.gz)
     if [[ ${#arrLoop6Files[@]} -gt 0 ]]; then
         return 0
@@ -1532,21 +1550,22 @@ function fnIsCompliantFolders() {
 ####################### function: fnFeedbackSubsystem #########################
 ###############################################################################
 function fnFeedbackSubsystem() {
-    declare -i local NN=$1
-    local fpathClashNodeSubcriNew=$2
+    local -r NN=$1
+    local -r fpathClashNodeSubcriNew=$2
+    ASSERT "isdigit \"${NN}\"" "The first input parameter must be a number."
 
     #//////////////////////////////////////////////////////////////////////
     # 1. arrSubscri
-    declare -a local arrSubscri
+    local -a arrSubscri
     readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
     ASSERT "(( 0 < ${#arrSubscri[@]} ))" "Subscription configuration item count is 0"
 
     #//////////////////////////////////////////////////////////////////////
     # 2. LinkDiscardOld ==> arrSubscri, Link8thDays
-    declare -a local Link8thDays
+    local -a Link8thDays
     if [ -f "${DIR0}/${baseName}.urls.db.LinkDiscard" ]; then
         # 2.1 LinkDiscardOld
-        declare -a local LinkDiscardOld
+        local -a LinkDiscardOld
         fnTableExtractPresent4Last7Days \
             "${DIR0}/${baseName}.urls.db.LinkDiscard" \
             LinkDiscardOld \
@@ -1554,7 +1573,7 @@ function fnFeedbackSubsystem() {
 
         # 2.2 arrSubscri
         if (( ${#LinkDiscardOld[@]} )); then
-            declare -a local arrSubscriTmp
+            local -a arrSubscriTmp
             ArraySubtract arrSubscri LinkDiscardOld arrSubscriTmp
             arrSubscri=("${arrSubscriTmp[@]}")
         fi
@@ -1565,7 +1584,7 @@ function fnFeedbackSubsystem() {
             "${DIR0}/${baseName}.urls.db.LinkDiscard" \
             $(( NN + 1 )) \
             1
-        declare -a local arr8thTmp
+        local -a arr8thTmp
         ArraySubtract Link8thDays LinkDiscardOld arr8thTmp
         Link8thDays=("${arr8thTmp[@]}")
     fi
@@ -1573,7 +1592,7 @@ function fnFeedbackSubsystem() {
 
     #//////////////////////////////////////////////////////////////////////
     # 3. LinkDiscard
-    declare -a local Link404Over7 LinkInactiveOver7 Link0sizeOver7
+    local -a Link404Over7 LinkInactiveOver7 Link0sizeOver7
 
     # 3.1 loop6.bak/Link404Over7
     if fnIsCompliantFolders "${DIR0}/loop6.bak/${baseName}.loop6"; then
@@ -1608,7 +1627,7 @@ function fnFeedbackSubsystem() {
     fnAddDatetimeMarkAndAppend2Eof Link0sizeOver7 "${DIR0}/${baseName}.urls.db.Link0sizeOver7"
 
     # 3.4 LinkDiscard <== (Link404Over7, LinkInactiveOver7, Link0sizeOver7)
-    declare -a local LinkDiscard
+    local -a LinkDiscard
     fnLinkDiscard \
         Link404Over7 \
         LinkInactiveOver7 \
@@ -1619,7 +1638,7 @@ function fnFeedbackSubsystem() {
 
     #//////////////////////////////////////////////////////////////////////
     # 4. LinkWorthTrying, LinkNotWorthTrying
-    declare -a local LinkWorthTrying LinkNotWorthTrying
+    local -a LinkWorthTrying LinkNotWorthTrying
     fnClashNodeSubcriUrlsSubtractDiscarded \
         arrSubscri \
         LinkDiscard \
@@ -1636,9 +1655,9 @@ function fnFeedbackSubsystem() {
 ################## function: trans2stddatetimestring ##########################
 ###############################################################################
 function trans2stddatetimestring() {
-    local s="$1"
+    local -r s="$1"
     ASSERT "((15 <= ${#s}))" "trans2stddatetimestring() cannot accept strings shorter than 15."
-    local sDatetime="${s:0:4}-${s:4:2}-${s:6:2} ${s:9:2}:${s:11:2}:${s:13:2}"
+    local -r sDatetime="${s:0:4}-${s:4:2}-${s:6:2} ${s:9:2}:${s:11:2}:${s:13:2}"
     echo ${sDatetime}
 }
 
@@ -1649,13 +1668,14 @@ function trans2stddatetimestring() {
 # https://stackoverflow.com/questions/7870230/array-intersection-in-bash
 # https://stackoverflow.com/questions/10582763/how-to-return-an-array-in-bash-without-using-globals
 function ArrayIntersect() {
-    local -n array1=$1
-    local -n array2=$2
+    local -nr array1=$1
+    local -nr array2=$2
     local -n result=$3                    # use nameref for indirection
     ASSERT "! (( ${#result[@]} ))" "The array used to hold the returned data must initially be empty."
 
-    local l2=" ${array2[*]} "             # add framing blanks
-    for item in ${array1[@]}; do
+    local -r l2=" ${array2[*]} "             # add framing blanks
+    # https://stackoverflow.com/questions/8880603/loop-through-an-array-of-strings-in-bash
+    for item in "${array1[@]}"; do
         if [[ $l2 =~ " $item " ]] ; then  # use $item as regexp
             result+=($item)
         fi
@@ -1667,8 +1687,8 @@ function ArrayIntersect() {
 ###############################################################################
 # https://stackoverflow.com/questions/10020148/bash-delete-items-present-in-one-array-from-another?rq=3
 function ArraySubtract() {
-    local -n array1_=$1
-    local -n array2_=$2
+    local -nr array1_=$1
+    local -nr array2_=$2
     local -n result_=$3
     ASSERT "! (( ${#result_[@]} ))" "The array used to hold the returned data must initially be empty."
     result_=("${array1_[@]}")
@@ -1682,12 +1702,12 @@ function ArraySubtract() {
 ###############################################################################
 # https://www.google.com/search?q=bash+array+interset+with+space&pws=0&gl=us&gws_rd=cr
 function ArrayIntersect4element_contain_spaces() {
-    local -n array1=$1
-    local -n array2=$2
+    local -nr array1=$1
+    local -nr array2=$2
     local -n result=$3
     ASSERT "! (( ${#result[@]} ))" "The array used to hold the returned data must initially be empty."
 
-    declare -A local map
+    local -A map
 
     for item in "${array1[@]}"; do
         map["$item"]=1
@@ -1709,44 +1729,43 @@ function ArrayIntersect4element_contain_spaces() {
 ###### function: _all_datetime_urlnameslice_records_from_the_last_NN_days #####
 ###############################################################################
 function _all_datetime_urlnameslice_records_from_the_last_NN_days() {
-    local sTableFPath=$1
-    declare -i local NN=$2
+    local -r sTableFPath=$1
+    local -r NN=$2
     local -n arrNNdatetime_=$3
     local -n arrNNUrlName_=$4
     ASSERT "! (( ${#arrNNdatetime_[@]} ))" "Parameter 3 is an output parameter; its initial value must be empty."
     ASSERT "! (( ${#arrNNUrlName_[@]} ))" "Parameter 4 is an output parameter; its initial value must be empty."
-
-    ASSERT "[[ 0 < ${NN} ]]" "The specified number of days must be greater than 0."
+    ASSERT "isdigit \"${NN}\"" "This parameter must be a digit."
+    ASSERT "(( 0 < NN ))" "The specified number of days must be greater than 0."
     ASSERT "[ -f ${sTableFPath} ]" "The specified table file must exist."
-    declare -i local nFilesize=$(get_file_size "$sTableFPath")
-    ASSERT "(( 20 < ${nFilesize} ))" "The file size is too small; it appears you have tampered with the data."
+    if ! (( 0 < $(get_file_size "$sTableFPath") )); then return 1; fi
 
-    declare -i local j=-1 k=-1
+    local -i j=-1 k=-1
 
     # arrTableRec_sorted_unique
-    declare -a local arrTableRec
-    declare -a local arrTableRec_sorted_unique
+    local -a arrTableRec
+    local -a arrTableRec_sorted_unique
     readarray -t arrTableRec < ${sTableFPath}
     if ! (( 0 < ${#arrTableRec[@]} )); then return 1; fi
     readarray -t arrTableRec_sorted_unique < <(printf "%s\n" "${arrTableRec[@]}" | sort -u)
-    declare -i local nRecords=${#arrTableRec_sorted_unique[@]}
+    local -ri nRecords=${#arrTableRec_sorted_unique[@]}
     if ! (( 0 < nRecords )); then return 1; fi
 
     # nNNdaysago, n1daysago
-    declare -i local nNow=TIMEBEGIN
-    declare -i local nTodayYYYYmmdd=$( date -d "$( date -d @${TIMEBEGIN} '+%F' )" +%s )
-    declare -i local nNNdaysago=$(( nNow - ( NN*24*60*60 ) - (nNow - nTodayYYYYmmdd) )) # Today doesn't count.
-    declare -i local n1daysago=$(( nNow - (nNow - nTodayYYYYmmdd) ))
+    local -ri nNow=TIMEBEGIN
+    local -ri nTodayYYYYmmdd=$( date -d "$( date -d @${TIMEBEGIN} '+%F' )" +%s )
+    local -ri nNNdaysago=$(( nNow-(NN*24*60*60)-(nNow-nTodayYYYYmmdd) )) # Today doesn't count.
+    local -ri n1daysago=$(( nNow-(nNow-nTodayYYYYmmdd) ))
 
     # arrNNdatetime_, arrNNUrlName_
-    for (( k=0, j=$((--nRecords)); 0<=j; j-- )); do
-        declare -i local nThisLen=${#arrTableRec_sorted_unique[j]}
+    for (( k=0, j=nRecords-1; 0<=j; j-- )); do
+        local -i nThisLen=${#arrTableRec_sorted_unique[j]}
         ASSERT "(( 20 < nThisLen ))" "This record \"${arrTableRec_sorted_unique[j]}\" is too short; it doesn't seem like a legitimate record."
         local sDatetime=${arrTableRec_sorted_unique[j]: 0: 15 }
         local sUrlName=${arrTableRec_sorted_unique[j]: 16 }
         ASSERT "is_valid_datetime \"${sDatetime}\"" "The first 15 characters of the \"${arrTableRec_sorted_unique[j]}\" are not a valid timestamp."
         local sStdDatetime=$(trans2stddatetimestring "${sDatetime}")
-        declare -i local nDatetime=$(date -d "${sStdDatetime}" +%s)
+        local -i nDatetime=$(date -d "${sStdDatetime}" +%s)
         if (( n1daysago <= nDatetime )); then continue; fi # Today doesn't count.
         if (( nDatetime < nNNdaysago )); then break; fi # Right, use `break` instead of `continue`, because the data has already been sorted and we are iterating in reverse order.
         arrNNdatetime_[k]=${nDatetime}
@@ -1765,15 +1784,30 @@ function _all_datetime_urlnameslice_records_from_the_last_NN_days() {
 ############### function: print_yyyyMMddHHmmss_urlNameSlice ###################
 ###############################################################################
 function print_yyyyMMddHHmmss_urlNameSlice() {
-    declare -n arrNNdatetime_=$1
-    declare -n arrNNUrlName_=$2
-    declare -i local i=-1
-    declare -i local nArrSize=${#arrNNdatetime_[@]}
+    local -n arrNNdatetime_=$1
+    local -n arrNNUrlName_=$2
+    local -i i=-1
+    local -i nArrSize=${#arrNNdatetime_[@]}
     for (( i = 0; i < nArrSize; i++)); do
         sDatetime=$(date -d @${arrNNdatetime_[i]} +"%Y-%m-%d %H:%M:%S")
         printf "%s %s\n" "$sDatetime" "${arrNNUrlName_[i]}"
     done
 }
+
+###############################################################################
+################### function: CombileSpacesAndTrimFile() ######################
+###############################################################################
+# https://unix.stackexchange.com/questions/102008/how-do-i-trim-leading-and-trailing-whitespace-from-each-line-of-some-output
+function CombileSpacesAndTrimFile() {
+    local fpath="$1"
+    local -r tmpfpath=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
+    cat "${fpath}" | awk 'NF{$1=$1;print}' > "${tmpfpath}"
+    mv -f "${tmpfpath}" "${fpath}" &> /dev/null
+}
+# declare fpathtemp=tmptmptmp.txt
+# printf "\n\taaa\n\n  bbb\t   \n c   c\tc" > "${fpathtemp}"
+# CombileSpacesAndTrimFile "${fpathtemp}"
+# cat "${fpathtemp}"
 
 ###############################################################################
 ########################### LocalLet.vs.LetLocal ##############################
