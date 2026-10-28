@@ -630,7 +630,7 @@ function singleton_clean_up() {
     local -ri timeEnd=$(date +%s)
     local -ri total_seconds=timeEnd-TIMEBEGIN
     local -ri seconds=total_seconds%60
-    local -ri minutes=(total_seconds/60)%60
+    local -ri minutes=$(( (total_seconds / 60) % 60 ))
     local -ri hours=total_seconds/3600
     printf -v formatted_string "%02d:%02d:%02d" $hours $minutes $seconds
     tee_echo "\tEnd: $(date -d @${timeEnd} +%Y%m%d_%H%M%S), time escaped:${formatted_string}"
@@ -699,7 +699,7 @@ function combine_subscri() {
 
         local thisCombine="${EXISTENTIAL_CONFIGs}/${arr[${begin}]}.yaml"
         local -i j=-1
-        for (( j = $((++begin)); j < ${end}; j++ )); do
+        for (( j = ++begin; j < end; j++ )); do
             thisCombine="${thisCombine}|${EXISTENTIAL_CONFIGs}/${arr[${j}]}.yaml"
         done
         local url_uhttpd=$(urlencode "${thisCombine}")
@@ -1117,8 +1117,8 @@ function GetTitle() {
         return
     fi
 
-    local -ri half=(totalWidth-zTitle)/2-1
-    local -ri half2=totalWidth-half-1
+    local -ri half=$(( (totalWidth-zTitle) / 2 - 1))
+    local -ri half2=$(( totalWidth-half-1 ))
     # https://stackoverflow.com/questions/5349718/how-can-i-repeat-a-character-in-bash
     local -r str=$(printf "%${half}s")
     local -r str2=$(printf "%${half2}s")
