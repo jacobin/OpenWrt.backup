@@ -93,7 +93,7 @@ for cmd in "${cmds[@]}"; do
     fi
 done
 
-python -c "import PyYAML" &> /dev/null || ( pip install PyYAML &> /dev/null || ( tee_echo "Python installation of PyYAML failed"; singleton_clean_up 1 ) )
+python -c "import PyYAML" &>/dev/null || ( pip install PyYAML &>/dev/null || ( tee_echo "Python installation of PyYAML failed"; singleton_clean_up 1 ) )
 
 declare -r -a existing_dirs=("${DIR0}/loop6.bak"
                              "${DATA_DIR}"
@@ -101,7 +101,7 @@ declare -r -a existing_dirs=("${DIR0}/loop6.bak"
                              "${DATA_DIR}/slice"
                              "${DATA_DIR}/pass2subconverter"
                              "${DATA_DIR}/filterout_snioff")
-for dir in "${existing_dirs[@]}"; do mkdir -p "${dir}" > /dev/null 2>&1; done
+for dir in "${existing_dirs[@]}"; do mkdir -p "${dir}" &>/dev/null; done
 for dir in "${existing_dirs[@]}"; do
     if [ ! -d "${dir}" ]; then
         tee_echo "\tFolder \"${dir}\" not found!"
@@ -264,13 +264,13 @@ tee_echo "Download the subscribed raw data to local ${DATA_DIR}/original after a
 ###############################################################################
 # https://stackoverflow.com/questions/62021429/why-does-command-line-rm-not-accept-quotation-marks-for-directories-with-spaces
 if [ -f "${DIR0}/${baseName}.loop"6 ]; then
-    mv -f "${DIR0}/${baseName}.loop"6 "${DIR0}/loop6.bak/${baseName}.loop6.$(date -d @${TIMEBEGIN} +%Y%m%d_%H%M%S)" &> /dev/null
+    mv -f "${DIR0}/${baseName}.loop"6 "${DIR0}/loop6.bak/${baseName}.loop6.$(date -d @${TIMEBEGIN} +%Y%m%d_%H%M%S)" &>/dev/null
     tar_old_files "${DIR0}/loop6.bak/${baseName}.backup.loop6" "${DIR0}/loop6.bak/${baseName}.loop6" 2 1000
 fi
 
-rm -f "${DIR0}/${baseName}.loop"? > /dev/null 2>&1
-cp -f "${DIR0}/${baseName}.urls.constrict" "${DIR0}/${baseName}.loop1" &> /dev/null
-rm "${DIR0}/${baseName}.127.urls" > /dev/null 2>&1
+rm -f "${DIR0}/${baseName}.loop"? &>/dev/null
+cp -f "${DIR0}/${baseName}.urls.constrict" "${DIR0}/${baseName}.loop1" &>/dev/null
+rm "${DIR0}/${baseName}.127.urls" &>/dev/null
 
 for (( i=1; i<=5; i++ )); do
     tee_echo "Loop${i}"
@@ -325,7 +325,7 @@ for (( i=1; i<=5; i++ )); do
                 continue
             fi
         else
-            mv -f "${DATA_DIR}/original/${fname}.tmp" "${DATA_DIR}/original/${fname}" &> /dev/null
+            mv -f "${DATA_DIR}/original/${fname}.tmp" "${DATA_DIR}/original/${fname}" &>/dev/null
         fi
 
         if [[ -z "${tobe_sliced}" ]]; then
@@ -334,12 +334,12 @@ for (( i=1; i<=5; i++ )); do
             declare targetDisasFPath="${DATA_DIR}/original/${fname}"
 
             # If the file is base64 encoded...
-            rm -f "${DATA_DIR}/original/${fname}.base64decode.result" &> /dev/null
+            rm -f "${DATA_DIR}/original/${fname}.base64decode.result" &>/dev/null
             if base64 --decode --ignore-garbage "${targetDisasFPath}" > "${DATA_DIR}/original/${fname}.base64decode.result" 2>/dev/null; then
                 # https://fabianlee.org/2024/06/22/yq-validate-yaml-syntax
                 targetDisasFPath="${DATA_DIR}/original/${fname}.base64decode.result"
             else
-                rm -f "${DATA_DIR}/original/${fname}.base64decode.result" &> /dev/null
+                rm -f "${DATA_DIR}/original/${fname}.base64decode.result" &>/dev/null
             fi
 
             # If it is a YAML file format ...
@@ -365,7 +365,7 @@ for (( i=1; i<=5; i++ )); do
                         if (( lineNo % SLICE_SIZE == 1 )); then
                             declare newSubFName=${fname}.$(printf %05d ${fileNo}).txt
                             echo "${WEB_SLIC_DAT}/${newSubFName},${newSubFName}" >> "${DIR0}/${baseName}.127.urls"
-                            rm -f "${DATA_DIR}/slice/${newSubFName}" &> /dev/null
+                            rm -f "${DATA_DIR}/slice/${newSubFName}" &>/dev/null
                             echo "$v2rayLine" > "${DATA_DIR}/slice/${newSubFName}"
                             ((fileNo++))
                         else
@@ -378,14 +378,14 @@ for (( i=1; i<=5; i++ )); do
         fi
 
     done
-    rm -f "${DATA_DIR}/original/"*".tmp" > /dev/null 2>&1
+    rm -f "${DATA_DIR}/original/"*".tmp" &>/dev/null
 done
 
 tee_echo "Convert data files that 'cannot be subscribed to via Openclash' to ${DATA_DIR}/pass2subconverter using base64 encoding."
 ###############################################################################
 ## 把哪些『不能“通过Openclash进行订阅”』的数据文件进行base64的编码转换到${DATA_DIR}/pass2subconverter
 ###############################################################################
-rm -f "${DIR0}/${baseName}.127.pass2subconverter.urls" > /dev/null 2>&1
+rm -f "${DIR0}/${baseName}.127.pass2subconverter.urls" &>/dev/null
 declare -a arrSubscri=()
 readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.127.urls")
 
@@ -401,21 +401,21 @@ for subscri in "${arrSubscri[@]}"; do
     folderName=$( tweezers_original_folder_name "${url127}" )
     operation="ln"
     ASSERT "[ -f \"${DATA_DIR}/${folderName}/${fname}\" ]" "File \"${DATA_DIR}/${folderName}/${fname}\" that should exist does not exist"
-    rm -f "${DATA_DIR}/${folderName}/${fname}.base64decode.result" &> /dev/null
+    rm -f "${DATA_DIR}/${folderName}/${fname}.base64decode.result" &>/dev/null
     if base64 --decode --ignore-garbage "${DATA_DIR}/${folderName}/${fname}" > "${DATA_DIR}/${folderName}/${fname}.base64decode.result" 2>/dev/null; then
         # https://fabianlee.org/2024/06/22/yq-validate-yaml-syntax
         if yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/${folderName}/${fname}.base64decode.result" &>/dev/null; then
-            ln -sf "${DATA_DIR}/${folderName}/${fname}.base64decode.result" "${DATA_DIR}/pass2subconverter/${fname}" &> /dev/null
+            ln -sf "${DATA_DIR}/${folderName}/${fname}.base64decode.result" "${DATA_DIR}/pass2subconverter/${fname}" &>/dev/null
         else
-            rm -f "${DATA_DIR}/${folderName}/${fname}.base64decode.result" > /dev/null 2>&1
-            ln -sf "${DATA_DIR}/${folderName}/${fname}" "${DATA_DIR}/pass2subconverter/${fname}" &> /dev/null
+            rm -f "${DATA_DIR}/${folderName}/${fname}.base64decode.result" &>/dev/null
+            ln -sf "${DATA_DIR}/${folderName}/${fname}" "${DATA_DIR}/pass2subconverter/${fname}" &>/dev/null
         fi
     else
-        rm -f "${DATA_DIR}/${folderName}/${fname}.base64decode.result" > /dev/null 2>&1
+        rm -f "${DATA_DIR}/${folderName}/${fname}.base64decode.result" &>/dev/null
         if [[ "${fname}" == *.yaml || "${fname}" == *.yml ]] || yq --exit-status 'tag == "!!map" or tag== "!!seq"' "${DATA_DIR}/${folderName}/${fname}" &>/dev/null; then
-            ln -sf "${DATA_DIR}/${folderName}/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"  &> /dev/null
+            ln -sf "${DATA_DIR}/${folderName}/${fname}" "${DATA_DIR}/pass2subconverter/${fname}"  &>/dev/null
         else
-            rm -f "${DATA_DIR}/pass2subconverter/${fname}" > /dev/null 2>&1
+            rm -f "${DATA_DIR}/pass2subconverter/${fname}" &>/dev/null
             base64 -w0 "${DATA_DIR}/${folderName}/${fname}" > "${DATA_DIR}/pass2subconverter/${fname}"
             operation="base64"
         fi
@@ -450,7 +450,7 @@ if (( subsSize <= 0 )); then
     singleton_clean_up 1
 fi
 
-rm "${DIR0}/${baseName}.snioff.urls" > /dev/null 2>&1
+rm "${DIR0}/${baseName}.snioff.urls" &>/dev/null
 for (( j=0; j<subsSize; j++ )); do
     # subscri
     declare subscri=${arrSubscri[$j]}
@@ -479,7 +479,7 @@ for (( j=0; j<subsSize; j++ )); do
                 beEdited=true
             fi
         fi
-        rm -f "${DATA_DIR}/filterout_snioff/${pass2subfname}.base64decode.result" &> /dev/null
+        rm -f "${DATA_DIR}/filterout_snioff/${pass2subfname}.base64decode.result" &>/dev/null
     fi
 
     if $beEdited; then
@@ -500,7 +500,7 @@ if [ ! -f "${DIR0}/${baseName}.snioff.urls" ]; then
     singleton_clean_up 1
 fi
 
-rm -f "${DIR0}/${baseName}.etc_config_openclash.mutable" > /dev/null 2>&1
+rm -f "${DIR0}/${baseName}.etc_config_openclash.mutable" &>/dev/null
 echo -e "\toption config_path 'PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH'\n" >> "${DIR0}/${baseName}.etc_config_openclash.mutable"
 echo -e "\toption custom_domain_dns_server '${directDns}'\n" >> "${DIR0}/${baseName}.etc_config_openclash.mutable"
 
@@ -551,14 +551,14 @@ sed -i "s#PLACEHOLDER_ACTIVE_OPENCLASH_CONFIG_PATH#${DIR0}\/config\/${final1}.ya
 
 ###############################################################################
 # "${DIR0}/${baseName}.cfg"
-rm -f "${DIR0}/${baseName}.cfg" &> /dev/null
+rm -f "${DIR0}/${baseName}.cfg" &>/dev/null
 cat "${DIR0}/${baseName}.etc_config_openclash.const"   >  "${DIR0}/${baseName}.cfg"
 cat "${DIR0}/${baseName}.etc_config_openclash.mutable" >> "${DIR0}/${baseName}.cfg"
 
 ###############################################################################
 # "/etc/config/openclash"
-mv -f "/etc/config/openclash" "/etc/config/openclash.$(date -d @${TIMEBEGIN} +%Y%m%d_%H%M%S)" &> /dev/null
-cp -f "${DIR0}/${baseName}.cfg" "/etc/config/openclash" &> /dev/null
+mv -f "/etc/config/openclash" "/etc/config/openclash.$(date -d @${TIMEBEGIN} +%Y%m%d_%H%M%S)" &>/dev/null
+cp -f "${DIR0}/${baseName}.cfg" "/etc/config/openclash" &>/dev/null
 
 tee_echo "Package redundant config Openclash files. Only 5 external files are left."
 ###############################################################################
@@ -579,12 +579,12 @@ tee_echo "Restart Openclash."
 ## 重启 openclash #############################################################
 ###############################################################################
 # "/etc/init.d/openclash" restart
-/usr/share/openclash/openclash.sh > /dev/null 2>&1
+/usr/share/openclash/openclash.sh &>/dev/null
 
 ###############################################################################
 ## 如果启动失败...fuckoffsnioff的细作都干过了，看起来Mihomo的订阅合并有毛病 ###
 ###############################################################################
-if ! pgrep -x "/etc/openclash/clash" > /dev/null; then
+if ! pgrep -x "/etc/openclash/clash" &>/dev/null; then
     tee_echo "Perhaps there is an error with Mihomo's subscription merging"
     if grep -q 'sni: off,' "${DIR0}/config/${final1}.yaml" 2>/dev/null; then
         sed -i -e 's/sni: off,/sni: "off",/g' "${DIR0}/config/${final1}.yaml" 2>/dev/null
@@ -594,7 +594,7 @@ if ! pgrep -x "/etc/openclash/clash" > /dev/null; then
         tee_echo "Restarted it after fixing the configuration editing error."
     fi
 fi
-if ! pgrep -x "/etc/openclash/clash" > /dev/null; then
+if ! pgrep -x "/etc/openclash/clash" &>/dev/null; then
     tee_echo "Oh, startup failed."
 fi
 
@@ -636,8 +636,8 @@ function singleton_clean_up() {
     tee_echo "\tEnd: $(date -d @${timeEnd} +%Y%m%d_%H%M%S), time escaped:${formatted_string}"
     flock -u 3
     exec 4>&-
-    rm -f ${F_LOCK} &> /dev/null
-    rm -f ${F_PID} &> /dev/null
+    rm -f ${F_LOCK} &>/dev/null
+    rm -f ${F_PID} &>/dev/null
     exit "$1"
 }
 
@@ -811,11 +811,11 @@ function tar_old_files() {
     ASSERT "! [[ ${targetFPathMatchingPattern} == *\"${tarFPath}\"* || ${tarFPath} == *\"${targetFPathMatchingPattern}\"* ]]" "It must be ensured that \"${tarFPath}\" is not in the pattern matching of \"${targetFPathMatchingPattern}\""
 
     if [ -f "${tarFPath}.tar.gz" ]; then
-        gzip -d "${tarFPath}.tar.gz" &> /dev/null
+        gzip -d "${tarFPath}.tar.gz" &>/dev/null
         ASSERT "[ ! -f \"${tarFPath}.tar.gz\" ]" "Failed to unzip file \"${tarFPath}.tar.gz\"."
-        tar x -v -f "${tarFPath}.tar" -C "/" >/dev/null 2>&1
+        tar x -v -f "${tarFPath}.tar" -C "/" &>/dev/null
         ASSERT "[ -f \"${tarFPath}.tar\" ]" "tar's behavior towards file \"${tarFPath}.tar\" does not meet expectations."
-        rm -f "${tarFPath}.tar" &> /dev/null
+        rm -f "${tarFPath}.tar" &>/dev/null
         ASSERT "[ ! -f \"${tarFPath}.tar\" ]" "Delete file \"${tarFPath}.tar\" failed."
     fi
 
@@ -831,7 +831,7 @@ function tar_old_files() {
     readarray -t arrOpenclashConfigBakup < <(cat "${ListFPathTemp}")
     # https://stackoverflow.com/questions/13648410/how-can-i-get-unique-values-from-an-array-in-bash
     IFS=" " read -r -a arrOpenclashConfigBakup <<< "$(tr ' ' '\n' <<< "${arrOpenclashConfigBakup[@]}" | sort -u | tr '\n' ' ')"
-    rm -f "${ListFPathTemp}" &> /dev/null
+    rm -f "${ListFPathTemp}" &>/dev/null
     local -i bakSize=${#arrOpenclashConfigBakup[@]}
     if (( bakSize == 0 )); then return; fi
 
@@ -858,7 +858,7 @@ function tar_old_files() {
 
         if $bRename; then
             local newFpath="${fpath}.${NowDatetime}"
-            mv -f "${fpath}" "${newFpath}" &> /dev/null
+            mv -f "${fpath}" "${newFpath}" &>/dev/null
             arrOpenclashConfigBakup[$j]="${newFpath}"
         fi
     done
@@ -878,14 +878,14 @@ function tar_old_files() {
         rm_command_string="${rm_command_string} \"${arrOpenclashConfigBakup[$j]}\""
     done
 
-    tar_command_string="${tar_command_string} >/dev/null 2>&1"
-    rm_command_string="${rm_command_string} >/dev/null 2>&1"
+    tar_command_string="${tar_command_string} &>/dev/null"
+    rm_command_string="${rm_command_string} &>/dev/null"
 
     if ! $bExecution; then return; fi
 
     eval "$tar_command_string"
     eval "$rm_command_string"
-    gzip "${tarFPath}.tar"  &> /dev/null
+    gzip "${tarFPath}.tar"  &>/dev/null
     ASSERT "[[ -f \"${tarFPath}.tar.gz\" && ! -f \"${tarFPath}.tar\" ]]" "Compressed file \"${tarFPath}.tar\" failed."
 }
 
@@ -1423,11 +1423,11 @@ function fnFile2Table() {
     ASSERT "[ -f \"${sTableResultFPath}\" ]" "There cannot be a file at that location \"${sTableResultFPath}\"."
 
     if [ -f "${sTarFPath}.tar.gz" ]; then
-        gzip -d "${sTarFPath}.tar.gz" &> /dev/null
+        gzip -d "${sTarFPath}.tar.gz" &>/dev/null
         ASSERT "[ ! -f \"${sTarFPath}.tar.gz\" ]" "Failed to unzip file \"${sTarFPath}.tar.gz\"."
-        tar x -v -f "${sTarFPath}.tar" -C "/" >/dev/null 2>&1
+        tar x -v -f "${sTarFPath}.tar" -C "/" &>/dev/null
         ASSERT "[ -f \"${sTarFPath}.tar\" ]" "tar's behavior towards file \"${sTarFPath}.tar\" does not meet expectations."
-        rm -f "${sTarFPath}.tar" &> /dev/null
+        rm -f "${sTarFPath}.tar" &>/dev/null
         ASSERT "[ ! -f \"${sTarFPath}.tar\" ]" "Delete file \"${sTarFPath}.tar\" failed."
     fi
 
@@ -1604,7 +1604,7 @@ function fnFeedbackSubsystem() {
             "${fpathTmp}" \
             Link404Over7 \
             ${NN}
-        rm -f "${fpathTmp}"
+        rm -f "${fpathTmp}" &>/dev/null
     fi
     fnAddDatetimeMarkAndAppend2Eof Link404Over7 "${DIR0}/${baseName}.urls.db.Link404Over7"
 
@@ -1802,7 +1802,7 @@ function CombileSpacesAndTrimFile() {
     local fpath="$1"
     local -r tmpfpath=$(mktemp "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
     cat "${fpath}" | awk 'NF{$1=$1;print}' > "${tmpfpath}"
-    mv -f "${tmpfpath}" "${fpath}" &> /dev/null
+    mv -f "${tmpfpath}" "${fpath}" &>/dev/null
 }
 # declare fpathtemp=tmptmptmp.txt
 # printf "\n\taaa\n\n  bbb\t   \n c   c\tc" > "${fpathtemp}"
