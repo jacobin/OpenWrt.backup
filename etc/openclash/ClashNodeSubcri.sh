@@ -1466,7 +1466,7 @@ function fnAddDatetimeMarkAndAppend2Eof() {
     fi
 
     # sDatetime <== ticks
-    local -r sDatetime=$(date -d @${ticks} +"%Y-%m-%d_%H:%M:%S")
+    local -r sDatetime=$(date -d @${ticks} +"%Y%m%d_%H%M%S")
 
     local -i j=-1
     for (( j=0; j<${#arrUrlNameSlice[@]}; j++ )); do
