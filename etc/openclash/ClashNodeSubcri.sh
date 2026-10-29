@@ -1324,7 +1324,7 @@ function fnTableExtractPresent4Last7Days() {
     local -a arrBucketNN
     local -ri nRecNNsize=${#arrNNUrlName[@]}
     for (( j=0; j<nRecNNsize; j++ )); do
-        local -ri nBucketIdx=$(( (arrNNdatetime[j]-nNNdaysago)/(24*60*60) ))
+        local -i nBucketIdx=$(( (arrNNdatetime[j]-nNNdaysago)/(24*60*60) ))
 		ASSERT "(( 0 <= nBucketIdx )) && (( nBucketIdx < NN ))" "The records obtained after filtering must all fall within the last 7 days."
         arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
         arrBucketNN[ nBucketIdx ]+="|"
@@ -1377,7 +1377,7 @@ function fnTableExtractPresent4NCDays() {
     local -a arrBucketNN
     local -ri nRecNNsize=${#arrNNUrlName[@]}
     for (( j=0; j<nRecNNsize; j++ )); do
-        local -ri nBucketIdx=$(( (arrNNdatetime[j]-nNNdaysago)/(24*60*60) ))
+        local -i nBucketIdx=$(( (arrNNdatetime[j]-nNNdaysago)/(24*60*60) ))
 		ASSERT "(( 0 <= nBucketIdx )) && (( nBucketIdx < NN ))" "The records obtained after filtering must all fall within the last 7 days."
         if (( nBucketIdx < nCount )); then
             arrBucketNN[ nBucketIdx ]+=${arrNNUrlName[j]}
