@@ -1559,6 +1559,9 @@ function fnFeedbackSubsystem() {
     local -a arrSubscri
     readarray -t arrSubscri < <(cat "${DIR0}/${baseName}.urls" | sed -e 's/[[:space:]]*#.*//' -e '/^[[:space:]]*$/d')
     ASSERT "(( 0 < ${#arrSubscri[@]} ))" "Subscription configuration item count is 0"
+    # https://stackoverflow.com/questions/30294514/replace-blank-spaces-in-an-array-in-bash
+    arrSubscri=( "${arrSubscri[@]// /}" ) # perform expansion on all array members at once
+  # printf '%s\n' "${arrSubscri[@]}"; exit 0
 
     #//////////////////////////////////////////////////////////////////////
     # 2. LinkDiscardOld ==> arrSubscri, Link8thDays
