@@ -363,7 +363,7 @@ def main():
         json.dump(PRESENT_DNSs, f, indent=4) # 'indent=4' makes the file human-readable
 
 ###############################################################################
-# format of list_downloaded_fpath: url, downloaded_tmpfile, downloaded_oldfile
+# The format of list_downloaded_fpath: url, downloaded_tmpfile, downloaded_oldfile
 def download( telegram_urls, web_download_folder, list_downloaded_fpath ):
     __func__ = inspect.currentframe().f_code.co_name
 
